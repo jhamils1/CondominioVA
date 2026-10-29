@@ -1,0 +1,365 @@
+{
+  "format": "EA XMI 1.1",
+  "classes": 32,
+  "attributes": 172,
+  "associations": 32,
+  "generalizations": 3,
+  "diagrams": [
+    {
+      "name": "00 General - modelo del negocio",
+      "classes": 20,
+      "relationships": 23
+    },
+    {
+      "name": "01 Personas - herencia y usuarios",
+      "classes": 5,
+      "relationships": 6
+    },
+    {
+      "name": "02 Administracion - empleados y cargos",
+      "classes": 3,
+      "relationships": 2
+    },
+    {
+      "name": "03 Viviendas - contratos expensas multas",
+      "classes": 7,
+      "relationships": 7
+    },
+    {
+      "name": "04 Convivencia - visitas mascotas y vehiculos",
+      "classes": 6,
+      "relationships": 6
+    },
+    {
+      "name": "05 Areas comunes y reservas",
+      "classes": 3,
+      "relationships": 2
+    },
+    {
+      "name": "06 Infraestructura - Django JWT y FCM",
+      "classes": 13,
+      "relationships": 12
+    }
+  ],
+  "xml_references_valid": true,
+  "live_import_verified": false,
+  "source": "esquema_verificado.json",
+  "relationships": [
+    {
+      "id": "EAID_B533B2BB_925F_5E19_8369_5A9BA93808FD",
+      "type": "Association",
+      "source": "django_admin_log",
+      "target": "django_content_type",
+      "field": "content_type",
+      "source_cardinality": "0..*",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_D8A4805F_A314_5723_AD25_152C9A9B67F4",
+      "type": "Association",
+      "source": "django_admin_log",
+      "target": "auth_user",
+      "field": "user",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_409CE7B2_1C18_538B_8CCA_C3C708EE9967",
+      "type": "Association",
+      "source": "empleado",
+      "target": "cargo",
+      "field": "cargo",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_114AEF91_06C2_57EA_AC69_8169132DC46F",
+      "type": "Association",
+      "source": "empleado",
+      "target": "auth_user",
+      "field": "user",
+      "source_cardinality": "0..1",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_E4FB1B98_EC6F_5836_B198_EF0923B7C76F",
+      "type": "Association",
+      "source": "persona",
+      "target": "auth_user",
+      "field": "user",
+      "source_cardinality": "0..1",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_70FB70AB_EA18_59A8_9137_60E99B3F7B8A",
+      "type": "Association",
+      "source": "auth_group_permissions",
+      "target": "auth_group",
+      "field": "group",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_0E1799CB_CC30_5733_9D8F_17F9D346DA10",
+      "type": "Association",
+      "source": "auth_group_permissions",
+      "target": "auth_permission",
+      "field": "permission",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_54AD1C16_F198_5AF0_B1A0_D4A45F022BEA",
+      "type": "Association",
+      "source": "auth_permission",
+      "target": "django_content_type",
+      "field": "content_type",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_D1D026FB_179F_55C1_93E4_0849F1B2BDD0",
+      "type": "Association",
+      "source": "auth_user_groups",
+      "target": "auth_user",
+      "field": "user",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_CB656767_75C2_5342_860B_B8E3384A6BFD",
+      "type": "Association",
+      "source": "auth_user_groups",
+      "target": "auth_group",
+      "field": "group",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_C2148C9E_2B54_522B_995C_79BEDBD944C6",
+      "type": "Association",
+      "source": "auth_user_user_permissions",
+      "target": "auth_user",
+      "field": "user",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_ED656663_F668_597E_99A2_00926E1B26D8",
+      "type": "Association",
+      "source": "auth_user_user_permissions",
+      "target": "auth_permission",
+      "field": "permission",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_08E0B01B_5ADD_5BB4_950D_B919BFBBB270",
+      "type": "Association",
+      "source": "fcm_django_fcmdevice",
+      "target": "auth_user",
+      "field": "user",
+      "source_cardinality": "0..*",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_A3F92728_1CA8_543B_A9F2_8CD37CA07C9E",
+      "type": "Association",
+      "source": "contrato",
+      "target": "persona",
+      "field": "propietario",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_8C7DE8D6_6E43_5A59_9D88_BFBC7188BE9B",
+      "type": "Association",
+      "source": "contrato",
+      "target": "unidad",
+      "field": "unidad",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_B960F1E8_ABF7_56F3_B8CA_D93A4B391FF2",
+      "type": "Association",
+      "source": "expensa",
+      "target": "unidad",
+      "field": "unidad",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_EFFEC3C9_EDE0_5F91_B6B9_107753B96C55",
+      "type": "Association",
+      "source": "multa",
+      "target": "expensa",
+      "field": "expensa",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_8324BDC0_3B14_5963_889B_8B03E344512B",
+      "type": "Generalization",
+      "source": "familiares",
+      "target": "persona",
+      "field": "persona_ptr",
+      "source_cardinality": "0..1",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_FE73AEBC_F53E_51A0_843D_DFD209675D02",
+      "type": "Association",
+      "source": "familiares",
+      "target": "persona",
+      "field": "persona_relacionada",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_2BFD154A_C1B2_5DD4_96A2_88F4E38090BB",
+      "type": "Association",
+      "source": "incidente",
+      "target": "multa",
+      "field": "multa",
+      "source_cardinality": "0..*",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_334FE1B3_660A_5650_AA48_FB628726DC30",
+      "type": "Association",
+      "source": "incidente",
+      "target": "persona",
+      "field": "propietario",
+      "source_cardinality": "0..*",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_A493FA81_E999_58B3_BF6E_445134706F69",
+      "type": "Generalization",
+      "source": "inquilino",
+      "target": "persona",
+      "field": "persona_ptr",
+      "source_cardinality": "0..1",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_98321B73_B987_5B9C_9CEE_603DE595101E",
+      "type": "Association",
+      "source": "inquilino",
+      "target": "persona",
+      "field": "propietario",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_56EFE963_4B2B_5075_9C89_900269363307",
+      "type": "Association",
+      "source": "mascota",
+      "target": "persona",
+      "field": "persona",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_09E0CC7E_5DC3_520D_A0F5_EC95BD5181FC",
+      "type": "Association",
+      "source": "reserva_area_comun",
+      "target": "residencial_areascomunes",
+      "field": "area_comun",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_F8F9D4BD_1C7A_5645_8E7B_85FF6E30E761",
+      "type": "Association",
+      "source": "reserva_area_comun",
+      "target": "persona",
+      "field": "persona",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_6A88BA1E_F0DB_5882_8C45_3CC7C2ADE39F",
+      "type": "Association",
+      "source": "residencial_objetoperdido",
+      "target": "persona",
+      "field": "entregado_a",
+      "source_cardinality": "0..*",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_01CEC4F3_3968_5000_92B3_AC9C11C977AB",
+      "type": "Association",
+      "source": "unidad",
+      "target": "bloque",
+      "field": "bloque",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_44CAE477_EC08_57EF_A2EF_2D2B73F0CAE2",
+      "type": "Association",
+      "source": "vehiculo",
+      "target": "persona",
+      "field": "persona",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_361DD7F0_7C04_5D39_BF59_8F3E1D3DAAC1",
+      "type": "Association",
+      "source": "visita",
+      "target": "persona",
+      "field": "recibe_persona",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_0CEA06B7_BA28_5C9E_B50E_4B240F429A52",
+      "type": "Association",
+      "source": "visita",
+      "target": "persona",
+      "field": "visitante",
+      "source_cardinality": "0..*",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_D55AB11C_5BC2_51CE_92FC_44ADCAE8AFAF",
+      "type": "Generalization",
+      "source": "visitante",
+      "target": "persona",
+      "field": "persona_ptr",
+      "source_cardinality": "0..1",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_81F90EE4_BB7A_586E_A174_1385867FA88C",
+      "type": "Association",
+      "source": "lectura_placa",
+      "target": "vehiculo",
+      "field": "vehiculo",
+      "source_cardinality": "0..*",
+      "target_cardinality": "0..1"
+    },
+    {
+      "id": "EAID_127EE1E5_757C_57CF_AB53_801A8EDB4A48",
+      "type": "Association",
+      "source": "token_blacklist_blacklistedtoken",
+      "target": "token_blacklist_outstandingtoken",
+      "field": "token",
+      "source_cardinality": "0..1",
+      "target_cardinality": "1"
+    },
+    {
+      "id": "EAID_0591C0CC_F231_54A5_96E0_6E11587D73EF",
+      "type": "Association",
+      "source": "token_blacklist_outstandingtoken",
+      "target": "auth_user",
+      "field": "user",
+      "source_cardinality": "0..*",
+      "target_cardinality": "0..1"
+    }
+  ],
+  "navigation_arrows": false
+}

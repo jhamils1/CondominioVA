@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Contrato {{ contrato.id }}</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12pt; }
+  h1 { text-align: center; margin-bottom: 8px; }
+  .muted { color: #666; font-size: 10pt; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+</style>
+</head>
+<body>
+  <h1>Contrato N° {{ contrato.id }}</h1>
+  <p class="muted">Fecha de contrato: {{ contrato.fecha_contrato }}</p>
+
+  <h3>Propietario</h3>
+  <p><strong>Nombre:</strong> {{ contrato.propietario.nombre }} {{ contrato.propietario.apellido }}</p>
+
+  <h3>Unidad</h3>
+  <p><strong>Unidad:</strong> {{ contrato.unidad }}</p>
+
+  <h3>Detalles</h3>
+  <table>
+    <tr><th>Estado</th><td>{{ contrato.get_estado_display }}</td></tr>
+    <tr><th>Cuota mensual</th><td>{{ contrato.cuota_mensual|default:"—" }}</td></tr>
+    <tr><th>Costo de compra</th><td>{{ contrato.costo_compra|default:"—" }}</td></tr>
+    <tr><th>Fecha de registro</th><td>{{ contrato.fecha_registro }}</td></tr>
+  </table>
+
+  <p style="margin-top:24px;">Firmas:</p>
+  <p>______________________________</p>
+  <p class="muted">Administrador</p>
+</body>
+</html>
