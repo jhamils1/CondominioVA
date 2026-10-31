@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from administracion.access import AdministratorOnly
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Sum, Count, Q, F
@@ -13,7 +14,7 @@ from administracion.models import Persona
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AdministratorOnly])
 def dashboard_resumen_financiero(request):
     """
     Dashboard principal con resumen financiero general
@@ -67,7 +68,7 @@ def dashboard_resumen_financiero(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AdministratorOnly])
 def grafico_expensas_estado(request):
     """
     GRÁFICO 1: Estado de expensas (Pagadas vs Pendientes)
@@ -120,7 +121,7 @@ def grafico_expensas_estado(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AdministratorOnly])
 def grafico_ingresos_mensuales(request):
     """
     GRÁFICO 2: Ingresos mensuales del año actual
@@ -190,7 +191,7 @@ def grafico_ingresos_mensuales(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AdministratorOnly])
 def grafico_morosos_ranking(request):
     """
     GRÁFICO 3: Top 10 Propietarios con más expensas pendientes
@@ -266,7 +267,7 @@ def grafico_morosos_ranking(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AdministratorOnly])
 def grafico_comparativo_anual(request):
     """
     GRÁFICO BONUS: Comparación de ingresos entre años

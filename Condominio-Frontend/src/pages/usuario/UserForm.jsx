@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from "react";
 import StyledForm from "../../components/form";
 import Button from "../../components/button"; // Nuevo componente reutilizable
+import { roleKey, roles as permittedRoles } from '../../auth/access.js';
 
-const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading }) => {
+const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading, isOwnAccount }) => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -19,6 +20,7 @@ const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading }) => {
         email: initialData.email || "",
         password: "",
         role_id: selectedRole ? selectedRole.id : "",
+        is_active: initialData.is_active,
       });
     }
   }, [initialData, roles]);
@@ -100,11 +102,12 @@ const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading }) => {
           name="role_id"
           value={formData.role_id}
           onChange={handleChange}
-          required
+          required={!isOwnAccount}
+          disabled={isOwnAccount}
           className="w-full px-3 py-2 rounded-md bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="">Selecciona un rol</option>
-          {roles.map(role =>
+          {roles.filter(role => permittedRoles.includes(roleKey(role.name))).map(role =>
             role.id && role.name ? (
               <option key={role.id} value={role.id}>
                 {role.name}
@@ -112,7 +115,9 @@ const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading }) => {
             ) : null
           )}
         </select>
+        {isOwnAccount && <p className="text-xs text-gray-500 mt-1">No puedes cambiar tu propio rol.</p>}
       </div>
+      {isEditing && !isOwnAccount && <label className="block text-sm"><input type="checkbox" checked={formData.is_active !== false} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} /> Cuenta activa</label>}
 
       {/* Botones */}
       <div className="flex justify-end space-x-2 pt-2">

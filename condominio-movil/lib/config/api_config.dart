@@ -1,7 +1,11 @@
+import 'app_environment.dart';
+
 class ApiConfig {
-  // URL base de tu backend Django
-  static const String baseUrl =
-      'http://192.168.0.15:8000/api';
+  // Se puede elegir la dirección al compilar; se conserva la anterior por defecto.
+  static const String baseUrl = AppEnvironment.isolated ? AppEnvironment.isolatedApi : String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.0.15:8000/api',
+  );
 
   // Stripe Publishable Key (para procesar pagos)
   static const String stripePublishableKey =
@@ -10,8 +14,7 @@ class ApiConfig {
   // Endpoints específicos (basados en tu backend real)
   static const String loginEndpoint = '/login/';
   static const String logoutEndpoint = '/logout/';
-  static const String userProfileEndpoint =
-      '/users/'; // Para obtener info del usuario
+  static const String userProfileEndpoint = '/me/';
   static const String refreshTokenEndpoint = '/refresh/';
   static const String devicesEndpoint = '/devices/'; // Para registrar dispositivos FCM
   static const String expensasEndpoint = '/expensas/'; // Para gestionar expensas

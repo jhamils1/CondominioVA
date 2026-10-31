@@ -1,0 +1,35 @@
+# Diseño: cambio seguro de cuenta en un teléfono
+
+## Objetivo y alcance
+
+Permitir que el propietario autorizado del teléfono cambie de la cuenta A a la cuenta B sin transferir silenciosamente el registro de notificaciones de A a B. El cambio afecta a los avisos de **ese teléfono**, no a los demás dispositivos de A ni a sus datos. La aplicación y las notificaciones internas siguen usando los permisos vigentes del backend. Este documento es un diseño: no se ha implementado ni ejecutado el cambio en ningún dispositivo.
+
+En el caso actual, `guardia_prueba` puede consultar su bandeja, pero el identificador de Firebase del teléfono figura asociado a otra cuenta. El usuario indicó que no sabe si esa cuenta es de prueba y pidió no modificar dispositivos ajenos. Por eso no se puede liberar ese registro real con este diseño hasta verificar la titularidad y obtener autorización específica.
+
+## Flujo propuesto con la cuenta anterior disponible
+
+1. La persona inicia sesión en la app con la **cuenta A propietaria del registro**, por sus propios medios; no entrega su contraseña al asistente ni a otra cuenta. La app explica que al continuar A dejará de recibir avisos en ese teléfono y pide una acción explícita. No se alteran otros teléfonos.
+2. Se pausa el registro automático de tokens durante el cambio. La app solicita al servidor la baja de los identificadores confirmados o pendientes que pertenecen a A. El endpoint existente `devices/desregistrar/` ya exige autenticación, comprueba propiedad y permite repetir la baja. Cada resultado debe verificarse; si hay varios identificadores, una baja parcial no debe presentarse como completa. El servidor registra una acción mínima de auditoría sin token ni contenido de notificaciones.
+3. Solo tras confirmar la baja en el servidor, la app solicita a Firebase invalidar el token actual del teléfono. El SDK instalado ofrece `deleteToken`, pero esta operación depende del dispositivo y la conectividad y aún debe verificarse en teléfonos reales. Debe coordinarse con la renovación automática para que un evento de actualización no vuelva a registrar silenciosamente el token durante el cambio. Si hay error o respuesta incierta, la app conserva un estado pendiente recuperable y no afirma que el cambio esté terminado.
+4. La cuenta A puede cerrar su sesión y la persona inicia sesión con B. La app obtiene un identificador nuevo y verifica que no sea el retirado. Después solicita el registro de B usando el endpoint de sincronización existente. El backend mantiene el rechazo de identificadores pertenecientes a otra cuenta, incluso si el registro está inactivo: **una baja no autoriza por sí sola a reasignar ese token**. Solo se presenta el dispositivo como registrado para B cuando el backend lo confirma.
+5. La bandeja consulta datos autorizados para B; un aviso recibido anteriormente no puede abrir datos de A. Las notificaciones push son genéricas y no contienen detalles privados. Los avisos en la bandeja del sistema que ya estaban mostrados podrían permanecer hasta que Android los quite; se estudiará su limpieza local sin borrar el historial del servidor.
+
+## Fallos y casos límite
+
+- **Sin acceso a A o identidad incierta:** no se cambia ni se desactiva su registro. La persona puede usar B para iniciar sesión y consultar su bandeja, pero el registro push conflictivo permanece bloqueado. Una posible recuperación administrativa requiere una política y autorización específicas; no se propone inferir la propiedad por tener el teléfono o por ser administrador.
+- **Sin red, sesión vencida o baja fallida:** no puede garantizarse que A deje de recibir push en ese teléfono. La app debe decirlo, mantener los datos mínimos necesarios en almacenamiento seguro y permitir reintentar con la cuenta autorizada; no debe prometer una transferencia. B puede usar funciones que no dependan de push y se le avisa que el dispositivo no está registrado.
+- **Respuesta perdida:** la operación puede haberse completado en el servidor. La baja idempotente debe reintentarse y el estado local no debe borrarse antes de obtener confirmación. La invalidación de Firebase debe manejarse como un paso separado cuya recuperación se pruebe; no basta con asumir que se completó.
+- **Reinicio de la app o del teléfono:** deben conservarse los pasos mínimos pendientes en almacenamiento seguro, sin contraseñas ni registros de tokens en logs. Hay que evitar sobrescribir la referencia necesaria para terminar una baja anterior. La implementación debe comprobar quién está autenticado antes de cualquier reintento.
+- **Renovación concurrente del token o cambio rápido entre cuentas:** serializar las operaciones locales, verificar nuevamente la sesión y conservar los bloqueos y la restricción única en PostgreSQL. Probar también los clientes antiguos, sin suponer que un bloqueo en Flutter protege todas las solicitudes concurrentes del servidor.
+- **Envío en curso:** desactivar el dispositivo evita que el trabajador lo seleccione en futuras comprobaciones, pero no puede garantizar retirar una notificación que ya fue aceptada por Firebase o cuya llamada ya está en curso. No exponer información privada en el push y volver a comprobar permisos al abrir la app.
+- **Guardias:** la transición solo impide el push en el teléfono sin registrar; la notificación interna debe seguir generándose para cada guardia activo. No se deben cambiar las reglas de destinatarios para resolver el conflicto de un dispositivo.
+
+## Implementación propuesta por etapas
+
+1. Implementar la máquina de estados y la coordinación en Flutter con almacenamiento y Firebase simulados. Evaluar si los endpoints existentes alcanzan y añadir auditoría mínima en el backend donde sea necesaria; no crear modelos ni migraciones sin una propuesta y aprobación separadas. Conservar las rutas existentes y no cambiar dispositivos reales.
+2. Probar con cuentas y dispositivos ficticios: éxito, token antiguo de otro usuario, baja parcial, cortes en cada paso, respuesta perdida, reinicio, sesión vencida, nuevo token idéntico o ajeno, accesos simultáneos y ausencia de envío de datos privados. Las pruebas de concurrencia relevantes deben ejecutarse en PostgreSQL aislado; SQLite no valida todos los bloqueos.
+3. Presentar el resultado para aprobación. Solo después de identificar la cuenta anterior y obtener la autorización necesaria se podría probar el cambio en un teléfono real. El envío de un push real requiere otra aprobación específica; no se utilizará el dispositivo de la cuenta actual sin esa decisión.
+
+## Comprobación de la etapa de diseño
+
+Se revisaron los endpoints y la lógica existentes, y la interfaz local de `firebase_messaging` instalada. Pasaron 78 pruebas actuales del backend en SQLite temporal y 19 pruebas Flutter con servicios simulados. Estas pruebas confirman el comportamiento existente, **no** el flujo propuesto, que todavía no está implementado. No se modificó la base, no se cambió el dispositivo de otra cuenta, no se invocó Firebase real ni se enviaron mensajes.

@@ -8,10 +8,12 @@ from .serializers.serializersPlaca import LecturaPlacaSerializer
 from residencial.modelsVehiculo import Vehiculo
 from administracion.models import Persona, Empleado
 from core.luxand import recognize, add_person
+from administracion.access import AdministratorOnly, SecurityOperator
 
 PLATE_URL = "https://api.platerecognizer.com/v1/plate-reader/"
 
 class AlprScanView(APIView):
+    permission_classes = [SecurityOperator]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
@@ -93,6 +95,7 @@ def _norm(sim):
 
 
 class ReconocimientoGlobalView(APIView):
+    permission_classes = [SecurityOperator]
     """
     Reconoce a una persona (residente) o a un empleado en una sola llamada.
     Body:
@@ -130,16 +133,13 @@ class ReconocimientoGlobalView(APIView):
             
             for attempt in range(max_retries):
                 try:
-                    print(f"🔄 Reconocimiento intento {attempt + 1}/{max_retries}")
                     res = recognize(fuente, gallery=gallery)
                     break  # Si es exitoso, salir del loop
                 except ValueError as e:
                     error_msg = str(e)
-                    print(f"❌ Error en intento {attempt + 1}: {error_msg}")
                     
                     # Si es un error 503 o 429, intentar de nuevo después de un delay
                     if ("503" in error_msg or "429" in error_msg or "timeout" in error_msg.lower()) and attempt < max_retries - 1:
-                        print(f"⏳ Esperando {retry_delay} segundos antes del siguiente intento...")
                         import time
                         time.sleep(retry_delay)
                         retry_delay *= 2  # Exponential backoff
@@ -148,19 +148,6 @@ class ReconocimientoGlobalView(APIView):
                         # Si no es un error temporal o ya se agotaron los intentos, re-lanzar el error
                         raise e
             
-            # Debug: Log the response structure and gallery
-            print(f"=== RECONOCIMIENTO DEBUG ===")
-            print(f"Gallery used: '{gallery}'")
-            print(f"Luxand API response type: {type(res)}")
-            print(f"Luxand API response: {res}")
-            print(f"==========================")
-            
-            # Debug adicional: verificar si la gallery coincide
-            if gallery != "condominio_all":
-                print(f"⚠️  WARNING: Gallery mismatch!")
-                print(f"   Enrolamiento usa: 'condominio_all'")
-                print(f"   Reconocimiento usa: '{gallery}'")
-
             # Verificar si hay error en la respuesta de Luxand
             if isinstance(res, dict) and "error" in res:
                 return Response({
@@ -187,12 +174,6 @@ class ReconocimientoGlobalView(APIView):
                 if isinstance(candidates, dict):
                     candidates = candidates.get("candidates", [])
             
-            print(f"🔍 CANDIDATES DEBUG:")
-            print(f"   Response type: {type(res)}")
-            print(f"   Response keys: {res.keys() if isinstance(res, dict) else 'Not a dict'}")
-            print(f"   Candidates found: {len(candidates) if isinstance(candidates, list) else 'Not a list'}")
-            print(f"   Candidates: {candidates}")
-            print(f"   First candidate: {candidates[0] if candidates and len(candidates) > 0 else 'None'}")
             if not candidates:
                 return Response({
                     "ok": False, 
@@ -222,39 +203,19 @@ class ReconocimientoGlobalView(APIView):
             uuid = best.get("uuid") or best.get("subject") or best.get("person_uuid")
             sim = _norm(best.get("probability") or best.get("similarity") or best.get("confidence") or best.get("score"))
 
-            print(f"🎯 UUID DEBUG:")
-            print(f"   UUID from Luxand: {uuid}")
-            print(f"   Similarity: {sim}")
-
             tipo = None
             obj = None
             if uuid:
-                print(f"🔍 DATABASE SEARCH:")
                 obj = Persona.objects.filter(luxand_uuid=uuid).first()
                 if obj:
                     tipo = "persona"
-                    print(f"   ✅ Found in Persona table: {obj.nombre} {obj.apellido}")
                 else:
                     obj = Empleado.objects.filter(luxand_uuid=uuid).first()
                     if obj:
                         tipo = "empleado"
-                        print(f"   ✅ Found in Empleado table: {obj.nombre} {obj.apellido}")
-                    else:
-                        print(f"   ❌ Not found in database with UUID: {uuid}")
-                        print(f"   📋 Available UUIDs in Persona: {list(Persona.objects.filter(luxand_uuid__isnull=False).values_list('luxand_uuid', flat=True))}")
-                        print(f"   📋 Available UUIDs in Empleado: {list(Empleado.objects.filter(luxand_uuid__isnull=False).values_list('luxand_uuid', flat=True))}")
-            else:
-                print(f"   ❌ No UUID found in Luxand response")
 
             ok = bool(obj) and sim >= umbral
             nombre = f"{getattr(obj, 'nombre', '')} {getattr(obj, 'apellido', '')}".strip() if obj else None
-            
-            print(f"🎯 FINAL RESULT:")
-            print(f"   Object found: {bool(obj)}")
-            print(f"   Similarity: {sim}")
-            print(f"   Threshold: {umbral}")
-            print(f"   OK: {ok}")
-            print(f"   Name: {nombre}")
             
             return Response({
                 "ok": ok,
@@ -279,6 +240,7 @@ class ReconocimientoGlobalView(APIView):
 
 
 class EnrolarPersonaView(APIView):
+    permission_classes = [AdministratorOnly]
     """
     Enrola una persona en Luxand (registra su foto para reconocimiento futuro).
     Body:
@@ -333,18 +295,7 @@ class EnrolarPersonaView(APIView):
             fuente = image_url if image_url else image_file
             
             gallery = getattr(settings, "LUXAND_COLLECTION", "")
-            print(f"=== ENROLAMIENTO DEBUG ===")
-            print(f"Gallery used: '{gallery}'")
-            print(f"Nombre completo: '{nombre_completo}'")
-            print(f"Tipo de fuente: {type(fuente)}")
-            if image_file:
-                print(f"Tamaño de archivo: {image_file.size} bytes")
-                print(f"Tipo de contenido: {image_file.content_type}")
-            print(f"==========================")
-            
             res = add_person(nombre_completo, fuente, collections=gallery)
-            
-            print(f"Luxand add_person response: {res}")
             
             # Verificar si el enrolamiento fue exitoso
             if res.get("status") == "failure":
@@ -375,11 +326,11 @@ class EnrolarPersonaView(APIView):
             })
             
         except Exception as e:
-            print(f"Error en enrolamiento: {e}")
             return Response({"detail": f"Error al enrolar: {e}"}, status=500)
 
 
 class VerificarEnrolamientoView(APIView):
+    permission_classes = [AdministratorOnly]
     """
     Verifica el estado de enrolamiento de personas y empleados.
     Útil para debugging.
@@ -408,6 +359,7 @@ class VerificarEnrolamientoView(APIView):
 
 
 class VerificarLuxandAPIView(APIView):
+    permission_classes = [AdministratorOnly]
     """
     Verifica el estado de la API de Luxand.
     Útil para debugging de problemas de conectividad.
@@ -473,6 +425,7 @@ class VerificarLuxandAPIView(APIView):
 
 
 class ProbarLuxandView(APIView):
+    permission_classes = [AdministratorOnly]
     """
     Prueba la funcionalidad de Luxand con una imagen de prueba.
     Útil para debugging y verificación.

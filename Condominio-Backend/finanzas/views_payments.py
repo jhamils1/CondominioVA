@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404
 from decimal import Decimal
 import stripe
 from .models import expensa as Expensa
+from .views import expensas_permitidas
+from administracion.access import ApplicationRolePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -16,11 +18,12 @@ class CreatePaymentIntentExpensa(APIView):
     -> crea un PaymentIntent y devuelve { client_secret }
     Usar con Stripe Elements en el frontend (sin redirección).
     """
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [ApplicationRolePermission]
+    role_access = {'post': ('administrador', 'propietario', 'inquilino')}
 
     def post(self, request):
         expensa_id = request.data.get("expensa_id")
-        exp = get_object_or_404(Expensa, id=expensa_id)
+        exp = get_object_or_404(expensas_permitidas(request.user), id=expensa_id)
         amount_cents = int(Decimal(exp.monto) * 100)
 
         # Idempotencia por si el front reintenta
@@ -48,18 +51,23 @@ class VerifyPaymentIntentExpensa(APIView):
     -> devuelve estado del PaymentIntent y marca pagada=True si 'succeeded'
     (útil si quieres verificar desde el front sin webhooks).
     """
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [ApplicationRolePermission]
+    role_access = {'get': ('administrador', 'propietario', 'inquilino')}
 
     def get(self, request):
         pi_id = request.query_params.get("payment_intent_id")
         if not pi_id:
             return Response({"error": "payment_intent_id requerido"}, status=400)
 
+        exp = get_object_or_404(expensas_permitidas(request.user), stripe_payment_intent_id=pi_id)
         pi = stripe.PaymentIntent.retrieve(pi_id)
         status_pi = pi.get("status")  # 'succeeded', 'requires_payment_method', etc.
         expensa_id = (pi.get("metadata") or {}).get("expensa_id")
 
-        if status_pi == "succeeded" and expensa_id:
-            Expensa.objects.filter(id=expensa_id).update(pagada=True)
+        if expensa_id and str(expensa_id) == str(exp.pk):
+            if status_pi == "succeeded":
+                Expensa.objects.filter(pk=exp.pk).update(pagada=True)
+        else:
+            return Response({'detail': 'Pago no asociado a una expensa.'}, status=404)
 
         return Response({"status": status_pi, "expensa_id": expensa_id})

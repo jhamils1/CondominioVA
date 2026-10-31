@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
 import '../widgets/custom_text_field.dart';
+import '../security/security_notification_navigation.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -33,25 +34,30 @@ class _LoginPageState extends State<LoginPage> {
       final pass = _passController.text;
 
       final result = await AuthService.login(user, pass);
-
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
 
       if (result['success']) {
-        // Registrar el dispositivo para notificaciones push (no bloqueante)
+        FCMService.allowRegistration();
+        var fcmReady = false;
         try {
           final fcmToken = await FCMService.getToken();
           if (fcmToken != null) {
-            await FCMService.registerDevice(fcmToken);
+            fcmReady = await FCMService.registerDevice(fcmToken);
           }
-        } catch (e) {
-          print('Error al registrar dispositivo FCM: $e');
-          // Continuar con el login aunque falle el registro FCM
+        } catch (_) { /* El acceso no depende de la disponibilidad de FCM. */ }
+        if (!mounted) return;
+        if (!fcmReady) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('No se pudo confirmar el registro de notificaciones en este dispositivo.'),
+          ));
         }
         
         // Navegar al perfil si el login es exitoso
         Navigator.pushReplacementNamed(context, "/perfil");
+        SecurityNotificationNavigation.instance.procesar();
       } else {
         // Mostrar error si el login falla
         ScaffoldMessenger.of(context).showSnackBar(
@@ -66,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final notice = ModalRoute.of(context)?.settings.arguments;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Iniciar Sesión"),
@@ -83,6 +90,11 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              if (notice is String && notice.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(notice, style: const TextStyle(color: Colors.red)),
+                ),
               // 👇 Logo en la parte superior
               SizedBox(
                 height: 180,

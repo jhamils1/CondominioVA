@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import RolList from './RolList.jsx';
 import RolForm from './RolForm.jsx';
-import { fetchAllRoles, createRol, updateRol, deleteRol, fetchRolById } from '../../api/rolApi.jsx';
+import { fetchAllRoles, createRol, updateRol, fetchRolById } from '../../api/rolApi.jsx';
+import { useSession } from '../../auth/sessionContext.js';
 
 const RolPage = () => {
+  const { user } = useSession();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingRol, setEditingRol] = useState(null);
@@ -37,16 +39,6 @@ const RolPage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("¿Seguro que quieres eliminar este rol?")) return;
-    try {
-      await deleteRol(id);
-      loadRoles();
-    } catch (error) {
-      console.error(error.message);
-    }
-  };
-
   const handleFormSubmit = async (formData) => {
     try {
       if (editingRol) {
@@ -70,7 +62,7 @@ const RolPage = () => {
       <RolList
         roles={roles}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        currentRole={user.role}
         onAddNew={() => { setEditingRol(null); setShowForm(true); }}
       />
 
@@ -81,6 +73,7 @@ const RolPage = () => {
             onCancel={() => { setShowForm(false); setEditingRol(null); }}
             initialData={editingRol}
             loading={loading}
+            existingRoles={roles}
           />
         </div>
       )}

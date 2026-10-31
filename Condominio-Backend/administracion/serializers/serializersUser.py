@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User, Group
+from administracion.access import ROLE_NAMES, assigned_role
 
 class GroupAuxSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,7 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'role', 'role_id']
+        fields = ['id', 'username', 'email', 'password', 'role', 'role_id', 'is_active']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -27,8 +28,8 @@ class UserSerializer(serializers.ModelSerializer):
             self.fields['password'].required = False
 
     def get_role(self, obj):
-        first_group = obj.groups.first()
-        return first_group.name if first_group else None
+        names = list(obj.groups.values_list('name', flat=True))
+        return names[0] if len(names) == 1 else None
 
     def validate_username(self, value):
         if " " in value:
@@ -60,6 +61,25 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'role_id': 'Debe asignar un rol al usuario.'
             })
+        group = data.get('role_id')
+        if group and group.name.strip().casefold() not in ROLE_NAMES:
+            raise serializers.ValidationError({'role_id': 'El rol no está autorizado.'})
+        request = self.context.get('request')
+        if self.instance and request:
+            if self.instance.is_superuser and self.instance.pk != request.user.pk:
+                raise serializers.ValidationError('Las cuentas técnicas se administran por separado.')
+            current_groups = set(self.instance.groups.values_list('pk', flat=True))
+            if request.user.pk == self.instance.pk and group and current_groups != {group.pk}:
+                raise serializers.ValidationError({'role_id': 'No puede cambiar su propio rol.'})
+            if request.user.pk == self.instance.pk and data.get('is_active') is False:
+                raise serializers.ValidationError({'is_active': 'No puede desactivar su propia cuenta.'})
+            removing_admin = assigned_role(self.instance) == 'administrador' and (
+                data.get('is_active') is False or (group and ROLE_NAMES[group.name.strip().casefold()] != 'administrador')
+            )
+            if removing_admin and not User.objects.filter(
+                is_active=True, groups__name__iexact='administrador'
+            ).exclude(pk=self.instance.pk).exists():
+                raise serializers.ValidationError('Debe conservarse al menos un administrador activo.')
         return data
 
     def create(self, validated_data):

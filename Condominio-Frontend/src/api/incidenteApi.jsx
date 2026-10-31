@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from './client.js';
 
 // Creamos una instancia de Axios que se usará para todas las llamadas a la API.
 const apiClient = axios.create({

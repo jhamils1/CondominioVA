@@ -4,8 +4,11 @@ from .models import Mascota
 from .serializers.serializersMascota import MascotaSerializer, MascotaListSerializer
 import requests
 from django.conf import settings
+from administracion.access import ApplicationRolePermission, effective_role, roles_for
 
 class MascotaViewSet(viewsets.ModelViewSet):
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario', 'inquilino'), write=('administrador',))
     """
     ViewSet para CRUD completo de mascotas con subida de imágenes a ImgBB
     """
@@ -29,6 +32,8 @@ class MascotaViewSet(viewsets.ModelViewSet):
         Filtrar mascotas por diferentes criterios
         """
         queryset = super().get_queryset()
+        if effective_role(self.request.user) in ('propietario', 'inquilino'):
+            queryset = queryset.filter(persona__user=self.request.user)
         
         # Filtrar por especie
         especie = self.request.query_params.get('especie', None)

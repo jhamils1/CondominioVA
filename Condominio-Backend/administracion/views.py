@@ -7,12 +7,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.permissions import IsAuthenticated
 from .serializers.serializersUser import UserSerializer, GroupAuxSerializer
 from .serializers.serializersRol import RolSerializer, RolListSerializer, PermissionSerializer
 from .serializers.serializersPersona import PersonaSerializer
 from .serializers.serializersEmpleado import CargoSerializer, EmpleadoSerializer, EmpleadoListSerializer
-from .models import Persona, Cargo, Empleado
+from .models import Persona, Cargo, Empleado, SesionAplicacion
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.permissions import AllowAny
@@ -20,46 +22,152 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 import requests
 from django.conf import settings
 from core.luxand import add_person, add_face, recognize
+from django.db import transaction
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE
+from django.contrib.contenttypes.models import ContentType
+from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
+from .access import AdministratorOnly, ApplicationRolePermission, effective_role, roles_for
+from .authentication import ApplicationTokenObtainSerializer
+from .audit import record_action
+
+
+def _audit_user(actor, instance, action, flag):
+    LogEntry.objects.log_action(
+        user_id=actor.pk, content_type_id=ContentType.objects.get_for_model(User).pk,
+        object_id=str(instance.pk), object_repr='Cuenta de usuario',
+        action_flag=flag, change_message=action,
+    )
+
+
+class PersonaSeguridadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Persona
+        fields = ['id', 'nombre', 'apellido', 'CI', 'tipo', 'estado']
 
 
 # Create your views here.
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request):
         try:
-            refresh_token = request.data["refresh"]
-            token = RefreshToken(refresh_token)
-            token.blacklist() 
-            return Response({"message": "Logout exitoso"}, status=status.HTTP_205_RESET_CONTENT)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            token = RefreshToken(request.data.get('refresh', ''))
+        except (TokenError, TypeError):
+            return Response({'detail': 'El token de renovación no es válido.'}, status=status.HTTP_400_BAD_REQUEST)
+        if str(token.get(api_settings.USER_ID_CLAIM)) != str(getattr(request.user, api_settings.USER_ID_FIELD)):
+            return Response({'detail': 'El token no corresponde a la cuenta actual.'}, status=status.HTTP_400_BAD_REQUEST)
+        session_id = request.auth.get('session_id')
+        if not session_id or token.get('session_id') != session_id:
+            return Response({'detail': 'El token no corresponde a la sesión actual.'}, status=status.HTTP_400_BAD_REQUEST)
+        session = SesionAplicacion.objects.select_for_update().filter(
+            pk=session_id, usuario=request.user, revocada__isnull=True).first()
+        if not session:
+            return Response({'detail': 'La sesión no está activa.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            token = RefreshToken(request.data['refresh'])
+        except TokenError:
+            return Response({'detail': 'El token de renovación no es válido.'}, status=status.HTTP_400_BAD_REQUEST)
+        token.blacklist()
+        session.revocada = timezone.now()
+        session.save(update_fields=['revocada'])
+        record_action(request.user, request.user, 'Cierre de sesión', CHANGE)
+        return Response({"message": "Logout exitoso"}, status=status.HTTP_205_RESET_CONTENT)
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        role = effective_role(request.user)
+        if not role:
+            raise PermissionDenied('La cuenta no tiene un rol o perfil autorizado.')
+        persona = getattr(request.user, 'persona', None)
+        empleado = getattr(request.user, 'empleado', None)
+        return Response({'id': request.user.pk, 'username': request.user.username,
+                         'role': role, 'persona_id': getattr(persona, 'pk', None),
+                         'empleado_id': getattr(empleado, 'pk', None)})
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [AdministratorOnly]
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        # Serialize role/account changes across concurrent administrators.
+        list(Group.objects.select_for_update().filter(name__iexact='administrador'))
+        return super().create(request, *args, **kwargs)
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        list(Group.objects.select_for_update().filter(name__iexact='administrador'))
+        return super().update(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        _audit_user(self.request.user, instance, 'Creación de cuenta y asignación de rol', ADDITION)
+
+    def perform_update(self, serializer):
+        previous_roles = list(serializer.instance.groups.values_list('name', flat=True))
+        previous_active = serializer.instance.is_active
+        instance = serializer.save()
+        current_roles = list(instance.groups.values_list('name', flat=True))
+        parts = ['Actualización de cuenta']
+        if previous_roles != current_roles:
+            parts.append(f'roles {previous_roles} -> {current_roles}')
+        if previous_active != instance.is_active:
+            parts.append(f'activa {previous_active} -> {instance.is_active}')
+        _audit_user(self.request.user, instance, '; '.join(parts), CHANGE)
 
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        try:
-            self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except ProtectedError:
-            return Response(
-                {"detail": "No se puede eliminar este usuario porque está asociado a otros registros"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response({'detail': 'Desactive la cuenta para conservar sus registros.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 class GroupAuxViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupAuxSerializer
+    permission_classes = [AdministratorOnly]
+    http_method_names = ['get', 'head', 'options']
 
 class PermissionViewSet(viewsets.ModelViewSet):
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
+    permission_classes = [AdministratorOnly]
+    http_method_names = ['get', 'head', 'options']
 
 class RolViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
+    permission_classes = [AdministratorOnly]
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        list(Group.objects.select_for_update().filter(name__iexact='administrador'))
+        return super().create(request, *args, **kwargs)
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        list(Group.objects.select_for_update().filter(name__iexact='administrador'))
+        if request.user.groups.filter(pk=self.get_object().pk).exists():
+            raise PermissionDenied('No puede modificar su propio rol.')
+        return super().update(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        self._audit_group(instance, ADDITION)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        self._audit_group(instance, CHANGE)
+
+    def _audit_group(self, instance, flag):
+        LogEntry.objects.log_action(user_id=self.request.user.pk,
+            content_type_id=ContentType.objects.get_for_model(Group).pk,
+            object_id=str(instance.pk), object_repr='Rol', action_flag=flag,
+            change_message='Creación o modificación de permisos del rol')
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({'detail': 'No se permite eliminar roles con historial.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -74,6 +182,14 @@ class PersonaViewSet(viewsets.ModelViewSet):
     ViewSet para gestionar personas con subida de imágenes a ImgBB
     """
     queryset = Persona.objects.all()
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'guardia', 'propietario', 'inquilino'),
+                            write=('administrador',), extra={'reconocimiento_facial': ('administrador', 'guardia'), 'agregar_foto': ('administrador',)})
+
+    def get_serializer_class(self):
+        if effective_role(self.request.user) == 'guardia':
+            return PersonaSeguridadSerializer
+        return self.serializer_class
     serializer_class = PersonaSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['nombre', 'apellido', 'CI', 'telefono']
@@ -85,6 +201,8 @@ class PersonaViewSet(viewsets.ModelViewSet):
         Filtrar por tipo de persona si se especifica
         """
         queryset = super().get_queryset()
+        if effective_role(self.request.user) in ('propietario', 'inquilino'):
+            queryset = queryset.filter(user=self.request.user)
         tipo = self.request.query_params.get('tipo', None)
         if tipo:
             queryset = queryset.filter(tipo=tipo)
@@ -354,6 +472,7 @@ class PersonaViewSet(viewsets.ModelViewSet):
 # ==================== VISTAS PARA GESTIONAR EMPLEADOS ====================
 
 class CargoViewSet(viewsets.ModelViewSet):
+    permission_classes = [AdministratorOnly]
     """
     ViewSet para gestionar cargos
     """
@@ -366,6 +485,7 @@ class CargoViewSet(viewsets.ModelViewSet):
 
 
 class EmpleadoViewSet(viewsets.ModelViewSet):
+    permission_classes = [AdministratorOnly]
     """
     ViewSet para gestionar empleados con subida de imágenes a ImgBB
     """
@@ -519,6 +639,7 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
 class CustomTokenObtainPairView(TokenObtainPairView):
     authentication_classes = []
     permission_classes = [AllowAny]
+    serializer_class = ApplicationTokenObtainSerializer
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class CSRFTokenView(APIView):

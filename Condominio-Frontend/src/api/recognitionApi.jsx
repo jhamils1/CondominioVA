@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from './client.js';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -22,13 +22,13 @@ export const fileToBase64 = (file) => {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const result = reader.result;
-      console.log('Base64 generado:', result.substring(0, 50) + '...');
+
       console.log('Tamaño del archivo:', file.size, 'bytes');
       console.log('Tipo de archivo:', file.type);
       resolve(result);
     };
     reader.onerror = error => {
-      console.error('Error al leer archivo:', error);
+      console.error('No se pudo completar la operación.');
       reject(error);
     };
   });
@@ -67,7 +67,7 @@ export const scanPlate = async (imageFile, cameraId = '') => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error en scanPlate:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }
@@ -99,7 +99,7 @@ export const fetchLecturasPlacas = async () => {
   try {
     const response = await apiClient.get('lecturas-placas/');
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error('Error al obtener el historial de lecturas de placas.');
   }
 };
@@ -139,7 +139,7 @@ export const recognizeFace = async (imageFile, threshold = 0.80) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error en recognizeFace:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }
@@ -209,7 +209,7 @@ export const enrollPerson = async (personId, employeeId, imageFile) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error en enrollPerson:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }
@@ -225,7 +225,7 @@ export const verificarEnrolamiento = async () => {
     const response = await apiClient.get('verificar-enrolamiento/');
     return response.data;
   } catch (error) {
-    console.error('Error en verificarEnrolamiento:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }
@@ -239,7 +239,7 @@ export const verificarLuxandAPI = async () => {
     const response = await apiClient.get('verificar-luxand/');
     return response.data;
   } catch (error) {
-    console.error('Error en verificarLuxandAPI:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }
@@ -278,7 +278,7 @@ export const probarLuxand = async (imageFile) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error en probarLuxand:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }
@@ -338,7 +338,7 @@ export const addExtraPhotoToPerson = async (personId, imageFile) => {
     const response = await apiClient.post(`personas/${personId}/agregar_foto/`, payload);
     return response.data;
   } catch (error) {
-    console.error('Error en addExtraPhotoToPerson:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }
@@ -396,7 +396,7 @@ export const addExtraPhotoToEmployee = async (employeeId, imageFile) => {
     const response = await apiClient.post(`empleados/${employeeId}/agregar_foto/`, payload);
     return response.data;
   } catch (error) {
-    console.error('Error en addExtraPhotoToEmployee:', error);
+    console.error('No se pudo completar la operación.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }

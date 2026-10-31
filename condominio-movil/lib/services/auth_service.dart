@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
+import '../security/access_policy.dart';
 
 class AuthService {
   static const _storage = FlutterSecureStorage();
@@ -46,50 +47,55 @@ class AuthService {
   }
   
   // Logout
-  static Future<Map<String, dynamic>> logout() async {
+  static Future<Map<String, dynamic>> logout({
+    http.Client? client,
+    Future<String?> Function(String)? readToken,
+    Future<void> Function(String)? deleteToken,
+  }) async {
+    final read = readToken ?? (String key) => _storage.read(key: key);
+    final delete = deleteToken ?? (String key) => _storage.delete(key: key);
+    var serverConfirmed = false;
     try {
-      final refreshToken = await _storage.read(key: 'refresh_token');
-      final accessToken = await _storage.read(key: 'access_token');
+      final refreshToken = await read('refresh_token');
+      final accessToken = await read('access_token');
       
       if (refreshToken != null && accessToken != null) {
-        final response = await http.post(
-          Uri.parse('${ApiConfig.baseUrl}${ApiConfig.logoutEndpoint}'),
-          headers: ApiConfig.getAuthHeaders(accessToken),
-          body: jsonEncode({
-            'refresh': refreshToken,
-          }),
-        );
+        final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.logoutEndpoint}');
+        final headers = ApiConfig.getAuthHeaders(accessToken);
+        final body = jsonEncode({'refresh': refreshToken});
+        final response = await (client == null
+            ? http.post(uri, headers: headers, body: body)
+            : client.post(uri, headers: headers, body: body))
+            .timeout(const Duration(seconds: 5));
+        serverConfirmed = response.statusCode == 205;
         
-        // Si el logout en el servidor falla, aún limpiamos los tokens locales
-        if (response.statusCode != 200 && response.statusCode != 205) {
-          print('Logout en servidor falló, pero limpiando tokens locales');
-        }
       }
       
-      // Limpiar tokens locales siempre
-      await _storage.delete(key: 'access_token');
-      await _storage.delete(key: 'refresh_token');
-      
-      return {
-        'success': true,
-        'message': 'Logout exitoso',
-      };
-    } catch (e) {
-      // Aún así limpiamos los tokens locales
-      await _storage.delete(key: 'access_token');
-      await _storage.delete(key: 'refresh_token');
-      
-      return {
-        'success': true,
-        'message': 'Logout exitoso (tokens locales limpiados)',
-      };
+    } catch (_) {
+      // La eliminación local se intenta incluso sin conexión.
     }
+    var cleared = true;
+    for (final key in ['access_token', 'refresh_token']) {
+      try {
+        await delete(key);
+      } catch (_) {
+        cleared = false;
+      }
+    }
+    return {
+      'success': cleared,
+      'serverConfirmed': serverConfirmed,
+      'message': cleared ? 'Sesión local cerrada' : 'No se pudieron borrar los datos de sesión del dispositivo.',
+    };
   }
   
   // Obtener perfil del usuario
-  static Future<Map<String, dynamic>> getUserProfile() async {
+  static Future<Map<String, dynamic>> getUserProfile({
+    http.Client? client,
+    Future<String?> Function()? readToken,
+  }) async {
     try {
-      final token = await _storage.read(key: 'access_token');
+      final token = await (readToken ?? getAccessToken)();
       
       if (token == null) {
         return {
@@ -98,23 +104,32 @@ class AuthService {
         };
       }
       
-      // Tu backend tiene un endpoint /users/ que devuelve la lista de usuarios
-      // Necesitamos obtener el usuario actual, pero como no tienes un endpoint específico
-      // para el usuario actual, vamos a simular los datos básicos
+      final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.userProfileEndpoint}');
+      final headers = ApiConfig.getAuthHeaders(token);
+      final response = await (client == null
+          ? http.get(uri, headers: headers)
+          : client.get(uri, headers: headers)).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 401) {
+        return {'success': false, 'message': 'La sesión venció o no está autorizada. Inicia sesión de nuevo.'};
+      }
+      if (response.statusCode == 403) {
+        return {'success': false, 'message': 'La cuenta no tiene acceso autorizado.'};
+      }
+      if (response.statusCode != 200) {
+        return {'success': false, 'message': 'No se pudo consultar el perfil. Intenta nuevamente.'};
+      }
+      final user = validarUsuarioActual(jsonDecode(response.body));
+      if (user == null) {
+        return {'success': false, 'message': 'La respuesta del perfil no contiene un rol válido.'};
+      }
       return {
         'success': true,
-        'data': {
-          'id': 1,
-          'username': 'usuario_actual',
-          'email': 'usuario@condominio.com',
-          'first_name': 'Usuario',
-          'last_name': 'Condominio',
-        },
+        'data': user,
       };
-    } catch (e) {
+    } catch (_) {
       return {
         'success': false,
-        'message': 'Error de conexión: $e',
+        'message': 'No se pudo conectar al servidor. Intenta nuevamente.',
       };
     }
   }
@@ -149,4 +164,8 @@ class AuthService {
   static Future<void> deleteFCMToken() async {
     await _storage.delete(key: 'fcm_token');
   }
+
+  static Future<String?> getPendingFCMToken() => _storage.read(key: 'fcm_pending');
+  static Future<void> savePendingFCMToken(String token) => _storage.write(key: 'fcm_pending', value: token);
+  static Future<void> deletePendingFCMToken() => _storage.delete(key: 'fcm_pending');
 }

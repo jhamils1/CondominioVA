@@ -12,14 +12,43 @@ from .serializers.serializersExpensa import ExpensaSerializer
 from .serializers.serializersMulta import MultaSerializer
 from .common.pdf_utils import render_pdf_from_template
 from rest_framework.permissions import IsAuthenticated
+from administracion.access import ApplicationRolePermission, effective_role, roles_for
+from django.db.models import F
+from django.utils import timezone
+from residencial.viewsVehiculo import unidades_propietario
+
+
+def expensas_permitidas(user):
+    queryset = expensa.objects.select_related('unidad', 'unidad__bloque')
+    role = effective_role(user)
+    if role == 'administrador':
+        return queryset
+    if role == 'propietario':
+        return queryset.filter(unidad__in=unidades_propietario(user),
+                               unidad__contratos_unidad__propietario__user=user,
+                               unidad__contratos_unidad__estado='A',
+                               unidad__contratos_unidad__fecha_contrato__lte=timezone.localdate(),
+                               fecha_emision__gte=F('unidad__contratos_unidad__fecha_contrato')).distinct()
+    return queryset.none()
 
 class ContratoViewSet(viewsets.ModelViewSet):
     queryset = contrato.objects.all()
     serializer_class = ContratoSerializer
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario', 'inquilino'), write=('administrador',),
+                            extra={'generar_pdf': ('administrador',)})
+
+    def get_queryset(self):
+        role = effective_role(self.request.user)
+        if role == 'administrador':
+            return super().get_queryset()
+        if role == 'propietario':
+            return super().get_queryset().filter(propietario__user=self.request.user)
+        return super().get_queryset().none()
 
     @action(detail=True, methods=["post"], url_path="generar_pdf")
     def generar_pdf(self, request, pk=None):
-        obj = get_object_or_404(contrato, pk=pk)
+        obj = self.get_object()
 
         # 1) PDF
         try:
@@ -54,22 +83,22 @@ class ContratoViewSet(viewsets.ModelViewSet):
 class MultaViewSet(viewsets.ModelViewSet):
     queryset = multa.objects.all()
     serializer_class = MultaSerializer
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario', 'inquilino'), write=('administrador',))
+
+    def get_queryset(self):
+        role = effective_role(self.request.user)
+        if role == 'administrador':
+            return super().get_queryset()
+        return super().get_queryset().filter(expensa__in=expensas_permitidas(self.request.user))
 
 class ExpensaViewSet(viewsets.ModelViewSet):
     serializer_class = ExpensaSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario', 'inquilino'), write=('administrador',))
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = expensa.objects.select_related("unidad", "unidad__bloque")
-        if user.is_superuser or user.is_staff:
-            return queryset
-        if user.groups.filter(name='administrador').exists():
-            return queryset
-        return queryset.filter(
-            unidad__contratos_unidad__propietario__user=user,
-            unidad__contratos_unidad__estado='A' 
-        ).distinct()
+        return expensas_permitidas(self.request.user)
 
 
 

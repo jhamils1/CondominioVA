@@ -1,6 +1,7 @@
 from rest_framework import status, viewsets, filters, generics, permissions, serializers
 from django.db.models import Q, Count, Avg
 from django.db.models import ProtectedError
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
@@ -17,6 +18,33 @@ from django.conf import settings
 from residencial.serializers.serializersArea import AreaSerializer
 from residencial.serializers.serializersReserva import ReservaAreaComunSerializer
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from administracion.access import AdministratorOnly, ApplicationRolePermission, effective_role, roles_for
+from administracion.views import PersonaSeguridadSerializer
+
+
+class InquilinoRelacionadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inquilino
+        fields = ['id', 'nombre', 'apellido', 'estado_inquilino', 'fecha_inicio', 'fecha_fin']
+
+
+class FamiliarRelacionadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Familiares
+        fields = ['id', 'nombre', 'apellido', 'parentesco']
+
+
+class InquilinoPropioSerializer(InquilinoSerializer):
+    class Meta(InquilinoSerializer.Meta):
+        fields = [field for field in InquilinoSerializer.Meta.fields
+                  if field not in ('propietario_ci', 'luxand_uuid')]
+
+
+class ResidenteSearchFilter(filters.SearchFilter):
+    def get_search_fields(self, view, request):
+        if effective_role(request.user) == 'propietario':
+            return ['nombre', 'apellido']
+        return super().get_search_fields(view, request)
 
 # Create your views here.
 
@@ -28,6 +56,19 @@ class PropietarioViewSet(viewsets.ModelViewSet):
     """
     serializer_class = PropietarioSerializer
     queryset = Persona.objects.filter(tipo='P')
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'guardia', 'propietario'), write=('administrador',))
+
+    def get_serializer_class(self):
+        if effective_role(self.request.user) == 'guardia':
+            return PersonaSeguridadSerializer
+        return self.serializer_class
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if effective_role(self.request.user) == 'propietario':
+            return queryset.filter(user=self.request.user)
+        return queryset
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['nombre', 'apellido', 'CI', 'telefono']
     ordering_fields = ['nombre', 'apellido', 'fecha_registro', 'CI']
@@ -93,11 +134,13 @@ class PropietarioViewSet(viewsets.ModelViewSet):
 
 
 class InquilinoViewSet(viewsets.ModelViewSet):
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario', 'inquilino'), write=('administrador',))
     """
     ViewSet para CRUD completo de inquilinos que hereda de Persona
     """
     queryset = Inquilino.objects.select_related('propietario').all()
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [ResidenteSearchFilter, filters.OrderingFilter]
     search_fields = [
         'nombre', 'apellido', 'CI', 'telefono',
         'propietario__nombre', 'propietario__apellido', 'propietario__CI'
@@ -109,6 +152,10 @@ class InquilinoViewSet(viewsets.ModelViewSet):
     ordering = ['-fecha_registro']
     
     def get_serializer_class(self):
+        if effective_role(self.request.user) == 'propietario':
+            return InquilinoRelacionadoSerializer
+        if effective_role(self.request.user) == 'inquilino':
+            return InquilinoPropioSerializer
         if self.action == 'list':
             return InquilinoListSerializer
         return InquilinoSerializer
@@ -118,6 +165,13 @@ class InquilinoViewSet(viewsets.ModelViewSet):
         Filtrar inquilinos por diferentes criterios
         """
         queryset = super().get_queryset()
+        role = effective_role(self.request.user)
+        if role == 'propietario':
+            today = timezone.localdate()
+            queryset = queryset.filter(propietario__user=self.request.user,
+                estado_inquilino='A', fecha_inicio__lte=today, fecha_fin__gte=today)
+        elif role == 'inquilino':
+            queryset = queryset.filter(user=self.request.user)
         
         # Filtrar por estado del inquilino
         estado = self.request.query_params.get('estado', None)
@@ -188,11 +242,14 @@ class InquilinoViewSet(viewsets.ModelViewSet):
 
 
 class FamiliaresViewSet(viewsets.ModelViewSet):
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario'), write=('administrador',),
+                            extra={'personas_disponibles': ('administrador',)})
     """
     ViewSet para CRUD completo de familiares que hereda de Persona
     """
     queryset = Familiares.objects.select_related('persona_relacionada').all()
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [ResidenteSearchFilter, filters.OrderingFilter]
     search_fields = [
         'nombre', 'apellido', 'CI', 'telefono',
         'persona_relacionada__nombre', 'persona_relacionada__apellido', 'persona_relacionada__CI'
@@ -203,6 +260,8 @@ class FamiliaresViewSet(viewsets.ModelViewSet):
     ordering = ['-fecha_registro']
     
     def get_serializer_class(self):
+        if effective_role(self.request.user) == 'propietario':
+            return FamiliarRelacionadoSerializer
         if self.action == 'list':
             return FamiliaresListSerializer
         return FamiliaresSerializer
@@ -212,6 +271,8 @@ class FamiliaresViewSet(viewsets.ModelViewSet):
         Filtrar familiares por diferentes criterios
         """
         queryset = super().get_queryset()
+        if effective_role(self.request.user) == 'propietario':
+            queryset = queryset.filter(persona_relacionada__user=self.request.user)
         
         # Filtrar por estado del familiar
         estado = self.request.query_params.get('estado', None)
@@ -300,6 +361,13 @@ class FamiliaresViewSet(viewsets.ModelViewSet):
 
 
 class VisitanteViewSet(viewsets.ModelViewSet):
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'guardia'), write=('administrador',))
+
+    def get_serializer_class(self):
+        if effective_role(self.request.user) == 'guardia':
+            return PersonaSeguridadSerializer
+        return self.serializer_class
     """
     ViewSet para CRUD completo de visitantes con subida de imágenes a ImgBB
     """
@@ -368,19 +436,23 @@ class VisitanteViewSet(viewsets.ModelViewSet):
         return action(request, *args, **kwargs)
 
 class AreaViewSet(viewsets.ModelViewSet):
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario', 'inquilino'), write=('administrador',))
     serializer_class = AreaSerializer
     queryset = AreasComunes.objects.all()
 
 class ReservaAreaComunViewSet(viewsets.ModelViewSet):
     serializer_class = ReservaAreaComunSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'propietario', 'inquilino'),
+                            write=('administrador', 'propietario', 'inquilino'))
 
     def es_administrador(self, user):
         """
         Método auxiliar para verificar si el usuario es Admin.
         Verifica si está en el grupo 'Administrador' o si es Superusuario.
         """
-        return user.groups.filter(name='administrador').exists() or user.is_superuser
+        return effective_role(user) == 'administrador'
 
     def get_queryset(self):
         """
@@ -422,6 +494,14 @@ class ReservaAreaComunViewSet(viewsets.ModelViewSet):
             
             # Forzamos que la reserva sea para él mismo, ignorando lo que envíe en el JSON
             serializer.save(persona=user.persona)
+
+    def perform_update(self, serializer):
+        if self.es_administrador(self.request.user):
+            serializer.save()
+        else:
+            if 'persona' in serializer.validated_data and serializer.validated_data['persona'] != self.request.user.persona:
+                raise PermissionDenied('No puede cambiar la persona de la reserva.')
+            serializer.save(persona=self.request.user.persona)
 
     def destroy(self, request, *args, **kwargs):
         """

@@ -1,5 +1,5 @@
 // src/api/userApi.jsx
-import axios from 'axios';
+import axios from './client.js';
 
 // Creamos una instancia de Axios que se usará para todas las llamadas a la API.
 const apiClient = axios.create({
@@ -29,16 +29,8 @@ export const fetchAllUsers = async () => {
 
 export const fetchCurrentUser = async () => {
   try {
-    // Primero intentar obtener el username del localStorage
-    const username = localStorage.getItem('username');
-    if (!username) {
-      throw new Error('No hay usuario en sesión');
-    }
-    
-    // Obtener todos los usuarios y buscar el actual
-    const response = await apiClient.get('users/');
-    const users = response.data.results || response.data;
-    const currentUser = users.find(user => user.username === username);
+    const response = await apiClient.get('me/');
+    const currentUser = response.data;
     
     if (!currentUser) {
       throw new Error('Usuario no encontrado');
@@ -72,9 +64,19 @@ export const createUser = async (userData) => {
   }
 };
 
+export const provisionarCuenta = async (data) => {
+  try {
+    return (await apiClient.post('provisionar-cuenta/', data)).data;
+  } catch (error) {
+    const detail = error.response?.data;
+    if (detail) throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    throw new Error('No se pudo conectar con el servidor.');
+  }
+};
+
 export const updateUser = async (userId, userData) => {
   try {
-    const response = await apiClient.put(`users/${userId}/`, userData);
+    const response = await apiClient.patch(`users/${userId}/`, userData);
     return response.data;
   } catch (error) {
     if (error.response) {

@@ -9,7 +9,7 @@ from .viewsDashboard import (
     grafico_morosos_ranking,
     grafico_comparativo_anual
 )
-from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
+from .devices import DispositivoPropioViewSet
 
 
 # Router
@@ -17,7 +17,7 @@ router = DefaultRouter()
 router.register(r'contratos', ContratoViewSet, basename='contratos')
 router.register(r'expensas', ExpensaViewSet, basename='expensas')
 router.register(r'multas', MultaViewSet, basename='multas')
-router.register(r'devices', FCMDeviceAuthorizedViewSet, basename='devices')
+router.register(r'devices', DispositivoPropioViewSet, basename='devices')
 
 urlpatterns = [
     path('', include(router.urls)),

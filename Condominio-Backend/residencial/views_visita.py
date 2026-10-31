@@ -2,15 +2,30 @@ from rest_framework import status, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import Visita
-from .serializers.serializersVisita import VisitaSerializer, VisitaListSerializer
+from .serializers.serializersVisita import VisitaSerializer, VisitaListSerializer, VisitaResidenteSerializer
 from administracion.models import Persona
+from administracion.access import ApplicationRolePermission, effective_role, roles_for
+
+
+class VisitaSearchFilter(filters.SearchFilter):
+    def get_search_fields(self, view, request):
+        if effective_role(request.user) in ('propietario', 'inquilino'):
+            return ['visitante__nombre', 'visitante__apellido', 'estado']
+        return super().get_search_fields(view, request)
 
 class VisitaViewSet(viewsets.ModelViewSet):
+    permission_classes = [ApplicationRolePermission]
+    role_access = roles_for(read=('administrador', 'guardia', 'propietario', 'inquilino'),
+                            write=('administrador', 'guardia'), extra={
+                                'destroy': ('administrador',),
+                                'visitantes_disponibles': ('administrador', 'guardia'),
+                                'personas_disponibles': ('administrador', 'guardia'),
+                                'finalizar_visita': ('administrador', 'guardia')})
     """
     ViewSet para CRUD completo de visitas
     """
     queryset = Visita.objects.select_related('visitante', 'recibe_persona').all()
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [VisitaSearchFilter, filters.OrderingFilter]
     search_fields = [
         'visitante__nombre', 'visitante__apellido', 'visitante__CI',
         'recibe_persona__nombre', 'recibe_persona__apellido', 'recibe_persona__CI',
@@ -22,6 +37,8 @@ class VisitaViewSet(viewsets.ModelViewSet):
     ordering = ['-fecha_hora_entrada']
     
     def get_serializer_class(self):
+        if effective_role(self.request.user) in ('propietario', 'inquilino'):
+            return VisitaResidenteSerializer
         if self.action == 'list':
             return VisitaListSerializer
         return VisitaSerializer
@@ -31,6 +48,12 @@ class VisitaViewSet(viewsets.ModelViewSet):
         Filtrar visitas por diferentes criterios
         """
         queryset = super().get_queryset()
+        role = effective_role(self.request.user)
+        if role == 'inquilino':
+            # Sin relación inquilino-unidad no es posible comprobar la ocupación.
+            return queryset.none()
+        if role == 'propietario':
+            queryset = queryset.filter(recibe_persona__user=self.request.user)
         
         # Filtrar por estado
         estado = self.request.query_params.get('estado', None)

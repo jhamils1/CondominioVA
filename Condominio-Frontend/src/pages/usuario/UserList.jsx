@@ -3,7 +3,7 @@ import CustomTable from "../../components/table.jsx";
 import Button from "../../components/button.jsx";
 import SearchBar from "../../components/SearchBar.jsx";
 
-const UserList = ({ users, onEdit, onDelete, onAddNew }) => {
+const UserList = ({ users, onEdit, onDeactivate, onAddNew, currentUserId }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
 
   // Filtrado de usuarios según búsqueda
@@ -14,19 +14,19 @@ const UserList = ({ users, onEdit, onDelete, onAddNew }) => {
       (user) =>
         user && 
         user.username && 
-        user.email && 
-        user.role &&
         (user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchTerm.toLowerCase()))
+        (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.role || '').toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, users]);
 
-  const columns = ["username", "email", "role"];
+  const columns = ["username", "email", "role", "estado"];
   const tableData = filteredUsers.map((user) => ({
     username: user?.username || '',
     email: user?.email || '',
-    role: user?.role || '',
+    role: user?.role || 'Sin rol único',
+    estado: user.is_active ? 'Activa' : 'Inactiva',
+    is_active: user.is_active,
     id: user?.id || '',
   }));
 
@@ -54,7 +54,7 @@ const UserList = ({ users, onEdit, onDelete, onAddNew }) => {
         columns={columns}
         data={tableData}
         onEdit={(user) => onEdit(user)}
-        onDelete={onDelete}
+        customActions={(row) => row.is_active && row.id !== currentUserId && <Button variant="cancelar" onClick={() => onDeactivate(row.id)}>Desactivar</Button>}
       />
     </div>
   );

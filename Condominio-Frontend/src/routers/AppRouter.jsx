@@ -1,5 +1,11 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useSession } from '../auth/sessionContext.js';
+import { canAccess } from '../auth/access.js';
+import ConsultaPage from '../pages/ConsultaPage.jsx';
+import IncidentesGuardia from '../pages/IncidentesGuardia.jsx';
+import NotificacionesPage from '../pages/NotificacionesPage.jsx';
+import EventosSeguridadPage from '../pages/EventosSeguridadPage.jsx';
 import HomePage from "../pages/HomePage.jsx";
 import LoginPage from "../pages/login/LoginPage.jsx";
 import Layout from "../components/Layout.jsx";
@@ -37,8 +43,19 @@ import PagoDebugPage from "../pages/pago/PagoDebugPage.jsx";
 
 // Componente para proteger rutas
 const ProtectedRoute = () => {
-  const isLoggedIn = !!localStorage.getItem("access");
-  return isLoggedIn ? <Layout /> : <Navigate to="/login" replace />;
+  const { status, logout } = useSession();
+  if (status === 'loading') return <p>Cargando sesión…</p>;
+  if (status === 'error') return <div><p>No se pudo verificar la sesión con el servidor.</p><button onClick={() => window.location.reload()}>Reintentar</button><button onClick={logout}>Cerrar sesión</button></div>;
+  return status === 'authenticated' ? <Layout /> : <Navigate to="/login" replace />;
+};
+
+const RolePage = ({ path, children }) => {
+  const { user } = useSession();
+  if (!canAccess(user.role, path)) return <div role="alert">No tienes permiso para acceder a esta página.</div>;
+  if (path === 'dashboard' && user.role !== 'administrador') return <div className="bg-white p-6 rounded-lg shadow"><h2 className="text-2xl font-semibold">Bienvenido, {user.username}</h2><p>Selecciona una opción del menú.</p></div>;
+  if (path === 'perfil' || (['propietario', 'inquilino'].includes(user.role) && ['unidades','vehiculos','contratos','expensas','visitas'].includes(path)) || (user.role === 'guardia' && path === 'vehiculos')) return <ConsultaPage resource={path} />;
+  if (path === 'incidentes' && user.role === 'guardia') return <IncidentesGuardia />;
+  return children;
 };
 
 const AppRouter = () => {
@@ -58,31 +75,35 @@ const AppRouter = () => {
 
         {/* Rutas protegidas del panel de administración */}
         <Route path="/admin" element={<ProtectedRoute />}>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="usuarios" element={<Usuarios />} />
-          <Route path="roles" element={<Roles />} />
-          <Route path="empleados" element={<Empleados />} />
-          <Route path="cargos" element={<Cargos />} />
-          <Route path="propietarios" element={<Propietarios />} />
-          <Route path="inquilinos" element={<Inquilinos />} />
-          <Route path="familiares" element={<Familiares />} />
-          <Route path="visitantes" element={<Visitantes />} />
-          <Route path="mascotas" element={<Mascotas />} />
-          <Route path="visitas" element={<Visitas />} />
-          <Route path="vehiculos" element={<Vehiculos />} />
-          <Route path="bloques" element={<Bloques />} />
-          <Route path="unidades" element={<Unidades />} />
-          <Route path="reconocimiento-vehicular" element={<ReconocimientoVehicular />} />
-          <Route path="reconocimiento-facial" element={<ReconocimientoFacial />} />
-          <Route path="enrolar-persona" element={<EnrolarPersona />} />
-          <Route path="debug-enrolamiento" element={<DebugEnrolamiento />} />
-          <Route path="contratos" element={<Contratos />} />
-          <Route path="incidentes" element={<Incidentes />} />
-          <Route path="multas" element={<Multas />} />
-          <Route path="expensas" element={<Expensas />} />
-          <Route path="objetos-perdidos" element={<ObjetosPerdidos />} />
-          <Route path="areas-comunes" element={<AreasComunes />} />
-          <Route path="reservas" element={<Reservas />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="perfil" element={<RolePage path="perfil" />} />
+          <Route path="notificaciones" element={<RolePage path="notificaciones"><NotificacionesPage /></RolePage>} />
+          <Route path="eventos-seguridad" element={<RolePage path="eventos-seguridad"><EventosSeguridadPage /></RolePage>} />
+          <Route path="dashboard" element={<RolePage path="dashboard"><Dashboard /></RolePage>} />
+          <Route path="usuarios" element={<RolePage path="usuarios"><Usuarios /></RolePage>} />
+          <Route path="roles" element={<RolePage path="roles"><Roles /></RolePage>} />
+          <Route path="empleados" element={<RolePage path="empleados"><Empleados /></RolePage>} />
+          <Route path="cargos" element={<RolePage path="cargos"><Cargos /></RolePage>} />
+          <Route path="propietarios" element={<RolePage path="propietarios"><Propietarios /></RolePage>} />
+          <Route path="inquilinos" element={<RolePage path="inquilinos"><Inquilinos /></RolePage>} />
+          <Route path="familiares" element={<RolePage path="familiares"><Familiares /></RolePage>} />
+          <Route path="visitantes" element={<RolePage path="visitantes"><Visitantes /></RolePage>} />
+          <Route path="mascotas" element={<RolePage path="mascotas"><Mascotas /></RolePage>} />
+          <Route path="visitas" element={<RolePage path="visitas"><Visitas /></RolePage>} />
+          <Route path="vehiculos" element={<RolePage path="vehiculos"><Vehiculos /></RolePage>} />
+          <Route path="bloques" element={<RolePage path="bloques"><Bloques /></RolePage>} />
+          <Route path="unidades" element={<RolePage path="unidades"><Unidades /></RolePage>} />
+          <Route path="reconocimiento-vehicular" element={<RolePage path="reconocimiento-vehicular"><ReconocimientoVehicular /></RolePage>} />
+          <Route path="reconocimiento-facial" element={<RolePage path="reconocimiento-facial"><ReconocimientoFacial /></RolePage>} />
+          <Route path="enrolar-persona" element={<RolePage path="enrolar-persona"><EnrolarPersona /></RolePage>} />
+          <Route path="debug-enrolamiento" element={<RolePage path="debug-enrolamiento"><DebugEnrolamiento /></RolePage>} />
+          <Route path="contratos" element={<RolePage path="contratos"><Contratos /></RolePage>} />
+          <Route path="incidentes" element={<RolePage path="incidentes"><Incidentes /></RolePage>} />
+          <Route path="multas" element={<RolePage path="multas"><Multas /></RolePage>} />
+          <Route path="expensas" element={<RolePage path="expensas"><Expensas /></RolePage>} />
+          <Route path="objetos-perdidos" element={<RolePage path="objetos-perdidos"><ObjetosPerdidos /></RolePage>} />
+          <Route path="areas-comunes" element={<RolePage path="areas-comunes"><AreasComunes /></RolePage>} />
+          <Route path="reservas" element={<RolePage path="reservas"><Reservas /></RolePage>} />
         </Route>
 
         {/* Redirección por defecto */}

@@ -32,7 +32,7 @@ const PagoSuccessPage = () => {
         }
       } catch (err) {
         console.error('Error al verificar el pago:', err);
-        setError('Error al verificar el estado del pago');
+        setError(err.message || 'Error al verificar el estado del pago');
       } finally {
         setLoading(false);
       }

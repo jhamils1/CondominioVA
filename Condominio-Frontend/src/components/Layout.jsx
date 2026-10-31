@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import Sidebar from '../components/sidebar.jsx';
+import { useSession } from '../auth/sessionContext.js';
+import { roleLabel } from '../auth/access.js';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { user, notice, setNotice } = useSession();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -27,13 +30,14 @@ const Layout = () => {
             )}
           </button>
           <h1 className="text-xl font-semibold text-white tracking-wide">
-            Panel de Administración
+            Panel de {roleLabel[user.role]}
           </h1>
           <div className="w-10"></div> {/* Spacer para centrar el título */}
         </div>
         
         {/* Contenido principal */}
         <div className="p-6">
+          {notice && <div role="alert" className="mb-4 bg-red-100 text-red-800 p-3 rounded">{notice} <button onClick={() => setNotice('')} aria-label="Cerrar">×</button></div>}
           <Outlet />
         </div>
       </main>

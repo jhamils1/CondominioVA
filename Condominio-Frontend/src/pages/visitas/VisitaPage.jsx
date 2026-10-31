@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import VisitaList from "./VisitaList";
 import VisitaForm from "./VisitaForm";
+import { useSession } from '../../auth/sessionContext.js';
 import {
   fetchAllVisitas,
   createVisita,
@@ -11,6 +12,7 @@ import {
 } from "../../api/visitasApi";
 
 const VisitaPage = () => {
+  const { user } = useSession();
   const [visitas, setVisitas] = useState([]);
   const [visitantes, setVisitantes] = useState([]);
   const [personas, setPersonas] = useState([]);
@@ -138,7 +140,7 @@ const VisitaPage = () => {
         <VisitaList
           visitas={visitas}
           onEdit={handleEdit}
-          onDelete={handleDelete}
+          onDelete={user.role === 'administrador' ? handleDelete : undefined}
           onAddNew={handleAddNew}
           loading={loading}
         />

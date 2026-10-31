@@ -9,16 +9,15 @@ const PagoDebugPage = () => {
     const expensaId = searchParams.get('expensa_id');
     const sessionId = searchParams.get('session_id');
     const paymentIntent = searchParams.get('payment_intent');
-    const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
+    const safeParams = Object.fromEntries([...searchParams.entries()].filter(([key]) => !/secret|token|key|authorization/i.test(key)));
     
     setDebugInfo({
       expensaId,
       sessionId,
       paymentIntent,
-      paymentIntentClientSecret,
-      allParams: Object.fromEntries(searchParams.entries()),
-      currentUrl: window.location.href,
-      referrer: document.referrer,
+      allParams: safeParams,
+      currentUrl: `${window.location.origin}${window.location.pathname}`,
+      referrer: document.referrer ? document.referrer.split('?')[0].split('#')[0] : '',
       userAgent: navigator.userAgent,
       timestamp: new Date().toISOString()
     });
@@ -42,7 +41,6 @@ const PagoDebugPage = () => {
             <p><strong>Expensa ID:</strong> {debugInfo.expensaId || 'No encontrado'}</p>
             <p><strong>Session ID:</strong> {debugInfo.sessionId || 'No encontrado'}</p>
             <p><strong>Payment Intent:</strong> {debugInfo.paymentIntent || 'No encontrado'}</p>
-            <p><strong>Payment Intent Client Secret:</strong> {debugInfo.paymentIntentClientSecret || 'No encontrado'}</p>
           </div>
 
           <div className="bg-yellow-50 p-4 rounded-lg">

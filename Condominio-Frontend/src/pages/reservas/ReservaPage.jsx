@@ -2,30 +2,19 @@ import React, { useEffect, useState } from 'react';
 import ReservaList from './ReservaList.jsx';
 import ReservaForm from './ReservaForm.jsx';
 import { fetchAllReservas, createReserva, updateReserva, deleteReserva, fetchReservaById } from '../../api/reservaApi.jsx';
-import { fetchCurrentUser } from '../../api/userApi.jsx';
+import { useSession } from '../../auth/sessionContext.js';
 
 const ReservaPage = () => {
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingReserva, setEditingReserva] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useSession();
+  const isAdmin = user.role === 'administrador';
 
   useEffect(() => {
-    checkUserRole();
     loadReservas();
   }, []);
-
-  const checkUserRole = () => {
-    // Obtener el rol desde localStorage (ya se guarda correctamente en el login)
-    const userRole = localStorage.getItem('userRole');
-    const normalizedRole = userRole ? userRole.toLowerCase().trim() : '';
-    
-    // Verificar si es administrador
-    const isUserAdmin = normalizedRole === 'administrador' || normalizedRole === 'admin';
-    
-    setIsAdmin(isUserAdmin);
-  };
 
   const loadReservas = async () => {
     setLoading(true);

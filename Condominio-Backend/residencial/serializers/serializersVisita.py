@@ -56,3 +56,12 @@ class VisitaListSerializer(serializers.ModelSerializer):
             'visitante', 'recibe_persona', 'fecha_registro',
             'visitante_nombre', 'visitante_ci', 'recibe_persona_nombre', 'recibe_persona_ci'
         ]
+
+
+class VisitaResidenteSerializer(serializers.ModelSerializer):
+    visitante_nombre = serializers.CharField(source='visitante.nombre_completo', read_only=True)
+
+    class Meta:
+        model = Visita
+        fields = ['id', 'estado', 'fecha_hora_entrada', 'fecha_hora_salida',
+                  'visitante', 'visitante_nombre', 'recibe_persona', 'fecha_registro']

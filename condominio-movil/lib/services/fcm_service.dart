@@ -1,11 +1,29 @@
-import 'dart:convert';
+import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
 import 'auth_service.dart';
+import 'fcm_device_registration.dart';
+import '../security/security_notification_navigation.dart';
+import '../config/app_environment.dart';
 
 class FCMService {
+  static Future<void> _pendingRegistration = Future.value();
+  static bool _registrationsPaused = false;
+
+  static void allowRegistration() { _registrationsPaused = false; }
+
+  static Future<T> _serialize<T>(Future<T> Function() action) {
+    final result = Completer<T>();
+    _pendingRegistration = _pendingRegistration.then((_) async {
+      try {
+        result.complete(await action());
+      } catch (error, stack) {
+        result.completeError(error, stack);
+      }
+    });
+    return result.future;
+  }
   static final FirebaseMessaging _firebaseMessaging =
       FirebaseMessaging.instance;
   
@@ -14,6 +32,7 @@ class FCMService {
 
   // Inicializar el servicio de FCM
   static Future<void> initialize() async {
+    if (AppEnvironment.isolated) return;
     try {
       // Inicializar notificaciones locales
       await _initializeLocalNotifications();
@@ -29,39 +48,36 @@ class FCMService {
         sound: true,
       );
 
-      print('Permisos de notificación: ${settings.authorizationStatus}');
+      debugPrint('Permisos de notificación: ${settings.authorizationStatus}');
 
       // Obtener el token FCM con manejo de errores
       try {
         String? token = await _firebaseMessaging.getToken();
         if (token != null) {
-          print('Token FCM: $token');
-          // Guardar el token localmente para enviarlo después del login
-          await AuthService.saveFCMToken(token);
+          // Conservar el registro anterior hasta que el servidor confirme.
+          if (await AuthService.getToken() != null) await registerDevice(token);
         }
-      } catch (e) {
-        print('Error al obtener token FCM: $e');
-        print('La app continuará sin notificaciones push');
+      } catch (_) {
+        debugPrint('No se pudo obtener el token de notificaciones.');
+        debugPrint('La app continuará sin notificaciones push');
       }
 
       // Escuchar cambios en el token
       _firebaseMessaging.onTokenRefresh.listen((newToken) async {
-        print('Token FCM actualizado: $newToken');
-        await AuthService.saveFCMToken(newToken);
         // Intentar registrar el nuevo token si el usuario está autenticado
         final token = await AuthService.getToken();
         if (token != null) {
           await registerDevice(newToken);
         }
-      }).onError((error) {
-        print('Error en onTokenRefresh: $error');
+      }).onError((_) {
+        debugPrint('No se pudo actualizar el registro de notificaciones.');
       });
 
       // Configurar handlers de mensajes
       _configureMessageHandlers();
-    } catch (e) {
-      print('Error al inicializar FCM: $e');
-      print('La aplicación continuará sin notificaciones push');
+    } catch (_) {
+      debugPrint('No se pudo inicializar el servicio de notificaciones.');
+      debugPrint('La aplicación continuará sin notificaciones push');
     }
   }
 
@@ -69,11 +85,10 @@ class FCMService {
   static void _configureMessageHandlers() {
     // Handler para mensajes cuando la app está en primer plano
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Mensaje recibido en primer plano: ${message.messageId}');
+      debugPrint('Mensaje recibido en primer plano.');
       
       if (message.notification != null) {
-        print('Título: ${message.notification!.title}');
-        print('Cuerpo: ${message.notification!.body}');
+        debugPrint('Notificación recibida.');
         
         // Aquí puedes mostrar una notificación local o un diálogo
         _showNotificationDialog(message);
@@ -82,7 +97,7 @@ class FCMService {
 
     // Handler para cuando el usuario toca una notificación y abre la app
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Notificación tocada: ${message.messageId}');
+      debugPrint('Notificación tocada.');
       
       // Aquí puedes navegar a una pantalla específica
       _handleNotificationNavigation(message);
@@ -91,7 +106,7 @@ class FCMService {
     // Verificar si la app se abrió desde una notificación
     _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
-        print('App abierta desde notificación: ${message.messageId}');
+        debugPrint('App abierta desde notificación.');
         _handleNotificationNavigation(message);
       }
     });
@@ -109,9 +124,19 @@ class FCMService {
     await _localNotifications.initialize(
       settings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print('Notificación tocada: ${response.payload}');
+        debugPrint('Notificación tocada.');
+        SecurityNotificationNavigation.instance.recibirPayload(response.payload);
       },
     );
+
+    try {
+      final launch = await _localNotifications.getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp == true) {
+        SecurityNotificationNavigation.instance.recibirPayload(launch?.notificationResponse?.payload);
+      }
+    } catch (_) {
+      debugPrint('No se pudo comprobar el inicio desde una notificación local.');
+    }
 
     // Crear canal de notificación para Android
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -129,7 +154,7 @@ class FCMService {
 
   // Mostrar notificación local cuando la app está en primer plano
   static Future<void> _showNotificationDialog(RemoteMessage message) async {
-    print('Mostrar notificación: ${message.notification?.title}');
+    debugPrint('Mostrar notificación local.');
     
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'high_importance_channel',
@@ -145,129 +170,46 @@ class FCMService {
     );
 
     await _localNotifications.show(
-      message.hashCode,
+      message.data['notificacion_id']?.hashCode ?? message.hashCode,
       message.notification?.title ?? 'Nueva notificación',
       message.notification?.body ?? '',
       notificationDetails,
+      payload: payloadAvisoSeguridad(message.data),
     );
   }
 
   // Manejar la navegación según los datos de la notificación
   static void _handleNotificationNavigation(RemoteMessage message) {
-    final data = message.data;
-    print('Datos de notificación: $data');
-    
-    // Aquí puedes implementar lógica de navegación según el tipo de notificación
-    if (data.containsKey('screen')) {
-      // Navegar a la pantalla especificada
-      print('Navegar a: ${data['screen']}');
-    }
+    SecurityNotificationNavigation.instance.recibir(message.data);
   }
 
   // Registrar el dispositivo en el backend
-  static Future<bool> registerDevice(String fcmToken) async {
-    try {
-      final token = await AuthService.getToken();
-      if (token == null) {
-        print('No hay token de autenticación');
-        return false;
-      }
-
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.devicesEndpoint}'),
-        headers: ApiConfig.getAuthHeaders(token),
-        body: jsonEncode({
-          'registration_id': fcmToken,
-          'type': 'android', // o 'ios' según la plataforma
-          'active': true,
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('Dispositivo registrado exitosamente');
-        return true;
-      } else {
-        print('Error al registrar dispositivo: ${response.statusCode}');
-        print('Respuesta: ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      print('Error al registrar dispositivo: $e');
-      return false;
-    }
-  }
+  static Future<bool> registerDevice(String fcmToken) => _serialize(() async {
+    if (AppEnvironment.isolated) return false;
+    if (_registrationsPaused) return false;
+    final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+    return FcmDeviceRegistration().synchronize(fcmToken, platform);
+  });
 
   // Actualizar el dispositivo en el backend
-  static Future<bool> updateDevice(String fcmToken, {bool active = true}) async {
-    try {
-      final token = await AuthService.getToken();
-      if (token == null) {
-        print('No hay token de autenticación');
-        return false;
-      }
-
-      final response = await http.put(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.devicesEndpoint}'),
-        headers: ApiConfig.getAuthHeaders(token),
-        body: jsonEncode({
-          'registration_id': fcmToken,
-          'active': active,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print('Dispositivo actualizado exitosamente');
-        return true;
-      } else {
-        print('Error al actualizar dispositivo: ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      print('Error al actualizar dispositivo: $e');
-      return false;
-    }
-  }
+  static Future<bool> updateDevice(String fcmToken, {bool active = true}) => active
+      ? registerDevice(fcmToken)
+      : _serialize(() => AppEnvironment.isolated ? Future.value(true) : FcmDeviceRegistration().unregister(token: fcmToken));
 
   // Desregistrar el dispositivo (cuando el usuario cierra sesión)
-  static Future<bool> unregisterDevice() async {
-    try {
-      final fcmToken = await AuthService.getFCMToken();
-      if (fcmToken == null) {
-        print('No hay token FCM guardado');
-        return false;
-      }
-
-      final token = await AuthService.getToken();
-      if (token == null) {
-        print('No hay token de autenticación');
-        return false;
-      }
-
-      final response = await http.delete(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.devicesEndpoint}$fcmToken/'),
-        headers: ApiConfig.getAuthHeaders(token),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        print('Dispositivo desregistrado exitosamente');
-        await AuthService.deleteFCMToken();
-        return true;
-      } else {
-        print('Error al desregistrar dispositivo: ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      print('Error al desregistrar dispositivo: $e');
-      return false;
-    }
+  static Future<bool> unregisterDevice() {
+    if (AppEnvironment.isolated) return Future.value(true);
+    _registrationsPaused = true;
+    return _serialize(() => FcmDeviceRegistration().unregister());
   }
 
   // Obtener el token FCM actual
   static Future<String?> getToken() async {
+    if (AppEnvironment.isolated) return null;
     try {
       return await _firebaseMessaging.getToken();
-    } catch (e) {
-      print('Error al obtener token FCM: $e');
+    } catch (_) {
+      debugPrint('No se pudo obtener el token de notificaciones.');
       return null;
     }
   }

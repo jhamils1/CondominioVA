@@ -2,8 +2,9 @@
 import React from 'react';
 import CustomTable from '../../components/table.jsx';
 import Button from '../../components/button.jsx';
+import { roleKey } from '../../auth/access.js';
 
-const RolList = ({ roles, onEdit, onDelete, onAddNew }) => {
+const RolList = ({ roles, onEdit, onAddNew, currentRole }) => {
   const columns = ['name'];
   const tableData = roles.map(rol => ({
     id: rol.id,
@@ -15,6 +16,7 @@ const RolList = ({ roles, onEdit, onDelete, onAddNew }) => {
       <h2 className="text-2xl font-semibold mb-6 text-gray-800">
         Gestión de Roles
       </h2>
+      <p className="mb-4 text-sm text-gray-600">Los permisos de Django se administran aquí; los accesos de la aplicación se definen en el backend. No puedes modificar tu propio rol.</p>
       <div className="flex justify-between items-center mb-2">
         <Button variant="guardar" onClick={onAddNew}>
           Nuevo Rol
@@ -24,7 +26,7 @@ const RolList = ({ roles, onEdit, onDelete, onAddNew }) => {
         columns={columns}
         data={tableData}
         onEdit={onEdit}
-        onDelete={onDelete}
+        canEdit={(row) => roleKey(row.name) !== currentRole}
       />
     </div>
   );

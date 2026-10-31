@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from './client.js';
 
 // Creamos una instancia de Axios que se usará para todas las llamadas a la API.
 const apiClient = axios.create({
@@ -44,6 +44,7 @@ export const verifyPaymentIntent = async (paymentIntentId) => {
     return response.data;
   } catch (error) {
     console.error('Error al verificar PaymentIntent:', error);
+    if (error.response?.status === 403) throw new Error('No tienes permiso para consultar este pago.');
     if (error.response) {
       throw new Error(JSON.stringify(error.response.data));
     }

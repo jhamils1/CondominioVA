@@ -25,3 +25,10 @@ class IncidenteSerializer(serializers.ModelSerializer):
                 "monto": getattr(obj.multa, "monto", None),
             }
         return None
+
+
+class IncidenteGuardiaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = incidente
+        fields = ['id', 'descripcion', 'fecha_incidente', 'fecha_registro']
+        read_only_fields = ['id', 'fecha_registro']

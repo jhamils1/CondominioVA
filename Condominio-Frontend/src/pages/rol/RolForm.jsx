@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import StyledForm from "../../components/form";
 import Button from "../../components/button";
 import { fetchAllPermissions } from "../../api/rolApi";
+import { roleKey } from '../../auth/access.js';
 
-const RoleForm = ({ onSubmit, onCancel, initialData, loading }) => {
+const RoleForm = ({ onSubmit, onCancel, initialData, loading, existingRoles = [] }) => {
   const [formData, setFormData] = useState({
     name: "",
     permission_ids: [],
@@ -78,6 +79,10 @@ const RoleForm = ({ onSubmit, onCancel, initialData, loading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (existingRoles.some(role => role.id !== initialData?.id && roleKey(role.name) === roleKey(formData.name))) {
+      alert('Ya existe un rol equivalente.');
+      return;
+    }
     // El backend espera permission_ids, no permissions
     const dataToSend = {
       name: formData.name,
@@ -97,15 +102,18 @@ const RoleForm = ({ onSubmit, onCancel, initialData, loading }) => {
         <label className="block text-sm font-medium mb-1 text-gray-700" htmlFor="name">
           Nombre del Rol
         </label>
-        <input
-          type="text"
+        <select
           id="name"
           name="name"
           value={formData.name}
           onChange={handleChange}
           required
           className="w-full px-3 py-2 rounded-md bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+          disabled={isEditing}
+        >
+          <option value="">Selecciona un rol</option>
+          {(isEditing ? [initialData.name] : ['administrador', 'Seguridad', 'propietario', 'inquilino'].filter(name => !existingRoles.some(role => roleKey(role.name) === roleKey(name)))).map(name => <option key={name} value={name}>{name}</option>)}
+        </select>
       </div>
 
       {/* Permisos */}

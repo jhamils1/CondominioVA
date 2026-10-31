@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import EmpleadoList from './EmpleadoList.jsx';
 import EmpleadoForm from './EmpleadoForm.jsx';
 import Button from '../../components/button.jsx';
+import CuentaPerfil from '../../components/CuentaPerfil.jsx';
 import { fetchAllEmpleados, fetchAllCargos, createEmpleado, updateEmpleado, deleteEmpleado } from '../../api/empleadosApi.jsx';
 
 const EmpleadoPage = () => {
@@ -10,6 +11,18 @@ const EmpleadoPage = () => {
   const [loading, setLoading] = useState(false);
   const [editingEmpleado, setEditingEmpleado] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [createdEmpleado, setCreatedEmpleado] = useState(null);
+  const [createdAccount, setCreatedAccount] = useState(false);
+  const [accountBusy, setAccountBusy] = useState(false);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingEmpleado(null);
+    setCreatedEmpleado(null);
+    setCreatedAccount(false);
+    setAccountBusy(false);
+  };
 
   const loadEmpleados = async () => {
     setLoading(true);
@@ -55,6 +68,8 @@ const EmpleadoPage = () => {
 
 
   const handleFormSubmit = async (formData) => {
+    if (saving) return;
+    setSaving(true);
     try {
       // Preparar los datos para el backend (estructura plana)
       const cleanedData = {
@@ -93,15 +108,21 @@ const EmpleadoPage = () => {
         alert('Empleado actualizado correctamente');
       } else {
         console.log('Creando empleado:', cleanedData);
-        await createEmpleado(cleanedData);
-        alert('Empleado creado correctamente');
+        const created = await createEmpleado(cleanedData);
+        if (!created?.id) {
+          throw new Error('No se pudo confirmar el identificador del empleado. Revisa la lista antes de volver a registrar.');
+        }
+        setCreatedEmpleado(created);
+        loadEmpleados();
+        return;
       }
-      setShowForm(false);
-      setEditingEmpleado(null);
+      closeForm();
       loadEmpleados();
     } catch (error) {
       console.error('Error:', error.message);
       alert('Error: ' + error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -119,13 +140,24 @@ const EmpleadoPage = () => {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <EmpleadoForm
-              onSubmit={handleFormSubmit}
-              onCancel={() => { setShowForm(false); setEditingEmpleado(null); }}
-              initialData={editingEmpleado}
-              cargos={cargos}
-              loading={loading}
-            />
+            {createdEmpleado ? (
+              <div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-md shadow-md space-y-4">
+                <h2 className="text-2xl font-semibold">Empleado registrado</h2>
+                <p role="status">El empleado se guardó correctamente. Puedes crear o vincular una cuenta y elegir su rol de acceso, o finalizar sin cuenta.</p>
+                <CuentaPerfil tipo="empleado" perfilId={createdEmpleado.id} onLinked={() => setCreatedAccount(true)} onBusyChange={setAccountBusy} />
+                <button type="button" onClick={closeForm} disabled={accountBusy} className="rounded-md bg-slate-900 px-4 py-2 text-white disabled:opacity-50">
+                  {createdAccount ? 'Finalizar' : 'Finalizar sin cuenta'}
+                </button>
+              </div>
+            ) : (
+              <EmpleadoForm
+                onSubmit={handleFormSubmit}
+                onCancel={closeForm}
+                initialData={editingEmpleado}
+                cargos={cargos}
+                loading={loading || saving}
+              />
+            )}
           </div>
         </div>
       )}

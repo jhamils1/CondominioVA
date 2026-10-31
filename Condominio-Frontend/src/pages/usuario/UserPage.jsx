@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import UserList from './UserList.jsx';
 import UserForm from './UserForm.jsx';
 import Button from '../../components/button.jsx';
-import { fetchAllUsers, fetchAllRoles, createUser, updateUser, deleteUser } from '../../api/userApi.jsx';
+import { fetchAllUsers, fetchAllRoles, createUser, updateUser } from '../../api/userApi.jsx';
+import { useSession } from '../../auth/sessionContext.js';
 
 const UserPage = () => {
+  const { user: currentUser } = useSession();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,17 +40,17 @@ const UserPage = () => {
   }, []);
 
   const handleEdit = (user) => {
-    setEditingUser(user);
+    setEditingUser(users.find(item => item.id === user.id));
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
+  const handleDeactivate = async (id) => {
+    if (id === currentUser.id || !window.confirm("¿Desactivar esta cuenta?")) return;
     try {
-      await deleteUser(id);
+      await updateUser(id, { is_active: false });
       loadUsers();
     } catch (error) {
-      console.error(error.message);
+      alert('No se pudo desactivar la cuenta: ' + error.message);
     }
   };
 
@@ -60,7 +62,7 @@ const UserPage = () => {
         if (!updateData.password || updateData.password.trim() === '') {
           delete updateData.password;
         }
-        console.log('Actualizando usuario:', editingUser.id, updateData);
+        if (editingUser.id === currentUser.id) delete updateData.role_id;
         await updateUser(editingUser.id, updateData);
         alert('Usuario actualizado correctamente');
       } else {
@@ -82,7 +84,8 @@ const UserPage = () => {
       <UserList
         users={users}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        currentUserId={currentUser.id}
+        onDeactivate={handleDeactivate}
         onAddNew={() => setShowForm(true)}
       />
 
@@ -95,6 +98,7 @@ const UserPage = () => {
             initialData={editingUser}
             roles={roles}
             loading={loading}
+            isOwnAccount={editingUser?.id === currentUser.id}
           />
         </div>
       )}

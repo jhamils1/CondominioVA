@@ -41,7 +41,7 @@ ALLOWED_HOSTS = ['*','primerparcial-backend-production.up.railway.app', '192.168
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'condominioBACK.admin_config.TechnicalAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -165,11 +165,16 @@ STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Se habilita únicamente después de crear y aplicar el esquema aprobado.
+NOTIFICACIONES_SEGURIDAD_ACTIVAS = config('NOTIFICACIONES_SEGURIDAD_ACTIVAS', default=False, cast=bool)
+COLA_FCM_SEGURIDAD_ACTIVA = config('COLA_FCM_SEGURIDAD_ACTIVA', default=False, cast=bool)
+ENVIO_FCM_SEGURIDAD_ACTIVO = config('ENVIO_FCM_SEGURIDAD_ACTIVO', default=False, cast=bool)
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",   # Bearer
+        "administracion.authentication.ApplicationJWTAuthentication",   # Bearer y rol vigente
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.AllowAny",  # todo requiere auth por defecto

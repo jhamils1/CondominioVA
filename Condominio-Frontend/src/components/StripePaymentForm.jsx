@@ -22,12 +22,6 @@ const PaymentForm = ({ expensa, onSuccess, onCancel }) => {
 
   // Debug: mostrar información de Stripe
   useEffect(() => {
-    console.log('=== DEBUG STRIPE ===');
-    console.log('Stripe object:', stripe);
-    console.log('Elements object:', elements);
-    console.log('Client secret:', clientSecret);
-    console.log('Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-    console.log('===================');
     
     setDebugInfo({
       stripeLoaded: !!stripe,
@@ -191,7 +185,7 @@ const PaymentForm = ({ expensa, onSuccess, onCancel }) => {
       </div>
 
       {/* Debug info - solo en desarrollo */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-4">
           <h4 className="text-yellow-800 font-semibold text-xs mb-2">🔧 Debug Info</h4>
           <div className="text-xs text-yellow-700 space-y-1">

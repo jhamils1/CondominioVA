@@ -13,8 +13,8 @@ def _filefield_for(path_or_url, field_name: str):
     if isinstance(path_or_url, str):
         if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
             return {field_name: path_or_url}
-        # o un archivo local
-        return {field_name: open(path_or_url, "rb")}
+        # Never interpret public image_url input as a local server path.
+        raise ValueError('La imagen debe ser un archivo subido o una URL HTTP/HTTPS.')
     else:
         # Es un objeto de archivo de Django (InMemoryUploadedFile, TemporaryUploadedFile, etc.)
         return {field_name: path_or_url}
@@ -62,16 +62,8 @@ def recognize(image_path_or_url: str, gallery: str = ""):
     if gallery:
         data["gallery"] = gallery
     
-    print(f"🔍 LUXAND RECOGNIZE DEBUG:")
-    print(f"   URL: {url}")
-    print(f"   Gallery: {gallery}")
-    print(f"   Headers: {HEADERS}")
-    print(f"   Data: {data}")
-    
     try:
         r = requests.post(url, headers=HEADERS, files=files, data=data, timeout=30)
-        print(f"   Status Code: {r.status_code}")
-        print(f"   Response: {r.text[:500]}...")
         
         if r.status_code == 503:
             raise ValueError(f"Luxand service unavailable (503). This may be due to rate limiting or service issues. Response: {r.text}")

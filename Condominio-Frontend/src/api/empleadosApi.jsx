@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from './client.js';
 
 // Creamos una instancia de Axios que se usará para todas las llamadas a la API.
 const apiClient = axios.create({
@@ -94,7 +94,7 @@ export const createEmpleado = async (empleadoData) => {
       console.error('Error status:', error.response.status);
       throw new Error(JSON.stringify(error.response.data));
     }
-    throw new Error('Error de conexión al registrar el empleado.');
+    throw new Error('No se pudo confirmar el registro. Comprueba la lista de empleados antes de reintentar para evitar duplicados.');
   }
 };
 

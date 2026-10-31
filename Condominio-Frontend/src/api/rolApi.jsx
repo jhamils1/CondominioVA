@@ -1,5 +1,5 @@
 // src/api/rolApi.jsx
-import axios from 'axios';
+import axios from './client.js';
 
 // Instancia de Axios con la base de tu backend
 const apiClient = axios.create({

@@ -1,6 +1,8 @@
 // src/components/Sidebar.jsx
-import React, { useState, useEffect } from "react";
-import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useSession } from '../auth/sessionContext.js';
+import { canAccess, roleLabel } from '../auth/access.js';
 import {
   FaChevronDown,
   FaChevronRight,
@@ -17,9 +19,10 @@ import logo from "../assets/images/logo.jpg";
 const Sidebar = ({ sidebarOpen }) => {
   const [openMenu, setOpenMenu] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation();
-  const [username, setUsername] = useState(localStorage.getItem("username") || "Usuario");
-  const [userRole, setUserRole] = useState("Invitado");
+  const { user, endSession } = useSession();
+  const [closing, setClosing] = useState(false);
+  const username = user.username;
+  const userRole = roleLabel[user.role] || 'Sin rol';
 
   const toggleMenu = (menu) => {
     setOpenMenu(openMenu === menu ? null : menu);
@@ -31,22 +34,14 @@ const Sidebar = ({ sidebarOpen }) => {
     }
   }, [sidebarOpen]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("username");
-    localStorage.removeItem("userRole");
+  const handleLogout = async () => {
+    if (closing) return;
+    setClosing(true);
+    await endSession();
     navigate("/login", { replace: true });
   };
 
-  useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    const storedUserRole = localStorage.getItem("userRole");
-    setUsername(storedUsername || "Usuario");
-    setUserRole(storedUserRole || "Invitado");
-  }, [location.pathname]);
-
-  const menuItems = [
+  const allMenuItems = [
     { title: "Dashboard", icon: <FaHome />, key: "dashboard", path: "/admin/dashboard" },
     {
       title: "Autenticación",
@@ -71,6 +66,8 @@ const Sidebar = ({ sidebarOpen }) => {
       icon: <FaRobot />,
       key: "seguridad",
       subItems: [
+        { name: "Notificaciones", path: "/admin/notificaciones" },
+        { name: "Eventos e incidencias", path: "/admin/eventos-seguridad" },
         { name: "Objetos Perdidos", path: "/admin/objetos-perdidos" },
         { name: "Reconocimiento Facial", path: "/admin/reconocimiento-facial" },
         { name: "Reconocimiento Vehicular", path: "/admin/reconocimiento-vehicular" },
@@ -111,6 +108,18 @@ const Sidebar = ({ sidebarOpen }) => {
       ],
     },
   ];
+
+  const menuItems = ['propietario', 'inquilino'].includes(user.role)
+    ? [
+        { title: 'Inicio', key: 'inicio', icon: <FaHome />, path: '/admin/dashboard' },
+        { title: 'Mi perfil', key: 'perfil', icon: <FaUserCircle />, path: '/admin/perfil' },
+        ...[['Mi vivienda','unidades'],['Mis vehículos','vehiculos'],['Mis contratos','contratos'],['Mis expensas y pagos','expensas'],['Mis visitas','visitas']]
+          .filter(([, path]) => canAccess(user.role, path))
+          .map(([title, path]) => ({ title, key: path, path: `/admin/${path}`, icon: <FaHome /> })),
+      ]
+    : allMenuItems.map(menu => menu.subItems
+        ? { ...menu, subItems: menu.subItems.filter(item => canAccess(user.role, item.path.split('/').pop())) }
+        : menu).filter(menu => menu.subItems ? menu.subItems.length > 0 : canAccess(user.role, menu.path.split('/').pop()));
 
   const NavItem = ({ to, icon, children }) => (
     <NavLink
@@ -216,10 +225,11 @@ const Sidebar = ({ sidebarOpen }) => {
         </div>
         <button
           onClick={handleLogout}
+          disabled={closing}
           className="px-4 py-2.5 flex items-center space-x-3 rounded-xl text-gray-300 group w-full hover:bg-red-500/20 hover:text-red-400 transition-all duration-300 border border-transparent hover:border-red-500/30 min-w-0"
         >
           <FaSignOutAlt className="flex-shrink-0 text-lg" />
-          <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium">Cerrar Sesión</span>
+          <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium">{closing ? 'Cerrando sesión…' : 'Cerrar Sesión'}</span>
         </button>
       </div>
     </aside>

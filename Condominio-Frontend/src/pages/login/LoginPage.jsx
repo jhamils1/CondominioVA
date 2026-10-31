@@ -1,6 +1,7 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSession } from '../../auth/sessionContext.js';
 import LoginForm from "./LoginForm";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -9,13 +10,14 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
+  const { sessionNotice, setSessionNotice } = useSession();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSessionNotice('');
     const success = await login(username, password);  // login con tu hook
     if (success) {
-      console.log("Login exitoso");
-      navigate("/admin/dashboard"); // redirige al dashboard
+      navigate("/admin/dashboard");
     }
   };
 
@@ -27,7 +29,7 @@ const LoginPage = () => {
       setPassword={setPassword}
       onSubmit={handleSubmit}
       loading={loading}
-      error={error}
+      error={error || sessionNotice || ''}
     />
   );
 };

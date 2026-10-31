@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import StyledForm from "../../components/form";
 import Button from "../../components/button";
-import { createUser } from "../../api/userApi";
+import CuentaPerfil from "../../components/CuentaPerfil.jsx";
 
 const InquilinoForm = ({ onSubmit, onCancel, initialData, propietarios = [], loading }) => {
   const [formData, setFormData] = useState({
@@ -25,7 +25,6 @@ const InquilinoForm = ({ onSubmit, onCancel, initialData, propietarios = [], loa
 
   useEffect(() => {
     if (initialData) {
-      console.log('Datos iniciales recibidos en InquilinoForm:', initialData);
       setFormData({
         // Atributos heredados de Persona
         nombre: initialData.nombre || "",
@@ -85,47 +84,9 @@ const InquilinoForm = ({ onSubmit, onCancel, initialData, propietarios = [], loa
   const handleSubmit = (e) => {
     e.preventDefault();
     // Excluir el campo email del envío al backend
-    const { email, ...dataToSubmit } = formData;
+    const dataToSubmit = { ...formData };
+    delete dataToSubmit.email;
     onSubmit(dataToSubmit);
-  };
-
-  const handleCreateUser = async () => {
-    if (!formData.email || !formData.nombre || !formData.apellido || !formData.CI || !formData.telefono) {
-      alert('Por favor completa todos los campos requeridos (nombre, apellido, CI, teléfono y email)');
-      return;
-    }
-
-    try {
-      // Generar username: nombre + CI
-      const username = `${formData.nombre}${formData.CI}`;
-      
-      // Generar password: teléfono + primera letra del nombre + primera letra del apellido
-      const password = `${formData.telefono}${formData.nombre.charAt(0).toLowerCase()}${formData.apellido.charAt(0).toLowerCase()}`;
-      
-      // Role ID para Inquilino
-      const role_id = 4;
-
-      const userData = {
-        username,
-        email: formData.email,
-        password,
-        role_id
-      };
-
-      console.log('Creando usuario con datos:', userData);
-      
-      const result = await createUser(userData);
-      console.log('Usuario creado exitosamente:', result);
-      
-      alert('Usuario creado exitosamente');
-      
-      // Limpiar el campo email después de crear el usuario
-      setFormData(prev => ({ ...prev, email: "" }));
-      
-    } catch (error) {
-      console.error('Error al crear usuario:', error);
-      alert('Error al crear usuario: ' + error.message);
-    }
   };
 
   const isEditing = !!initialData;
@@ -198,25 +159,6 @@ const InquilinoForm = ({ onSubmit, onCancel, initialData, propietarios = [], loa
               onChange={handleChange}
               className="w-full px-3 py-2 rounded-md bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-          </div>
-
-          {/* Email - Solo para crear usuario */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700" htmlFor="email">
-              Email (Para crear usuario)
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="ejemplo@correo.com"
-              className="w-full px-3 py-2 rounded-md bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Este campo solo se usa para crear un usuario del sistema
-            </p>
           </div>
 
           {/* Fecha de Nacimiento */}
@@ -374,19 +316,10 @@ const InquilinoForm = ({ onSubmit, onCancel, initialData, propietarios = [], loa
         </div>
       </div>
 
+      <CuentaPerfil tipo="inquilino" perfilId={initialData?.id} />
+
       {/* Botones */}
       <div className="flex justify-between items-center pt-4 mt-6 border-t">
-        {/* Botón para crear usuario */}
-        <Button 
-          variant="guardar" 
-          type="button"
-          onClick={handleCreateUser}
-          disabled={loading || !formData.email}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          CREAR USUARIO
-        </Button>
-        
         {/* Botones de formulario */}
         <div className="flex space-x-2">
           {onCancel && (
