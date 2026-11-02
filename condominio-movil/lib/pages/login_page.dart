@@ -40,14 +40,19 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       if (result['success']) {
-        FCMService.allowRegistration();
-        var fcmReady = false;
-        try {
-          final fcmToken = await FCMService.getToken();
-          if (fcmToken != null) {
-            fcmReady = await FCMService.registerDevice(fcmToken);
-          }
-        } catch (_) { /* El acceso no depende de la disponibilidad de FCM. */ }
+        final profile = await AuthService.getUserProfile();
+        final data = profile['data'];
+        final role = profile['success'] == true && data is Map ? data['role'] : null;
+        var fcmReady = role == 'personalizado';
+        if (role != null && role != 'personalizado') {
+          FCMService.allowRegistration();
+          try {
+            final fcmToken = await FCMService.getToken();
+            if (fcmToken != null) {
+              fcmReady = await FCMService.registerDevice(fcmToken);
+            }
+          } catch (_) { /* El acceso no depende de la disponibilidad de FCM. */ }
+        }
         if (!mounted) return;
         if (!fcmReady) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

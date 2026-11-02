@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import (
 )
 from .authentication import ApplicationTokenRefreshSerializer
 from .provision import ProvisionarCuentaView
+from .roles_personalizados import ListaRolesPersonalizados, DetalleRolPersonalizado, AsignarRolPersonalizado
 
 class ApplicationTokenRefreshView(TokenRefreshView):
     serializer_class = ApplicationTokenRefreshSerializer
@@ -30,6 +31,9 @@ router.register(r'cargos', CargoViewSet, basename='cargos')
 router.register(r'empleados', EmpleadoViewSet, basename='empleados')
 
 urlpatterns = [
+    path('roles-personalizados/', ListaRolesPersonalizados.as_view()),
+    path('roles-personalizados/<uuid:rol_id>/', DetalleRolPersonalizado.as_view()),
+    path('roles-personalizados/<uuid:rol_id>/asignar/', AsignarRolPersonalizado.as_view()),
     path('provisionar-cuenta/', ProvisionarCuentaView.as_view(), name='provisionar-cuenta'),
     path('', include(router.urls)),
     

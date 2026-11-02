@@ -1,10 +1,12 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings
 from fcm_django.models import FCMDevice
 from firebase_admin.messaging import Message, Notification
 from .models import expensa
 from django.utils import timezone
 from administracion.access import effective_role
+from .procedencia_fcm import dispositivos_elegibles
 import logging
 from residencial.models import ObjetoPerdido
 
@@ -18,6 +20,8 @@ MESES = {
 
 @receiver(post_save, sender=expensa)
 def enviar_notificacion_expensa(sender, instance, created, **kwargs):
+    if not getattr(settings, 'ENVIO_FCM_LEGADO_ACTIVO', True):
+        return
     if created:
         try:
             # Usar la misma restricción de unidad que la API financiera.
@@ -49,7 +53,7 @@ def enviar_notificacion_expensa(sender, instance, created, **kwargs):
             cuerpo_msg = f"Hola {nombre_persona}, se ha generado la cuota de tu unidad {nombre_unidad} por {instance.monto} {instance.currency}."
 
             # 3. Buscar dispositivos
-            dispositivos = FCMDevice.objects.filter(user=usuario_dueno, active=True)
+            dispositivos = dispositivos_elegibles(FCMDevice.objects.filter(user=usuario_dueno, active=True))
 
             if dispositivos.exists():
                 dispositivos.send_message(
@@ -72,6 +76,8 @@ def enviar_notificacion_expensa(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=ObjetoPerdido)
 def notificar_objeto_encontrado(sender, instance, created, **kwargs):
+    if not getattr(settings, 'ENVIO_FCM_LEGADO_ACTIVO', True):
+        return
     # Solo notificamos si es nuevo (created=True) y si el estado es 'Pendiente' ('P')
     if created and instance.estado == 'P':
         logger.info('Procesando notificacion de objeto encontrado')
@@ -79,7 +85,7 @@ def notificar_objeto_encontrado(sender, instance, created, **kwargs):
         try:
             # 1. Obtenemos TODOS los dispositivos registrados en el sistema
             # (En un condominio real, esto le avisa a todos los vecinos)
-            dispositivos = FCMDevice.objects.all()
+            dispositivos = dispositivos_elegibles(FCMDevice.objects.all())
             
             if dispositivos.exists():
                 logger.info('Procesando difusion de objeto encontrado')

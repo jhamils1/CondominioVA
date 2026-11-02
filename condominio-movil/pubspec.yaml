@@ -48,6 +48,8 @@ dependencies:
   fl_chart: ^0.69.2
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
 

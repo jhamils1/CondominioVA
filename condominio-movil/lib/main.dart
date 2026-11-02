@@ -15,16 +15,19 @@ import 'pages/areas_comunes_page.dart';
 import 'pages/mis_reservas_page.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/alertas_seguridad_page.dart';
+import 'pages/visitas_operativas_page.dart';
 import 'services/fcm_service.dart';
 import 'config/stripe_config.dart';
 import 'config/app_environment.dart';
+import 'config/firebase_push_test_options.dart';
 import 'security/protected_route.dart';
 import 'security/security_notification_navigation.dart';
 
 // Handler para mensajes en segundo plano
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(options: AppEnvironment.pushTest
+      ? FirebasePushTestOptions.current : DefaultFirebaseOptions.currentPlatform);
   debugPrint('Mensaje recibido en segundo plano.');
 }
 
@@ -36,7 +39,8 @@ void main() async {
     try {
       // Inicializar Firebase
       await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
+        options: AppEnvironment.pushTest
+            ? FirebasePushTestOptions.current : DefaultFirebaseOptions.currentPlatform,
       );
 
       // Configurar handler de mensajes en segundo plano
@@ -51,7 +55,7 @@ void main() async {
     }
   }
   
-  if (!AppEnvironment.isolated) {
+  if (!AppEnvironment.isolated && !AppEnvironment.pushTest) {
     try {
       // Inicializar Stripe
       Stripe.publishableKey = StripeConfig.publishableKey;
@@ -152,6 +156,7 @@ class _MyAppState extends State<MyApp> {
         "/mis-reservas": (context) => const ProtectedRoute(route: '/mis-reservas', child: MisReservasPage()),
         "/dashboard": (context) => const ProtectedRoute(route: '/dashboard', child: DashboardPage()),
         "/alertas-seguridad": (context) => const ProtectedRoute(route: '/alertas-seguridad', child: AlertasSeguridadPage()),
+        "/visitas-operativas": (context) => const ProtectedRoute(route: '/visitas-operativas', child: VisitasOperativasPage()),
       },
     );
   }

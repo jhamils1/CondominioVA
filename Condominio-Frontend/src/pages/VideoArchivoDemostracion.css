@@ -1,0 +1,54 @@
+.visor-marco {
+  position: relative;
+  aspect-ratio: var(--proporcion);
+  width: 100%;
+  max-width: min(100%, calc(24rem * var(--proporcion)));
+  background: #000;
+}
+
+.visor-marco video,
+.visor-marco .imagen-analisis,
+.visor-marco .capa-detecciones {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.visor-marco video {
+  object-fit: fill;
+}
+
+.visor-marco .capa-detecciones {
+  pointer-events: none;
+}
+
+/* La ampliación se aplica al contenedor para conservar los recuadros. */
+.visor-marco video::-webkit-media-controls-fullscreen-button {
+  display: none;
+}
+
+.boton-pantalla-analizada {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  color: white;
+  background: rgb(0 0 0 / 70%);
+  border-radius: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 1.25rem;
+}
+
+.visor-analizado:fullscreen {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visor-analizado:fullscreen .visor-marco {
+  width: min(100vw, calc(100vh * var(--proporcion)));
+  max-width: none;
+  max-height: 100vh;
+}

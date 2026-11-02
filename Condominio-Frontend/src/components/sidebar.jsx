@@ -22,7 +22,7 @@ const Sidebar = ({ sidebarOpen }) => {
   const { user, endSession } = useSession();
   const [closing, setClosing] = useState(false);
   const username = user.username;
-  const userRole = roleLabel[user.role] || 'Sin rol';
+  const userRole = user.rol_nombre || roleLabel[user.role] || 'Sin rol';
 
   const toggleMenu = (menu) => {
     setOpenMenu(openMenu === menu ? null : menu);
@@ -114,12 +114,12 @@ const Sidebar = ({ sidebarOpen }) => {
         { title: 'Inicio', key: 'inicio', icon: <FaHome />, path: '/admin/dashboard' },
         { title: 'Mi perfil', key: 'perfil', icon: <FaUserCircle />, path: '/admin/perfil' },
         ...[['Mi vivienda','unidades'],['Mis vehículos','vehiculos'],['Mis contratos','contratos'],['Mis expensas y pagos','expensas'],['Mis visitas','visitas']]
-          .filter(([, path]) => canAccess(user.role, path))
+          .filter(([, path]) => canAccess(user.role, path, user.capacidades))
           .map(([title, path]) => ({ title, key: path, path: `/admin/${path}`, icon: <FaHome /> })),
       ]
     : allMenuItems.map(menu => menu.subItems
-        ? { ...menu, subItems: menu.subItems.filter(item => canAccess(user.role, item.path.split('/').pop())) }
-        : menu).filter(menu => menu.subItems ? menu.subItems.length > 0 : canAccess(user.role, menu.path.split('/').pop()));
+        ? { ...menu, subItems: menu.subItems.filter(item => canAccess(user.role, item.path.split('/').pop(), user.capacidades)) }
+        : menu).filter(menu => menu.subItems ? menu.subItems.length > 0 : canAccess(user.role, menu.path.split('/').pop(), user.capacidades));
 
   const NavItem = ({ to, icon, children }) => (
     <NavLink

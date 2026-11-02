@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.functions import Lower, Trim
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
@@ -10,6 +11,41 @@ class SesionAplicacion(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sesiones_aplicacion')
     creada = models.DateTimeField(auto_now_add=True)
     revocada = models.DateTimeField(null=True, blank=True)
+    version_fcm = models.PositiveBigIntegerField(default=0)
+
+
+class RolPersonalizado(models.Model):
+    """Registro preparatorio, separado de los grupos que autorizan la API."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=100)
+    activo = models.BooleanField(default=False)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=~models.Q(nombre=''), name='rol_personalizado_nombre_no_vacio'),
+            models.UniqueConstraint(Lower(Trim('nombre')), name='rol_personalizado_nombre_unico'),
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+
+class CapacidadRolPersonalizado(models.Model):
+    """Código almacenado; no constituye autorización hasta integrarse en la API."""
+    rol = models.ForeignKey(RolPersonalizado, on_delete=models.PROTECT, related_name='capacidades')
+    codigo = models.CharField(max_length=100)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=~models.Q(codigo=''), name='capacidad_rol_codigo_no_vacio'),
+            models.UniqueConstraint(fields=['rol', 'codigo'], name='capacidad_rol_codigo_unico'),
+        ]
+
+
+class AsignacionRolPersonalizado(models.Model):
+    usuario = models.OneToOneField(User, on_delete=models.PROTECT, related_name='asignacion_rol_personalizado')
+    rol = models.ForeignKey(RolPersonalizado, on_delete=models.PROTECT, related_name='asignaciones')
 
 
 # Create your models here.

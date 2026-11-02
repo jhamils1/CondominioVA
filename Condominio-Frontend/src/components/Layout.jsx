@@ -30,7 +30,7 @@ const Layout = () => {
             )}
           </button>
           <h1 className="text-xl font-semibold text-white tracking-wide">
-            Panel de {roleLabel[user.role]}
+            Panel de {user.rol_nombre || roleLabel[user.role]}
           </h1>
           <div className="w-10"></div> {/* Spacer para centrar el título */}
         </div>

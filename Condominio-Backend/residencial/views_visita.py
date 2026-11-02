@@ -2,19 +2,26 @@ from rest_framework import status, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import Visita
-from .serializers.serializersVisita import VisitaSerializer, VisitaListSerializer, VisitaResidenteSerializer
+from .serializers.serializersVisita import VisitaSerializer, VisitaListSerializer, VisitaResidenteSerializer, VisitaOperativaSerializer
 from administracion.models import Persona
-from administracion.access import ApplicationRolePermission, effective_role, roles_for
+from administracion.access import ApplicationRolePermission, effective_role, roles_for, tiene_capacidad_personalizada
 
 
 class VisitaSearchFilter(filters.SearchFilter):
     def get_search_fields(self, view, request):
-        if effective_role(request.user) in ('propietario', 'inquilino'):
+        if effective_role(request.user) in ('propietario', 'inquilino', 'personalizado'):
             return ['visitante__nombre', 'visitante__apellido', 'estado']
         return super().get_search_fields(view, request)
 
+class VisitaPermission(ApplicationRolePermission):
+    def has_permission(self, request, view):
+        if effective_role(request.user) == 'personalizado':
+            return view.action in ('list', 'retrieve') and tiene_capacidad_personalizada(request.user, 'visitas.consultar_operativas')
+        return super().has_permission(request, view)
+
+
 class VisitaViewSet(viewsets.ModelViewSet):
-    permission_classes = [ApplicationRolePermission]
+    permission_classes = [VisitaPermission]
     role_access = roles_for(read=('administrador', 'guardia', 'propietario', 'inquilino'),
                             write=('administrador', 'guardia'), extra={
                                 'destroy': ('administrador',),
@@ -37,6 +44,8 @@ class VisitaViewSet(viewsets.ModelViewSet):
     ordering = ['-fecha_hora_entrada']
     
     def get_serializer_class(self):
+        if effective_role(self.request.user) == 'personalizado':
+            return VisitaOperativaSerializer
         if effective_role(self.request.user) in ('propietario', 'inquilino'):
             return VisitaResidenteSerializer
         if self.action == 'list':
@@ -49,6 +58,8 @@ class VisitaViewSet(viewsets.ModelViewSet):
         """
         queryset = super().get_queryset()
         role = effective_role(self.request.user)
+        if role == 'personalizado':
+            return queryset.filter(estado__in=('PENDIENTE', 'ACTIVA'))
         if role == 'inquilino':
             # Sin relación inquilino-unidad no es posible comprobar la ocupación.
             return queryset.none()

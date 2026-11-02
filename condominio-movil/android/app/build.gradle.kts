@@ -18,7 +18,20 @@ require(isolationFlags.size <= 1 && isolationFlags.all {
     it == "CONDOMINIO_AISLADO=true" || it == "CONDOMINIO_AISLADO=false"
 }) { "CONDOMINIO_AISLADO debe ser true o false y no debe repetirse." }
 val isolatedBuild = isolationFlags.singleOrNull() == "CONDOMINIO_AISLADO=true"
-if (isolatedBuild) {
+val pushFlags = defineValues.filter { it.startsWith("CONDOMINIO_PUSH_PRUEBA=") }
+require(pushFlags.size <= 1 && pushFlags.all {
+    it == "CONDOMINIO_PUSH_PRUEBA=true" || it == "CONDOMINIO_PUSH_PRUEBA=false"
+}) { "CONDOMINIO_PUSH_PRUEBA debe ser true o false y no debe repetirse." }
+val pushTestBuild = pushFlags.singleOrNull() == "CONDOMINIO_PUSH_PRUEBA=true"
+require(!(isolatedBuild && pushTestBuild)) { "Las variantes de prueba no se pueden combinar." }
+fun requiredTestDefine(name: String): String {
+    val values = defineValues.filter { it.startsWith("$name=") }
+    require(values.size == 1 && values.single().substringAfter('=').isNotBlank()) {
+        "Falta configuracion de Firebase de prueba: $name"
+    }
+    return values.single().substringAfter('=')
+}
+if (isolatedBuild || pushTestBuild) {
     require(gradle.startParameter.taskNames.none {
         it.contains("release", ignoreCase = true) || it.contains("profile", ignoreCase = true)
     }) { "La variante aislada solo admite compilaciones debug." }
@@ -61,6 +74,16 @@ android {
     buildTypes {
         getByName("debug") {
             if (isolatedBuild) applicationIdSuffix = ".prueba"
+            if (pushTestBuild) {
+                applicationIdSuffix = ".pushprueba"
+                require(requiredTestDefine("FIREBASE_TEST_PROJECT_ID") == "condominio-seguridad") {
+                    "El proyecto Firebase de prueba no coincide."
+                }
+                resValue("string", "google_app_id", requiredTestDefine("FIREBASE_TEST_APP_ID"))
+                resValue("string", "google_api_key", requiredTestDefine("FIREBASE_TEST_API_KEY"))
+                resValue("string", "gcm_defaultSenderId", requiredTestDefine("FIREBASE_TEST_SENDER_ID"))
+                resValue("string", "project_id", requiredTestDefine("FIREBASE_TEST_PROJECT_ID"))
+            }
         }
         release {
             // TODO: Add your own signing config for the release build.
@@ -73,6 +96,9 @@ android {
 
     if (isolatedBuild) {
         sourceSets.getByName("debug").manifest.srcFile("src/aislado/AndroidManifest.xml")
+    }
+    if (pushTestBuild) {
+        sourceSets.getByName("debug").manifest.srcFile("src/pushprueba/AndroidManifest.xml")
     }
 
 }

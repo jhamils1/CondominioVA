@@ -49,7 +49,7 @@ class _ProtectedRouteState extends State<ProtectedRoute> {
         );
       }
       final user = validarUsuarioActual(result['data']);
-      if (user == null || !puedeAcceder(user['role'] as String?, widget.route)) {
+      if (user == null || !puedeAcceder(user['role'] as String?, widget.route, user['capacidades'] as List<dynamic>?)) {
         return Scaffold(
           appBar: AppBar(title: const Text('Acceso denegado')),
           body: const Center(child: Text('No tienes permiso para acceder a esta pantalla.')),

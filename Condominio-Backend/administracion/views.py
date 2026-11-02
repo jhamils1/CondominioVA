@@ -15,6 +15,7 @@ from .serializers.serializersRol import RolSerializer, RolListSerializer, Permis
 from .serializers.serializersPersona import PersonaSerializer
 from .serializers.serializersEmpleado import CargoSerializer, EmpleadoSerializer, EmpleadoListSerializer
 from .models import Persona, Cargo, Empleado, SesionAplicacion
+from django.contrib.auth import get_user_model
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.permissions import AllowAny
@@ -27,7 +28,7 @@ from django.contrib.admin.models import LogEntry, ADDITION, CHANGE
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
-from .access import AdministratorOnly, ApplicationRolePermission, effective_role, roles_for
+from .access import AdministratorOnly, ApplicationRolePermission, ROLE_NAMES, effective_role, roles_for, tiene_capacidad_personalizada
 from .authentication import ApplicationTokenObtainSerializer
 from .audit import record_action
 
@@ -70,6 +71,16 @@ class LogoutView(APIView):
         except TokenError:
             return Response({'detail': 'El token de renovación no es válido.'}, status=status.HTTP_400_BAD_REQUEST)
         token.blacklist()
+        # A registration may have completed between device cleanup and logout.
+        # Retire only devices most recently registered by this session.
+        from finanzas.models import ProcedenciaFCM
+        from fcm_django.models import FCMDevice
+        get_user_model().objects.select_for_update().get(pk=request.user.pk)
+        device_ids = ProcedenciaFCM.objects.filter(sesion=session).values_list('dispositivo_id', flat=True)
+        for device in FCMDevice.objects.select_for_update().filter(pk__in=device_ids, user=request.user, active=True).order_by('pk'):
+            device.active = False
+            device.save(update_fields=['active'])
+            record_action(request.user, device, 'Dispositivo de notificaciones desactivado al cerrar sesión.', CHANGE)
         session.revocada = timezone.now()
         session.save(update_fields=['revocada'])
         record_action(request.user, request.user, 'Cierre de sesión', CHANGE)
@@ -85,9 +96,13 @@ class CurrentUserView(APIView):
             raise PermissionDenied('La cuenta no tiene un rol o perfil autorizado.')
         persona = getattr(request.user, 'persona', None)
         empleado = getattr(request.user, 'empleado', None)
-        return Response({'id': request.user.pk, 'username': request.user.username,
-                         'role': role, 'persona_id': getattr(persona, 'pk', None),
-                         'empleado_id': getattr(empleado, 'pk', None)})
+        result = {'id': request.user.pk, 'username': request.user.username,
+                  'role': role, 'persona_id': getattr(persona, 'pk', None),
+                  'empleado_id': getattr(empleado, 'pk', None)}
+        if role == 'personalizado':
+            result['capacidades'] = (['visitas.consultar_operativas'] if tiene_capacidad_personalizada(request.user, 'visitas.consultar_operativas') else [])
+            result['rol_nombre'] = request.user.asignacion_rol_personalizado.rol.nombre
+        return Response(result)
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -148,7 +163,10 @@ class RolViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         list(Group.objects.select_for_update().filter(name__iexact='administrador'))
-        if request.user.groups.filter(pk=self.get_object().pk).exists():
+        group = self.get_object()
+        if ROLE_NAMES.get(group.name.strip().casefold()):
+            raise PermissionDenied('Los roles predeterminados no se pueden editar.')
+        if request.user.groups.filter(pk=group.pk).exists():
             raise PermissionDenied('No puede modificar su propio rol.')
         return super().update(request, *args, **kwargs)
 

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { crearEvento, listarEventos, listarHistorialEvento, revisarEvento, atenderEvento } from '../api/notificacionesApi.js';
 import { useSession } from '../auth/sessionContext.js';
+import CamaraDemostracion from './CamaraDemostracion.jsx';
+import VideoArchivoDemostracion from './VideoArchivoDemostracion.jsx';
 
 export default function EventosSeguridadPage() {
   const { user } = useSession();
@@ -70,6 +72,8 @@ export default function EventosSeguridadPage() {
     finally { setBusy(false); }
   }
   return <div className="bg-white p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold mb-4">Eventos e incidencias de seguridad</h2>
+    <CamaraDemostracion />
+    <VideoArchivoDemostracion />
     {error && <p role="alert" className="text-red-700 mb-4">{error}</p>}
     {notice && <p role="status" className="text-green-700 mb-4">{notice}</p>}
     <form onSubmit={create} className="border rounded p-4 mb-5 space-y-3">

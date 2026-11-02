@@ -6,15 +6,15 @@ from unittest.mock import patch, MagicMock
 
 from django.contrib.admin.models import LogEntry
 from django.contrib import admin as django_admin
-from django.contrib.auth.models import Group, User
-from django.db import OperationalError, transaction
+from django.contrib.auth.models import Group, Permission, User
+from django.db import IntegrityError, OperationalError, transaction
 from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 
-from administracion.models import Cargo, Empleado, Persona
+from administracion.models import AsignacionRolPersonalizado, CapacidadRolPersonalizado, Cargo, Empleado, Persona, RolPersonalizado
 from residencial.models import Inquilino, ObjetoPerdido, Visita
 from residencial.modelsVehiculo import Bloque, Unidad, Vehiculo, incidente
 from finanzas.models import contrato, expensa
@@ -53,13 +53,171 @@ class AccessTests(unittest.TestCase):
         self.expense = expensa.objects.create(unidad=self.unit, monto=30)
         self.other_expense = expensa.objects.create(unidad=self.other_unit, monto=50)
         self.incident = incidente.objects.create(descripcion='Prueba', fecha_incidente=timezone.now())
+        if type(self) is AccessTests:
+            # Las regresiones preexistentes modelan dispositivos ya validados;
+            # los casos de procedencia desconocida están en tests_procedencia.
+            from django.db.models.signals import post_save
+            from finanzas.models import ProcedenciaFCM
+            from finanzas.procedencia_fcm import huella
+            opts = override_settings(FCM_PROCEDENCIA_ACTIVA=True, FCM_PROYECTO_ID='proyecto-ficticio')
+            opts.enable(); self.addCleanup(opts.disable)
+            app = patch('finanzas.procedencia_fcm.firebase_admin.get_app', return_value=SimpleNamespace(project_id='proyecto-ficticio'))
+            sender = patch('finanzas.procedencia_fcm.messaging.send', return_value='validacion-ficticia')
+            app.start(); sender.start(); self.addCleanup(app.stop); self.addCleanup(sender.stop)
+            def marcar_ficticio(sender, instance, created, **kwargs):
+                if created:
+                    ProcedenciaFCM.objects.create(dispositivo=instance, proyecto='proyecto-ficticio',
+                                                  token_hash=huella(instance.registration_id))
+            post_save.connect(marcar_ficticio, sender=FCMDevice, weak=False)
+            self.addCleanup(post_save.disconnect, marcar_ficticio, sender=FCMDevice)
 
     def tearDown(self):
         transaction.set_rollback(True)
         self.atomic.__exit__(None, None, None)
 
     def auth(self, user):
-        self.client.force_authenticate(user=user)
+        from administracion.models import SesionAplicacion
+        session = SesionAplicacion.objects.create(usuario=user)
+        token = AccessToken.for_user(user)
+        token['session_id'] = str(session.pk)
+        self.client.force_authenticate(user=user, token=token)
+
+    def test_custom_role_storage_starts_inactive_without_capabilities(self):
+        role = RolPersonalizado.objects.create(nombre='Operador ficticio')
+        self.assertFalse(role.activo)
+        self.assertFalse(role.capacidades.exists())
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            RolPersonalizado.objects.create(nombre='  operador ficticio  ')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            RolPersonalizado.objects.create(nombre='')
+
+    def test_custom_role_capability_is_unique_and_storage_alone_grants_no_access(self):
+        role = RolPersonalizado.objects.create(nombre='Revisor ficticio')
+        CapacidadRolPersonalizado.objects.create(rol=role, codigo='prueba.sin_implementacion')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            CapacidadRolPersonalizado.objects.create(rol=role, codigo='prueba.sin_implementacion')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            CapacidadRolPersonalizado.objects.create(rol=role, codigo='')
+        role.activo = True
+        role.save(update_fields=['activo'])
+        group = Group.objects.create(name=role.nombre)
+        self.owner.groups.set([group])
+        self.client.force_authenticate(user=None)
+        response = self.client.post('/api/login/', {'username': self.owner.username, 'password': 'Prueba1234'}, format='json')
+        self.assertEqual(response.status_code, 401)
+        self.auth(self.owner)
+        self.assertEqual(self.client.get('/api/vehiculos/').status_code, 403)
+
+    def test_existing_token_and_refresh_rejected_when_role_becomes_unknown(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.post('/api/login/', {'username': self.owner.username, 'password': 'Prueba1234'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        access, refresh = response.data['access'], response.data['refresh']
+        role = RolPersonalizado.objects.create(nombre='Otro rol ficticio', activo=True)
+        self.owner.groups.set([Group.objects.create(name=role.nombre)])
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access}')
+        self.assertEqual(self.client.get('/api/me/').status_code, 401)
+        self.client.credentials()
+        self.assertEqual(self.client.post('/api/refresh/', {'refresh': refresh}, format='json').status_code, 401)
+
+    def test_custom_roles_are_disabled_by_default(self):
+        self.auth(self.admin)
+        self.assertEqual(self.client.get('/api/roles-personalizados/').status_code, 503)
+        self.assertEqual(self.client.post('/api/roles-personalizados/', {'nombre': 'Recepción'}, format='json').status_code, 503)
+
+    @override_settings(ROLES_PERSONALIZADOS_ACTIVOS=True)
+    def test_custom_role_creation_assignment_and_visit_scope(self):
+        self.auth(self.admin)
+        path = '/api/roles-personalizados/'
+        for name in ('Administrador', ' Seguridad ', 'guardia', 'inquilino', 'personalizado'):
+            self.assertEqual(self.client.post(path, {'nombre': name}, format='json').status_code, 400)
+        self.assertEqual(self.client.post(path, {'nombre': 'Recepción', 'consultar_visitas': True}, format='json').status_code, 400)
+        response = self.client.post(path, {'nombre': 'Recepción'}, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        role_id = response.data['id']
+        self.assertFalse(response.data['activo'])
+        self.assertFalse(response.data['consultar_visitas'])
+        self.assertEqual(self.client.post(path, {'nombre': '  RECEPCIÓN  '}, format='json').status_code, 400)
+        role_path = f'{path}{role_id}/'
+        self.assertEqual(self.client.post(role_path + 'asignar/', {'usuario_id': self.guard.pk}, format='json').status_code, 400)
+        self.assertEqual(self.client.patch(role_path, {'activo': True, 'desconocido': True}, format='json').status_code, 400)
+        self.assertEqual(self.client.patch(role_path, {'activo': True}, format='json').status_code, 200)
+        self.assertEqual(self.client.post(role_path + 'asignar/', {'usuario_id': self.admin.pk}, format='json').status_code, 400)
+        self.assertEqual(self.client.post(role_path + 'asignar/', {'usuario_id': self.owner.pk}, format='json').status_code, 400)
+        response = self.client.post(role_path + 'asignar/', {'usuario_id': self.guard.pk}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(self.guard.groups.exists())
+        self.assertTrue(AsignacionRolPersonalizado.objects.filter(usuario=self.guard, rol_id=role_id).exists())
+        guard_client = APIClient()
+        login = guard_client.post('/api/login/', {'username': self.guard.username, 'password': 'Prueba1234'}, format='json')
+        self.assertEqual(login.status_code, 200, login.data)
+        guard_client.credentials(HTTP_AUTHORIZATION='Bearer ' + login.data['access'])
+        self.assertEqual(guard_client.get('/api/me/').data['capacidades'], [])
+        self.assertEqual(guard_client.get('/api/visitas/').status_code, 403)
+        self.assertEqual(self.client.patch(role_path, {'consultar_visitas': True}, format='json').status_code, 200)
+        visitor = Persona.objects.create(nombre='Visita', apellido='Ficticia', sexo='F', tipo='V', CI='9090', fecha_nacimiento=date(1990, 1, 1))
+        active = Visita.objects.create(visitante=visitor, recibe_persona=self.owner_person, estado='ACTIVA', fecha_hora_entrada=timezone.now())
+        finished = Visita.objects.create(visitante=visitor, recibe_persona=self.owner_person, estado='FINALIZADA', fecha_hora_entrada=timezone.now())
+        response = guard_client.get('/api/visitas/')
+        self.assertEqual(response.status_code, 200, response.data)
+        data = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
+        self.assertEqual([item['id'] for item in data], [active.pk])
+        self.assertEqual(set(data[0]), {'id', 'estado', 'fecha_hora_entrada', 'fecha_hora_salida', 'visitante_nombre', 'recibe_persona_nombre'})
+        self.assertEqual(guard_client.get(f'/api/visitas/{active.pk}/').status_code, 200)
+        self.assertEqual(guard_client.get(f'/api/visitas/{finished.pk}/').status_code, 404)
+        self.assertEqual(guard_client.post('/api/visitas/', {}, format='json').status_code, 403)
+        self.assertEqual(guard_client.get('/api/visitas/visitantes_disponibles/').status_code, 403)
+        self.assertEqual(guard_client.get('/api/eventos-seguridad/').status_code, 403)
+        self.assertEqual(guard_client.get('/api/expensas/').status_code, 403)
+        self.assertEqual(guard_client.get('/api/roles-personalizados/').status_code, 403)
+        self.assertEqual(guard_client.post('/api/roles-personalizados/', {'nombre': 'No permitido'}, format='json').status_code, 403)
+        self.assertEqual(guard_client.patch(role_path, {'consultar_visitas': True}, format='json').status_code, 403)
+        self.assertEqual(guard_client.get('/api/devices/').status_code, 403)
+        self.assertEqual(guard_client.post('/api/devices/sincronizar/', {'registration_id': 'token-ficticio', 'type': 'android'}, format='json').status_code, 403)
+        response = guard_client.get('/api/visitas/', {'search': '9090'})
+        results = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
+        self.assertEqual(len(results), 0)
+        self.assertEqual(self.client.patch(role_path, {'consultar_visitas': False}, format='json').status_code, 200)
+        self.assertEqual(guard_client.get('/api/visitas/').status_code, 403)
+        self.assertEqual(self.client.patch(role_path, {'activo': False}, format='json').status_code, 200)
+        self.assertEqual(guard_client.get('/api/me/').status_code, 401)
+        self.assertEqual(guard_client.post('/api/refresh/', {'refresh': login.data['refresh']}, format='json').status_code, 401)
+        self.assertTrue(LogEntry.objects.filter(user_id=self.admin.pk, object_id=str(self.guard.pk)).exists())
+
+    @override_settings(ROLES_PERSONALIZADOS_ACTIVOS=True)
+    def test_custom_assignment_rejects_admin_with_multiple_groups_and_rolls_back_on_audit_failure(self):
+        self.auth(self.admin)
+        role = RolPersonalizado.objects.create(nombre='Operador ficticio', activo=True)
+        path = f'/api/roles-personalizados/{role.pk}/asignar/'
+        self.guard.groups.add(self.groups['administrador'])
+        self.assertEqual(self.client.post(path, {'usuario_id': self.guard.pk}, format='json').status_code, 400)
+        self.guard.groups.remove(self.groups['administrador'])
+        device = FCMDevice.objects.create(user=self.guard, registration_id='token-ficticio-de-prueba', type='android', active=False)
+        self.assertEqual(self.client.post(path, {'usuario_id': self.guard.pk}, format='json').status_code, 400)
+        device.delete()
+        with patch('administracion.roles_personalizados.record_action', side_effect=RuntimeError('error simulado')):
+            with self.assertRaises(RuntimeError):
+                self.client.post(path, {'usuario_id': self.guard.pk}, format='json')
+        self.assertTrue(self.guard.groups.filter(pk=self.groups['Seguridad'].pk).exists())
+        self.assertFalse(AsignacionRolPersonalizado.objects.filter(usuario=self.guard).exists())
+
+    @override_settings(ROLES_PERSONALIZADOS_ACTIVOS=True)
+    def test_custom_role_creation_rolls_back_if_audit_fails(self):
+        self.auth(self.admin)
+        with patch('administracion.roles_personalizados.record_action', side_effect=RuntimeError('error simulado')):
+            with self.assertRaises(RuntimeError):
+                self.client.post('/api/roles-personalizados/', {'nombre': 'Temporal ficticio'}, format='json')
+        self.assertFalse(RolPersonalizado.objects.filter(nombre='Temporal ficticio').exists())
+
+    @override_settings(ROLES_PERSONALIZADOS_ACTIVOS=True)
+    def test_changing_custom_account_to_builtin_removes_custom_assignment(self):
+        self.auth(self.admin)
+        role = RolPersonalizado.objects.create(nombre='Operador ficticio', activo=True)
+        self.guard.groups.clear()
+        AsignacionRolPersonalizado.objects.create(usuario=self.guard, rol=role)
+        response = self.client.patch(f'/api/users/{self.guard.pk}/', {'role_id': self.groups['Seguridad'].pk}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(AsignacionRolPersonalizado.objects.filter(usuario=self.guard).exists())
 
     def test_anonymous_sensitive_endpoints_are_denied(self):
         for path in ('users/', 'roles/', 'personas/', 'vehiculos/', 'visitas/',
@@ -431,6 +589,43 @@ class AccessTests(unittest.TestCase):
         response = self.client.post('/api/roles/', {'name': 'guardia de seguridad', 'permission_ids': []}, format='json')
         self.assertEqual(response.status_code, 400)
 
+    def test_predefined_roles_cannot_be_modified_through_api(self):
+        self.auth(self.admin)
+        permission = Permission.objects.first()
+        self.assertIsNotNone(permission)
+        for group in self.groups.values():
+            group.permissions.add(permission)
+            before = set(group.permissions.values_list('pk', flat=True))
+            for method, data in [('patch', {'permission_ids': []}),
+                                 ('put', {'name': group.name, 'permission_ids': []}),
+                                 ('patch', {'name': 'otro-nombre'})]:
+                with self.subTest(group=group.name, method=method, data=data):
+                    response = getattr(self.client, method)(f'/api/roles/{group.pk}/', data, format='json')
+                    self.assertEqual(response.status_code, 403, response.data)
+                    group.refresh_from_db()
+                    self.assertEqual(set(group.permissions.values_list('pk', flat=True)), before)
+            self.assertEqual(self.client.delete(f'/api/roles/{group.pk}/').status_code, 405)
+
+    def test_missing_role_requires_explicit_creation_and_has_no_technical_permissions(self):
+        self.auth(self.admin)
+        tenant_group = self.groups['inquilino']
+        tenant_group.name = 'grupo-antiguo'
+        tenant_group.save()
+        permission = Permission.objects.first()
+        response = self.client.post('/api/roles/', {'name': 'inquilino', 'permission_ids': [permission.pk]}, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(Group.objects.filter(name='inquilino').exists())
+        response = self.client.post('/api/roles/', {'name': 'inquilino', 'permission_ids': []}, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        group = Group.objects.get(name='inquilino')
+        self.assertFalse(group.permissions.exists())
+        self.assertTrue(LogEntry.objects.filter(user_id=self.admin.pk, object_id=str(group.pk)).exists())
+        response = self.client.patch(f'/api/users/{self.tenant.pk}/', {'role_id': group.pk}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.auth(self.tenant)
+        self.assertEqual(self.client.get('/api/me/').data['role'], 'inquilino')
+        self.assertEqual(self.client.post('/api/roles/', {'name': 'otro', 'permission_ids': []}, format='json').status_code, 403)
+
     def test_admin_role_change_is_recorded_and_changes_authorization(self):
         self.auth(self.admin)
         response = self.client.patch(f'/api/users/{self.owner.pk}/',
@@ -464,6 +659,16 @@ class AccessTests(unittest.TestCase):
             self.assertEqual(send.call_count, 1)
             ObjetoPerdido.objects.create(titulo='Objeto de prueba', foto='https://example.test/imagen.jpg')
             self.assertEqual(send.call_count, 2)
+
+    @override_settings(ENVIO_FCM_LEGADO_ACTIVO=False)
+    def test_legacy_push_can_be_paused_without_losing_expenses_or_objects(self):
+        FCMDevice.objects.create(user=self.owner, registration_id='token-legacy-ficticio', type='android', active=True)
+        with patch('fcm_django.models.FCMDeviceQuerySet.send_message') as send:
+            expense = expensa.objects.create(unidad=self.unit, monto=99)
+            item = ObjetoPerdido.objects.create(titulo='Objeto de prueba', foto='https://example.test/imagen.jpg')
+            send.assert_not_called()
+        self.assertTrue(expensa.objects.filter(pk=expense.pk).exists())
+        self.assertTrue(ObjetoPerdido.objects.filter(pk=item.pk).exists())
 
     def test_expense_notification_skips_ambiguous_active_contracts(self):
         contrato.objects.create(propietario=self.other_person, unidad=self.unit,
@@ -756,7 +961,9 @@ class AccessTests(unittest.TestCase):
         self.assertEqual(device.user_id, self.other.pk)
         self.assertTrue(device.active)
         response = self.client.post('/api/devices/', {'registration_id': 'token-prueba-propio', 'type': 'android'}, format='json')
-        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.status_code, 400, response.data)
+        response = self.client.post('/api/devices/sincronizar/', {'registration_id': 'token-prueba-propio', 'type': 'android'}, format='json')
+        self.assertEqual(response.status_code, 204, response.data)
         response = self.client.patch('/api/devices/token-prueba-propio/', {'registration_id': device.registration_id}, format='json')
         self.assertEqual(response.status_code, 400)
         device.refresh_from_db()
@@ -821,14 +1028,15 @@ class AccessTests(unittest.TestCase):
         self.auth(self.guard)
         token = 'token-legado-ficticio'
         initial = LogEntry.objects.count()
-        self.assertEqual(self.client.post('/api/devices/', {'registration_id': token, 'type': 'android'}, format='json').status_code, 201)
-        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 200)
-        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 200)
+        self.assertEqual(self.client.post('/api/devices/', {'registration_id': token, 'type': 'android'}, format='json').status_code, 400)
+        self.assertEqual(self.client.post('/api/devices/sincronizar/', {'registration_id': token, 'type': 'android'}, format='json').status_code, 204)
+        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 400)
+        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 400)
         self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'registration_id': 'otro-token'}, format='json').status_code, 400)
         self.assertEqual(self.client.delete(f'/api/devices/{token}/').status_code, 204)
         self.assertEqual(self.client.delete(f'/api/devices/{token}/').status_code, 204)
         entries = list(LogEntry.objects.order_by('pk')[initial:])
-        self.assertEqual(len(entries), 3)
+        self.assertEqual(len(entries), 2)
         self.assertTrue(all(token not in entry.object_repr + entry.change_message for entry in entries))
         device = FCMDevice.objects.get(registration_id=token)
         self.assertFalse(device.active)
@@ -843,8 +1051,7 @@ class AccessTests(unittest.TestCase):
         device = FCMDevice.objects.create(user=self.guard, registration_id='rollback-legado', type='android', active=True)
         self.auth(self.guard)
         with patch('finanzas.devices.record_action', side_effect=RuntimeError('simulated')):
-            with self.assertRaises(RuntimeError):
-                self.client.patch('/api/devices/rollback-legado/', {'name': 'Prueba'}, format='json')
+            self.assertEqual(self.client.patch('/api/devices/rollback-legado/', {'name': 'Prueba'}, format='json').status_code, 400)
             with self.assertRaises(RuntimeError):
                 self.client.delete('/api/devices/rollback-legado/')
         device.refresh_from_db()

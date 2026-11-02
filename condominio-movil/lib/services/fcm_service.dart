@@ -4,12 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'auth_service.dart';
 import 'fcm_device_registration.dart';
+import 'fcm_startup.dart';
+import 'fcm_error_code.dart';
 import '../security/security_notification_navigation.dart';
 import '../config/app_environment.dart';
+import '../security/access_policy.dart';
 
 class FCMService {
   static Future<void> _pendingRegistration = Future.value();
   static bool _registrationsPaused = false;
+  static final FcmStartup _startup = FcmStartup();
 
   static void allowRegistration() { _registrationsPaused = false; }
 
@@ -33,52 +37,38 @@ class FCMService {
   // Inicializar el servicio de FCM
   static Future<void> initialize() async {
     if (AppEnvironment.isolated) return;
-    try {
-      // Inicializar notificaciones locales
-      await _initializeLocalNotifications();
-      
-      // Solicitar permisos
-      NotificationSettings settings = await _firebaseMessaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-
-      debugPrint('Permisos de notificación: ${settings.authorizationStatus}');
-
-      // Obtener el token FCM con manejo de errores
-      try {
-        String? token = await _firebaseMessaging.getToken();
+    await _startup.start(
+      initializeLocal: _initializeLocalNotifications,
+      installMessageHandlers: _configureMessageHandlers,
+      installTokenRefresh: () {
+        _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+          final token = await AuthService.getToken();
+          if (token != null) await registerDevice(newToken);
+        }).onError((_) {
+          debugPrint('No se pudo actualizar el registro de notificaciones.');
+        });
+      },
+      requestPermission: () async {
+        final settings = await _firebaseMessaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
+        debugPrint('Permisos de notificación: ${settings.authorizationStatus}');
+      },
+      obtainAndRegister: () async {
+        final token = await _firebaseMessaging.getToken();
         if (token != null) {
           // Conservar el registro anterior hasta que el servidor confirme.
           if (await AuthService.getToken() != null) await registerDevice(token);
         }
-      } catch (_) {
-        debugPrint('No se pudo obtener el token de notificaciones.');
-        debugPrint('La app continuará sin notificaciones push');
-      }
-
-      // Escuchar cambios en el token
-      _firebaseMessaging.onTokenRefresh.listen((newToken) async {
-        // Intentar registrar el nuevo token si el usuario está autenticado
-        final token = await AuthService.getToken();
-        if (token != null) {
-          await registerDevice(newToken);
-        }
-      }).onError((_) {
-        debugPrint('No se pudo actualizar el registro de notificaciones.');
-      });
-
-      // Configurar handlers de mensajes
-      _configureMessageHandlers();
-    } catch (_) {
-      debugPrint('No se pudo inicializar el servicio de notificaciones.');
-      debugPrint('La aplicación continuará sin notificaciones push');
-    }
+      },
+      onError: (error) => debugPrint('No se pudo inicializar el servicio de notificaciones: ${fcmErrorCode(error)}.'),
+    );
   }
 
   // Configurar los handlers de mensajes
@@ -187,8 +177,15 @@ class FCMService {
   static Future<bool> registerDevice(String fcmToken) => _serialize(() async {
     if (AppEnvironment.isolated) return false;
     if (_registrationsPaused) return false;
+    final access = await AuthService.getAccessToken();
+    if (access == null) return false;
+    final profile = await AuthService.getUserProfile();
+    if (await AuthService.getAccessToken() != access || profile['success'] != true || !puedeRegistrarNotificaciones(profile['data'] as Map<String, dynamic>?)) return false;
     final platform = defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
-    return FcmDeviceRegistration().synchronize(fcmToken, platform);
+    return FcmDeviceRegistration(readAccess: () async {
+      final current = await AuthService.getAccessToken();
+      return current == access ? current : null;
+    }).synchronize(fcmToken, platform);
   });
 
   // Actualizar el dispositivo en el backend
@@ -200,7 +197,19 @@ class FCMService {
   static Future<bool> unregisterDevice() {
     if (AppEnvironment.isolated) return Future.value(true);
     _registrationsPaused = true;
-    return _serialize(() => FcmDeviceRegistration().unregister());
+    return _serialize(() async {
+      final access = await AuthService.getAccessToken();
+      if (access == null) return false;
+      final profile = await AuthService.getUserProfile();
+      if (await AuthService.getAccessToken() != access || profile['success'] != true) return false;
+      final user = profile['data'] as Map<String, dynamic>?;
+      if (user?['role'] == 'personalizado') return true;
+      if (!puedeRegistrarNotificaciones(user)) return false;
+      return FcmDeviceRegistration(readAccess: () async {
+        final current = await AuthService.getAccessToken();
+        return current == access ? current : null;
+      }).unregister();
+    });
   }
 
   // Obtener el token FCM actual
@@ -208,8 +217,8 @@ class FCMService {
     if (AppEnvironment.isolated) return null;
     try {
       return await _firebaseMessaging.getToken();
-    } catch (_) {
-      debugPrint('No se pudo obtener el token de notificaciones.');
+    } catch (error) {
+      debugPrint('No se pudo obtener el token de notificaciones: ${fcmErrorCode(error)}.');
       return null;
     }
   }

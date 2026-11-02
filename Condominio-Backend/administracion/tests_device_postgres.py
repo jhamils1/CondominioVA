@@ -5,6 +5,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import close_old_connections, connection
 from fcm_django.models import FCMDevice
 from rest_framework.test import APIClient
@@ -17,6 +18,9 @@ class DeviceRaceTests(unittest.TestCase):
         suffix = uuid.uuid4().hex
         self.a = get_user_model().objects.create_user(username='a_' + suffix)
         self.b = get_user_model().objects.create_user(username='b_' + suffix)
+        group, _ = Group.objects.get_or_create(name='administrador')
+        self.a.groups.add(group)
+        self.b.groups.add(group)
         self.token = 'ficticio_' + suffix
 
     def race(self, actions, force_empty_lookup=False):
@@ -36,7 +40,12 @@ class DeviceRaceTests(unittest.TestCase):
                 return result
             try:
                 client = APIClient()
-                client.force_authenticate(user=action[0])
+                from administracion.models import SesionAplicacion
+                from rest_framework_simplejwt.tokens import AccessToken
+                session = SesionAplicacion.objects.create(usuario=action[0])
+                token = AccessToken.for_user(action[0])
+                token['session_id'] = str(session.pk)
+                client.force_authenticate(user=action[0], token=token)
                 start.wait()
                 with connection.execute_wrapper(wrapper):
                     if action[1] == 'delete':

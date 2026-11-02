@@ -23,7 +23,7 @@ export const fetchAllRoles = async () => {
   try {
     const response = await apiClient.get('roles/');
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error('Error al obtener los roles.');
   }
 };
@@ -33,7 +33,7 @@ export const fetchRolById = async (rolId) => {
   try {
     const response = await apiClient.get(`roles/${rolId}/`);
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error('Error al obtener el rol.');
   }
 };
@@ -69,7 +69,7 @@ export const updateRol = async (rolId, rolData) => {
 export const deleteRol = async (rolId) => {
   try {
     await apiClient.delete(`roles/${rolId}/`);
-  } catch (error) {
+  } catch {
     throw new Error('Error al eliminar el rol.');
   }
 };
@@ -79,7 +79,12 @@ export const fetchAllPermissions = async () => {
   try {
     const response = await apiClient.get('permissions/');
     return response.data;
-  } catch (error) {
+  } catch {
     throw new Error('Error al obtener los permisos.');
   }
 };
+
+export const fetchCustomRoles = async () => (await apiClient.get('roles-personalizados/')).data;
+export const createCustomRole = async nombre => (await apiClient.post('roles-personalizados/', { nombre })).data;
+export const updateCustomRole = async (id, data) => (await apiClient.patch(`roles-personalizados/${id}/`, data)).data;
+export const assignCustomRole = async (id, usuarioId) => (await apiClient.post(`roles-personalizados/${id}/asignar/`, { usuario_id: Number(usuarioId) })).data;

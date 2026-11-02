@@ -80,6 +80,9 @@ class _PerfilPageState extends State<PerfilPage> {
   Widget build(BuildContext context) {
     final username = userData?["username"] ?? "Sin sesión verificada";
     final role = userData?["role"] as String?;
+    final capabilities = userData?['capacidades'] is List ? userData!['capacidades'] as List<dynamic> : null;
+    final roleName = role == 'personalizado' && userData?['rol_nombre'] is String
+        ? userData!['rol_nombre'] as String : nombreRol(role);
 
     return Scaffold(
       onDrawerChanged: (open) {
@@ -104,7 +107,7 @@ class _PerfilPageState extends State<PerfilPage> {
           children: [
             UserAccountsDrawerHeader(
               accountName: Text(username),
-              accountEmail: Text(nombreRol(role)),
+              accountEmail: Text(roleName),
               currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Icon(Icons.person, size: 40, color: Colors.deepPurple),
@@ -128,6 +131,14 @@ class _PerfilPageState extends State<PerfilPage> {
               },
             ),
             const Divider(),
+            if (puedeAcceder(role, '/visitas-operativas', capabilities)) ListTile(
+              leading: const Icon(Icons.people_outline),
+              title: const Text('Visitas pendientes y activas'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/visitas-operativas');
+              },
+            ),
             if (puedeAcceder(role, '/alertas-seguridad')) ListTile(
               leading: const Icon(Icons.notifications_active),
               title: const Text('Alertas de seguridad'),
@@ -230,7 +241,7 @@ class _PerfilPageState extends State<PerfilPage> {
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
-                      Text("Rol: ${nombreRol(role)}"),
+                      Text("Rol: $roleName"),
                     ],
                   ),
                 ),

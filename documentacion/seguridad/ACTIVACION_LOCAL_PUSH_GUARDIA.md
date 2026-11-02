@@ -1,0 +1,19 @@
+# Activación local de push de seguridad para el guardia
+
+Fecha: 2026-11-01 (America/La Paz). El usuario pidió reintentar la instalación, inició sesión con la cuenta de guardia de prueba y autorizó continuar la puesta en marcha.
+
+La APK habitual debug se instaló en el teléfono después de un primer rechazo de Android. Se configuró ADB para dirigir el puerto 8001 del teléfono al puerto 8000 del backend local. La cuenta de guardia inició sesión; inicialmente Firebase no entregó el identificador necesario y el servidor no recibió ninguna solicitud de sincronización. La configuración Flutter y la configuración Android se compararon sin mostrar valores y coincidían en proyecto, aplicación, remitente y clave pública.
+
+Para diagnosticar el error se añadió un clasificador de códigos que solo registra una lista limitada de errores conocidos o `NO_CATALOGADO`; no imprime mensajes arbitrarios, credenciales ni identificadores. Pasaron dos pruebas del clasificador, cinco de inicio y el análisis estático. Una primera compilación conservó una instantánea antigua; se verificó el contenido del APK, se retiraron únicamente los directorios generados de compilación y se reconstruyó. El primer intento de limpieza quedó parcial por límites de ruta de Windows; se verificó la ruta y se completó con soporte de rutas largas. Se confirmó que el nuevo APK contenía el diagnóstico, se actualizó la aplicación con `adb install -r` y se abrió nuevamente. Después el registro se completó: un dispositivo del guardia de prueba quedó validado para el proyecto Firebase propio y ningún dispositivo de otras cuentas quedó validado. No se reasignaron los dos dispositivos anteriores.
+
+Se habilitaron los indicadores de cola y envío FCM de seguridad tras verificar que no había entregas pendientes y que el único dispositivo validado correspondía al guardia de prueba. La bandeja y la validación de procedencia ya estaban activas. Se reinició el servidor local identificado en `127.0.0.1:8000` y se inició en segundo plano el procesador `procesar_fcm_seguridad --continuo --intervalo 5`. Su inicio se confirmó y no se observaron errores iniciales. Los avisos push de expensas y objetos perdidos siguen pausados.
+
+Se envió un único mensaje rotulado «Prueba de seguridad» directamente mediante Firebase Admin al único dispositivo validado, usando la referencia de una notificación propia existente para abrir la bandeja. No se creó ninguna incidencia ni notificación nueva en la base. Firebase aceptó el mensaje; el usuario confirmó que lo recibió y que al tocarlo se abrió «Alertas de seguridad».
+
+## Alcance y operación
+
+La prueba directa confirma Firebase, el teléfono y la apertura en la app habitual. **No prueba el recorrido completo de una incidencia real por la cola y el procesador en esta base**: no se creó un evento ficticio persistente. Ese recorrido se probó previamente en un backend y base aislados; el procesador continuo tiene cuatro pruebas unitarias con proveedores simulados. Se comprobó además que la cola de la base local no tenía entregas pendientes al activar.
+
+El servidor y el procesador actuales son procesos locales en segundo plano, sin supervisión ni inicio automático con Windows. Deben seguir ejecutándose para usar el sistema y deben reiniciarse si se detienen o se reinicia la computadora. El enlace USB 8001→8000 debe restablecerse si se desconecta el teléfono. La APK es debug de uso local; para otra red o despliegue se requiere configuración apropiada. Firebase Cloud Messaging necesita conectividad.
+
+El sistema de cámaras e IA aún no genera automáticamente eventos; la disponibilidad del push no demuestra detección por video. Los cambios y las migraciones del repositorio permanecen sin commit. Los dos dispositivos previos de procedencia desconocida no recibirán envíos hasta que se validen para el proyecto correspondiente; no se transfirieron a otra cuenta.

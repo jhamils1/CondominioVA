@@ -33,7 +33,7 @@ export default function ConsultaPage({ resource }) {
     return () => { cancelled = true; };
   }, [endpoint, version]);
   return <div className="bg-white p-6 rounded-lg shadow-md">
-    <h2 className="text-2xl font-semibold mb-4">{title}</h2>
+    <h2 className="text-2xl font-semibold mb-4">{resource === 'visitas' && user.role === 'personalizado' ? 'Visitas pendientes y activas' : title}</h2>
     {resource === 'unidades' && user.role === 'inquilino' && <p className="mb-4 text-gray-600">La unidad estará disponible cuando se registre tu ocupación.</p>}
     {resource === 'visitas' && user.role === 'inquilino' && <p className="mb-4 text-gray-600">Las visitas estarán disponibles cuando se pueda verificar tu ocupación.</p>}
     {loading ? <p>Cargando…</p> : error ? <p role="alert" className="text-red-700">{error}</p> : items.length === 0 ? <p>No hay registros disponibles.</p> :

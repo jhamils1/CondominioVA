@@ -2,6 +2,7 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 from .api_notificaciones import EventoViewSet, NotificacionViewSet
+from .api_camara_demo import CamaraAnalizarDemo, CamaraEstadoDemo
 from .views import AlprScanView, ReconocimientoGlobalView, EnrolarPersonaView, VerificarEnrolamientoView, VerificarLuxandAPIView, ProbarLuxandView
 
 router = SimpleRouter()
@@ -9,6 +10,8 @@ router.register('eventos-seguridad', EventoViewSet, basename='eventos-seguridad'
 router.register('notificaciones-seguridad', NotificacionViewSet, basename='notificaciones-seguridad')
 
 urlpatterns = [
+    path('vision-camara/estado/', CamaraEstadoDemo.as_view(), name='vision-camara-estado'),
+    path('vision-camara/analizar/', CamaraAnalizarDemo.as_view(), name='vision-camara-analizar'),
     path('', include(router.urls)),
     path("alpr/", AlprScanView.as_view(), name="alpr-scan"),
     path("reconocimiento/", ReconocimientoGlobalView.as_view(), name="reconocimiento-global"),

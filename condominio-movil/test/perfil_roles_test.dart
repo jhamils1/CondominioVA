@@ -42,6 +42,23 @@ void main() {
     expect(find.text('Áreas Comunes'), findsOneWidget);
   });
 
+  testWidgets('rol personalizado ve visitas solo cuando tiene capacidad', (tester) async {
+    Future<Map<String, dynamic>> custom() async => {'success': true, 'data': {
+      'id': 12, 'username': 'usuario_prueba', 'role': 'personalizado',
+      'rol_nombre': 'Recepción', 'capacidades': ['visitas.consultar_operativas'],
+    }};
+    await tester.pumpWidget(MaterialApp(home: PerfilPage(
+      isDark: false, onToggleTheme: () {}, cargarPerfil: custom,
+    )));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Visitas pendientes y activas'), findsOneWidget);
+    expect(find.text('Alertas de seguridad'), findsNothing);
+    expect(find.text('Mis Expensas'), findsNothing);
+    expect(find.text('Editar Perfil'), findsNothing);
+  });
+
   testWidgets('administrador ve el dashboard financiero', (tester) async {
     await showMenu(tester, 'administrador');
     await tester.drag(find.byType(ListView), const Offset(0, -500));

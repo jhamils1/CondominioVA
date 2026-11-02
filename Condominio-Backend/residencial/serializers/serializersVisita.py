@@ -65,3 +65,14 @@ class VisitaResidenteSerializer(serializers.ModelSerializer):
         model = Visita
         fields = ['id', 'estado', 'fecha_hora_entrada', 'fecha_hora_salida',
                   'visitante', 'visitante_nombre', 'recibe_persona', 'fecha_registro']
+
+
+class VisitaOperativaSerializer(serializers.ModelSerializer):
+    visitante_nombre = serializers.CharField(source='visitante.nombre_completo', read_only=True)
+    recibe_persona_nombre = serializers.CharField(source='recibe_persona.nombre_completo', read_only=True)
+
+    class Meta:
+        model = Visita
+        fields = ['id', 'estado', 'fecha_hora_entrada', 'fecha_hora_salida',
+                  'visitante_nombre', 'recibe_persona_nombre']
+        read_only_fields = fields

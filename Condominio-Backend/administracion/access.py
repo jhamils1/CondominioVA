@@ -1,5 +1,6 @@
 """Application roles and data scopes; Django's staff flags are separate."""
 from rest_framework.permissions import BasePermission
+from django.conf import settings
 
 
 ROLE_NAMES = {
@@ -19,9 +20,26 @@ def assigned_role(user):
     if persona and persona.tipo in ('F', 'V'):
         return None
     names = list(user.groups.values_list('name', flat=True))
+    if len(names) == 0 and getattr(settings, 'ROLES_PERSONALIZADOS_ACTIVOS', False):
+        if user.is_staff or user.is_superuser or persona:
+            return None
+        employee = getattr(user, 'empleado', None)
+        if not employee or employee.estado != 'A':
+            return None
+        from administracion.models import AsignacionRolPersonalizado
+        if AsignacionRolPersonalizado.objects.filter(usuario=user, rol__activo=True).exists():
+            return 'personalizado'
     if len(names) != 1:
         return None
     return ROLE_NAMES.get(names[0].strip().casefold())
+
+
+def tiene_capacidad_personalizada(user, codigo):
+    if assigned_role(user) != 'personalizado':
+        return False
+    from administracion.models import CapacidadRolPersonalizado
+    return CapacidadRolPersonalizado.objects.filter(
+        rol__asignaciones__usuario=user, rol__activo=True, codigo=codigo).exists()
 
 
 def effective_role(user):

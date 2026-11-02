@@ -5,6 +5,17 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+class ProcedenciaFCM(models.Model):
+    """Resultado de validación del servidor; no almacena el token."""
+    dispositivo = models.OneToOneField('fcm_django.FCMDevice', on_delete=models.CASCADE,
+                                      related_name='procedencia_condominio')
+    proyecto = models.CharField(max_length=128)
+    token_hash = models.CharField(max_length=64)
+    sesion = models.ForeignKey('administracion.SesionAplicacion', null=True, blank=True,
+                               on_delete=models.SET_NULL, related_name='dispositivos_fcm')
+    validado_en = models.DateTimeField(auto_now=True)
+
+
 class contrato(models.Model):
     ESTADO_CHOICES = [
         ('A', 'Activo'),

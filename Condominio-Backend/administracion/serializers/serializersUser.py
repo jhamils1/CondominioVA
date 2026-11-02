@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User, Group
+from django.conf import settings
 from administracion.access import ROLE_NAMES, assigned_role
 
 class GroupAuxSerializer(serializers.ModelSerializer):
@@ -29,7 +30,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_role(self, obj):
         names = list(obj.groups.values_list('name', flat=True))
-        return names[0] if len(names) == 1 else None
+        return names[0] if len(names) == 1 else ('personalizado' if assigned_role(obj) == 'personalizado' else None)
 
     def validate_username(self, value):
         if " " in value:
@@ -95,5 +96,8 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(validated_data.pop('password'))
         instance = super().update(instance, validated_data)
         if group_data is not None:
+            if getattr(settings, 'ROLES_PERSONALIZADOS_ACTIVOS', False):
+                from administracion.models import AsignacionRolPersonalizado
+                AsignacionRolPersonalizado.objects.filter(usuario=instance).delete()
             instance.groups.set([group_data])
         return instance

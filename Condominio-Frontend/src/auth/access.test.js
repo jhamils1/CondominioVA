@@ -23,3 +23,12 @@ test('roles desconocidos y rutas inexistentes se rechazan', () => {
   assert.equal(roleKey(' Seguridad '), 'guardia');
   assert.equal(roleKey('Guardia de seguridad'), 'guardia');
 });
+
+test('rol personalizado solo muestra visitas cuando el backend comunica la capacidad', () => {
+  assert.equal(canAccess('personalizado', 'dashboard'), true);
+  assert.equal(canAccess('personalizado', 'visitas'), false);
+  assert.equal(canAccess('personalizado', 'visitas', ['visitas.consultar_operativas']), true);
+  for (const path of ['roles', 'usuarios', 'expensas', 'eventos-seguridad', 'notificaciones']) {
+    assert.equal(canAccess('personalizado', path, ['visitas.consultar_operativas']), false);
+  }
+});

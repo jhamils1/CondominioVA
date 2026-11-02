@@ -8,6 +8,8 @@ from django.utils import timezone
 from firebase_admin import messaging
 from fcm_django.models import FCMDevice
 from administracion.access import effective_role
+from finanzas.procedencia_fcm import (dispositivos_elegibles, elegible,
+                                     proyecto_configurado, ValidacionFCMNoDisponible)
 from .models import EntregaFCMSeguridad, EventoSeguridad
 
 MAX_INTENTOS = 5
@@ -20,12 +22,17 @@ def token_hash(value):
 
 def encolar_notificacion(notification):
     """Se ejecuta en la transacción que persiste la notificación interna."""
-    for device in FCMDevice.objects.filter(user=notification.destinatario, active=True):
+    for device in dispositivos_elegibles(FCMDevice.objects.filter(user=notification.destinatario, active=True)):
         EntregaFCMSeguridad.objects.get_or_create(notificacion=notification, dispositivo=device,
                                                   defaults={'token_hash': token_hash(device.registration_id)})
 
 
 def reservar_entrega():
+    try:
+        proyecto_configurado()
+    except ValidacionFCMNoDisponible:
+        # No consumir o cancelar pendientes mientras no exista validación fiable.
+        return None
     now = timezone.now()
     with transaction.atomic():
         queryset = EntregaFCMSeguridad.objects.filter(
@@ -57,6 +64,11 @@ def reservar_entrega():
 def procesar_reserva(delivery_id, reservation_id):
     if reservation_id is None:
         return 'FALLIDA'
+    try:
+        proyecto_configurado()
+    except ValidacionFCMNoDisponible:
+        # Se conserva la reserva hasta su vencimiento; después puede reintentarse.
+        return 'PROCEDENCIA_NO_DISPONIBLE'
     delivery = EntregaFCMSeguridad.objects.select_related('notificacion__destinatario', 'notificacion__evento', 'dispositivo').get(pk=delivery_id)
     if (delivery.estado != 'EN_PROCESO' or delivery.reserva_id != reservation_id or
             not delivery.reserva_hasta or delivery.reserva_hasta <= timezone.now()):
@@ -64,7 +76,7 @@ def procesar_reserva(delivery_id, reservation_id):
     notification, device = delivery.notificacion, delivery.dispositivo
     role = 'guardia' if notification.tipo == 'REVISION' else 'administrador'
     obsolete = notification.tipo == 'REVISION' and notification.evento.estado != EventoSeguridad.PENDIENTE
-    if (not device or not device.active or device.user_id != notification.destinatario_id or
+    if (not device or not device.active or not elegible(device) or device.user_id != notification.destinatario_id or
             effective_role(notification.destinatario) != role or obsolete or
             token_hash(device.registration_id) != delivery.token_hash):
         return finalizar(delivery_id, reservation_id, 'CANCELADA', 'DESTINATARIO_NO_VALIDO')

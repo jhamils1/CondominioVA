@@ -1,0 +1,812 @@
+--- a/Condominio-Backend/.env.example
++++ b/Condominio-Backend/.env.example
+@@ -10,3 +10,7 @@
+ ENVIO_FCM_SEGURIDAD_ACTIVO=False
+ # Durante una transición de proyecto Firebase, False pausa el push de expensas y objetos perdidos.
+ ENVIO_FCM_LEGADO_ACTIVO=True
++
++# Proveniencia FCM: activar solo tras migrar y verificar en el entorno.
++FCM_PROCEDENCIA_ACTIVA=False
++FCM_PROYECTO_ID=
+--- a/Condominio-Backend/condominioBACK/settings.py
++++ b/Condominio-Backend/condominioBACK/settings.py
+@@ -163,6 +163,9 @@
+ ENVIO_FCM_SEGURIDAD_ACTIVO = config('ENVIO_FCM_SEGURIDAD_ACTIVO', default=False, cast=bool)
+ # Permite pausar de forma explícita los avisos antiguos durante una migración FCM.
+ ENVIO_FCM_LEGADO_ACTIVO = config('ENVIO_FCM_LEGADO_ACTIVO', default=True, cast=bool)
++# Desactivado hasta migración y pruebas autorizadas; sin validación no se envía.
++FCM_PROCEDENCIA_ACTIVA = config('FCM_PROCEDENCIA_ACTIVA', default=False, cast=bool)
++FCM_PROYECTO_ID = config('FCM_PROYECTO_ID', default='')
+ 
+ CORS_ALLOW_ALL_ORIGINS = True
+ 
+--- a/Condominio-Backend/finanzas/models.py
++++ b/Condominio-Backend/finanzas/models.py
+@@ -3,6 +3,15 @@
+ from residencial.modelsVehiculo import Unidad
+ from django.utils import timezone
+ from datetime import timedelta
++
++
++class ProcedenciaFCM(models.Model):
++    """Resultado de validación del servidor; no almacena el token."""
++    dispositivo = models.OneToOneField('fcm_django.FCMDevice', on_delete=models.CASCADE,
++                                      related_name='procedencia_condominio')
++    proyecto = models.CharField(max_length=128)
++    token_hash = models.CharField(max_length=64)
++    validado_en = models.DateTimeField(auto_now=True)
+ 
+ 
+ class contrato(models.Model):
+--- /dev/null
++++ b/Condominio-Backend/finanzas/migrations/0003_procedencia_fcm.py
+@@ -0,0 +1,21 @@
++from django.db import migrations, models
++import django.db.models.deletion
++
++
++class Migration(migrations.Migration):
++    dependencies = [
++        ('finanzas', '0002_initial'),
++        ('fcm_django', '0011_fcmdevice_fcm_django_registration_id_user_id_idx'),
++    ]
++    operations = [
++        migrations.CreateModel(
++            name='ProcedenciaFCM',
++            fields=[
++                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
++                ('proyecto', models.CharField(max_length=128)),
++                ('token_hash', models.CharField(max_length=64)),
++                ('validado_en', models.DateTimeField(auto_now=True)),
++                ('dispositivo', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='procedencia_condominio', to='fcm_django.fcmdevice')),
++            ],
++        ),
++    ]
+--- /dev/null
++++ b/Condominio-Backend/finanzas/procedencia_fcm.py
+@@ -0,0 +1,71 @@
++"""Admisión FCM por proyecto; no confiar en metadatos enviados por el cliente."""
++import hashlib
++import hmac
++import firebase_admin
++from firebase_admin import exceptions, messaging
++from django.conf import settings
++from rest_framework.exceptions import APIException, ValidationError
++from .models import ProcedenciaFCM
++
++
++class ValidacionFCMNoDisponible(APIException):
++    status_code = 503
++    default_detail = 'No se puede validar el dispositivo en este momento.'
++    default_code = 'validacion_fcm_no_disponible'
++
++
++def proyecto_configurado():
++    if not getattr(settings, 'FCM_PROCEDENCIA_ACTIVA', False):
++        raise ValidacionFCMNoDisponible()
++    proyecto = getattr(settings, 'FCM_PROYECTO_ID', '').strip()
++    try:
++        app = firebase_admin.get_app()
++    except ValueError:
++        raise ValidacionFCMNoDisponible() from None
++    if not proyecto or app.project_id != proyecto:
++        raise ValidacionFCMNoDisponible()
++    return proyecto, app
++
++
++def huella(token):
++    return hashlib.sha256(token.encode('utf-8')).hexdigest()
++
++
++def validar_token(token):
++    proyecto, app = proyecto_configurado()
++    try:
++        # FCM valida sin entregar una notificación ni datos del residente.
++        messaging.send(messaging.Message(token=token, data={'tipo': 'validacion'}),
++                       dry_run=True, app=app)
++    except (messaging.UnregisteredError, messaging.SenderIdMismatchError,
++            exceptions.InvalidArgumentError, ValueError):
++        raise ValidationError({'detail': 'No se puede validar este dispositivo.'}) from None
++    except Exception:
++        # No registrar el error del proveedor, que puede contener datos sensibles.
++        raise ValidacionFCMNoDisponible() from None
++    return proyecto
++
++
++def elegible(device):
++    try:
++        proyecto, _ = proyecto_configurado()
++    except ValidacionFCMNoDisponible:
++        return False
++    if not device or not device.active:
++        return False
++    try:
++        proof = device.procedencia_condominio
++    except ProcedenciaFCM.DoesNotExist:
++        return False
++    return proof.proyecto == proyecto and hmac.compare_digest(proof.token_hash, huella(device.registration_id))
++
++
++def dispositivos_elegibles(queryset):
++    # Acotar primero por proyecto; el hash además detecta un token modificado.
++    try:
++        proyecto, _ = proyecto_configurado()
++    except ValidacionFCMNoDisponible:
++        return queryset.none()
++    candidatos = queryset.filter(active=True, procedencia_condominio__proyecto=proyecto).select_related('procedencia_condominio')
++    ids = [device.pk for device in candidatos if elegible(device)]
++    return queryset.filter(pk__in=ids, active=True, procedencia_condominio__proyecto=proyecto)
+--- a/Condominio-Backend/finanzas/devices.py
++++ b/Condominio-Backend/finanzas/devices.py
+@@ -10,6 +10,8 @@
+ from rest_framework.response import Response
+ from administracion.audit import record_action
+ from administracion.access import effective_role
++from .models import ProcedenciaFCM
++from .procedencia_fcm import huella, validar_token, proyecto_configurado
+ 
+ 
+ class DispositivoRolAdmitido(BasePermission):
+@@ -53,58 +55,15 @@
+             return queryset.select_for_update()
+         return queryset
+ 
+-    @staticmethod
+-    def estado_dispositivo(device):
+-        return (device.registration_id, device.active, device.type, device.name, device.device_id)
+-
+-    def comprobar_token(self, request):
+-        token = request.data.get('registration_id')
+-        if token and self.queryset.model.objects.select_for_update().filter(
+-                registration_id=token).exclude(user=request.user).exists():
+-            raise ValidationError({'registration_id': 'No se puede registrar este dispositivo.'})
+-
+     @transaction.atomic
+     def create(self, request, *args, **kwargs):
+-        self.bloquear_usuario(request)
+-        self.comprobar_token(request)
+-        instance = self.get_queryset().filter(registration_id=request.data.get('registration_id')).first()
+-        before = self.estado_dispositivo(instance) if instance else None
+-        serializer = self.get_serializer(instance, data=request.data)
+-        serializer.is_valid(raise_exception=True)
+-        try:
+-            with transaction.atomic():
+-                if instance:
+-                    self.perform_update(serializer)
+-                else:
+-                    self.perform_create(serializer)
+-                if instance is None:
+-                    record_action(request.user, serializer.instance, 'Dispositivo de notificaciones registrado.', ADDITION)
+-                elif before != self.estado_dispositivo(serializer.instance):
+-                    record_action(request.user, serializer.instance, 'Dispositivo de notificaciones actualizado.', CHANGE)
+-        except IntegrityError:
+-            raise ValidationError({'detail': 'No se puede registrar este dispositivo.'})
+-        return Response(serializer.data, status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED)
++        # La ruta heredada no valida proyecto: solo sincronizar puede registrar.
++        raise ValidationError({'detail': 'Utiliza la sincronización del dispositivo.'})
+ 
+     @transaction.atomic
+     def update(self, request, *args, **kwargs):
+-        self.bloquear_usuario(request)
+-        instance = self.get_object()
+-        before = self.estado_dispositivo(instance)
+-        replacement = request.data.get('registration_id')
+-        if replacement is not None and replacement != instance.registration_id:
+-            raise ValidationError({'detail': 'Para cambiar el token utiliza la sincronización del dispositivo.'})
+-        self.comprobar_token(request)
+-        partial = kwargs.pop('partial', False)
+-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+-        serializer.is_valid(raise_exception=True)
+-        try:
+-            with transaction.atomic():
+-                self.perform_update(serializer)
+-                if before != self.estado_dispositivo(serializer.instance):
+-                    record_action(request.user, serializer.instance, 'Dispositivo de notificaciones actualizado.', CHANGE)
+-        except IntegrityError:
+-            raise ValidationError({'detail': 'No se puede actualizar este dispositivo.'})
+-        return Response(serializer.data)
++        # No permitir que un cliente anterior reactive dispositivos desconocidos.
++        raise ValidationError({'detail': 'Utiliza la sincronización del dispositivo.'})
+ 
+     @transaction.atomic
+     def destroy(self, request, *args, **kwargs):
+@@ -124,6 +83,12 @@
+         data = serializer.validated_data
+         current = data['registration_id']
+         previous = data.get('previous_registration_id')
++        if effective_role(request.user) not in ('administrador', 'guardia', 'propietario', 'inquilino'):
++            raise PermissionDenied('Este rol no admite registro de dispositivos.')
++        # No consultar FCM para tokens que ya se sabe que son de otra cuenta.
++        if self.queryset.model.objects.filter(Q(registration_id=current) | Q(registration_id=previous)).exclude(user=request.user).exists():
++            raise ValidationError({'detail': 'No se puede sincronizar este dispositivo.'})
++        proyecto = validar_token(current)  # Red fuera de bloqueos/transacción.
+         try:
+             with transaction.atomic():
+                 # Serialize concurrent changes belonging to the same account.
+@@ -131,6 +96,8 @@
+                 devices = list(self.queryset.model.objects.select_for_update().filter(
+                     Q(registration_id=current) | Q(registration_id=previous)).order_by('pk'))
+                 if any(device.user_id != request.user.pk for device in devices):
++                    raise ValidationError({'detail': 'No se puede sincronizar este dispositivo.'})
++                if proyecto_configurado()[0] != proyecto:
+                     raise ValidationError({'detail': 'No se puede sincronizar este dispositivo.'})
+                 new_device = next((device for device in devices if device.registration_id == current), None)
+                 if new_device is None:
+@@ -144,6 +111,8 @@
+                     new_device.save(update_fields=['type', 'active'])
+                     if not was_active:
+                         record_action(request.user, new_device, 'Dispositivo de notificaciones reactivado.', CHANGE)
++                ProcedenciaFCM.objects.update_or_create(dispositivo=new_device,
++                    defaults={'proyecto': proyecto, 'token_hash': huella(current)})
+                 if previous and previous != current:
+                     previous_device = next((device for device in devices if device.registration_id == previous), None)
+                     if previous_device and previous_device.active:
+--- a/Condominio-Backend/finanzas/signals.py
++++ b/Condominio-Backend/finanzas/signals.py
+@@ -6,6 +6,7 @@
+ from .models import expensa
+ from django.utils import timezone
+ from administracion.access import effective_role
++from .procedencia_fcm import dispositivos_elegibles
+ import logging
+ from residencial.models import ObjetoPerdido
+ 
+@@ -52,7 +53,7 @@
+             cuerpo_msg = f"Hola {nombre_persona}, se ha generado la cuota de tu unidad {nombre_unidad} por {instance.monto} {instance.currency}."
+ 
+             # 3. Buscar dispositivos
+-            dispositivos = FCMDevice.objects.filter(user=usuario_dueno, active=True)
++            dispositivos = dispositivos_elegibles(FCMDevice.objects.filter(user=usuario_dueno, active=True))
+ 
+             if dispositivos.exists():
+                 dispositivos.send_message(
+@@ -84,7 +85,7 @@
+         try:
+             # 1. Obtenemos TODOS los dispositivos registrados en el sistema
+             # (En un condominio real, esto le avisa a todos los vecinos)
+-            dispositivos = FCMDevice.objects.all()
++            dispositivos = dispositivos_elegibles(FCMDevice.objects.all())
+             
+             if dispositivos.exists():
+                 logger.info('Procesando difusion de objeto encontrado')
+--- a/Condominio-Backend/seguridad_IA/fcm_delivery.py
++++ b/Condominio-Backend/seguridad_IA/fcm_delivery.py
+@@ -8,6 +8,8 @@
+ from firebase_admin import messaging
+ from fcm_django.models import FCMDevice
+ from administracion.access import effective_role
++from finanzas.procedencia_fcm import (dispositivos_elegibles, elegible,
++                                     proyecto_configurado, ValidacionFCMNoDisponible)
+ from .models import EntregaFCMSeguridad, EventoSeguridad
+ 
+ MAX_INTENTOS = 5
+@@ -20,12 +22,17 @@
+ 
+ def encolar_notificacion(notification):
+     """Se ejecuta en la transacción que persiste la notificación interna."""
+-    for device in FCMDevice.objects.filter(user=notification.destinatario, active=True):
++    for device in dispositivos_elegibles(FCMDevice.objects.filter(user=notification.destinatario, active=True)):
+         EntregaFCMSeguridad.objects.get_or_create(notificacion=notification, dispositivo=device,
+                                                   defaults={'token_hash': token_hash(device.registration_id)})
+ 
+ 
+ def reservar_entrega():
++    try:
++        proyecto_configurado()
++    except ValidacionFCMNoDisponible:
++        # No consumir o cancelar pendientes mientras no exista validación fiable.
++        return None
+     now = timezone.now()
+     with transaction.atomic():
+         queryset = EntregaFCMSeguridad.objects.filter(
+@@ -57,6 +64,11 @@
+ def procesar_reserva(delivery_id, reservation_id):
+     if reservation_id is None:
+         return 'FALLIDA'
++    try:
++        proyecto_configurado()
++    except ValidacionFCMNoDisponible:
++        # Se conserva la reserva hasta su vencimiento; después puede reintentarse.
++        return 'PROCEDENCIA_NO_DISPONIBLE'
+     delivery = EntregaFCMSeguridad.objects.select_related('notificacion__destinatario', 'notificacion__evento', 'dispositivo').get(pk=delivery_id)
+     if (delivery.estado != 'EN_PROCESO' or delivery.reserva_id != reservation_id or
+             not delivery.reserva_hasta or delivery.reserva_hasta <= timezone.now()):
+@@ -64,7 +76,7 @@
+     notification, device = delivery.notificacion, delivery.dispositivo
+     role = 'guardia' if notification.tipo == 'REVISION' else 'administrador'
+     obsolete = notification.tipo == 'REVISION' and notification.evento.estado != EventoSeguridad.PENDIENTE
+-    if (not device or not device.active or device.user_id != notification.destinatario_id or
++    if (not device or not device.active or not elegible(device) or device.user_id != notification.destinatario_id or
+             effective_role(notification.destinatario) != role or obsolete or
+             token_hash(device.registration_id) != delivery.token_hash):
+         return finalizar(delivery_id, reservation_id, 'CANCELADA', 'DESTINATARIO_NO_VALIDO')
+--- /dev/null
++++ b/Condominio-Backend/finanzas/tests_procedencia.py
+@@ -0,0 +1,231 @@
++"""Escenarios aislados de admisión y envío; Firebase se simula siempre."""
++import unittest
++import uuid
++from types import SimpleNamespace
++from unittest.mock import patch
++
++from django.test import override_settings
++from fcm_django.models import FCMDevice
++from firebase_admin import exceptions, messaging
++from administracion import tests_access as existing_tests
++from finanzas.models import ProcedenciaFCM
++from finanzas.procedencia_fcm import dispositivos_elegibles, huella
++from seguridad_IA.models import EntregaFCMSeguridad, NotificacionSeguridad
++
++
++class ProcedenciaTests(unittest.TestCase):
++    auth = existing_tests.AccessTests.auth
++    tearDown = existing_tests.AccessTests.tearDown
++
++    def setUp(self):
++        existing_tests.AccessTests.setUp(self)
++        options = override_settings(FCM_PROCEDENCIA_ACTIVA=True, FCM_PROYECTO_ID='proyecto-ficticio',
++            NOTIFICACIONES_SEGURIDAD_ACTIVAS=True, COLA_FCM_SEGURIDAD_ACTIVA=True)
++        options.enable()
++        self.addCleanup(options.disable)
++        self.auth(self.guard)
++        self.app = SimpleNamespace(project_id='proyecto-ficticio')
++        self.app_patch = patch('finanzas.procedencia_fcm.firebase_admin.get_app', return_value=self.app)
++        self.send_patch = patch('finanzas.procedencia_fcm.messaging.send', return_value='aceptado-ficticio')
++        self.app_patch.start()
++        self.send = self.send_patch.start()
++        self.addCleanup(self.app_patch.stop)
++        self.addCleanup(self.send_patch.stop)
++
++    def sync(self, token, previous=None):
++        return self.client.post('/api/devices/sincronizar/',
++            {'registration_id': token, 'previous_registration_id': previous, 'type': 'android'}, format='json')
++
++    def proof(self, device, project='proyecto-ficticio', digest=None):
++        return ProcedenciaFCM.objects.create(dispositivo=device, proyecto=project,
++            token_hash=digest or huella(device.registration_id))
++
++    def test_procedencia_valida_en_servidor_y_rota_solo_el_propio(self):
++        old = FCMDevice.objects.create(user=self.guard, registration_id='anterior', type='android', active=True)
++        response = self.sync('nuevo', 'anterior')
++        self.assertEqual(response.status_code, 204)
++        self.send.assert_called_once()
++        self.assertTrue(self.send.call_args.kwargs['dry_run'])
++        self.assertIs(self.send.call_args.kwargs['app'], self.app)
++        self.assertEqual(self.send.call_args.args[0].data, {'tipo': 'validacion'})
++        old.refresh_from_db(); self.assertFalse(old.active)
++        new = FCMDevice.objects.get(registration_id='nuevo')
++        self.assertEqual(new.user_id, self.guard.pk)
++        self.assertEqual(new.procedencia_condominio.token_hash, huella('nuevo'))
++        self.assertNotEqual(new.procedencia_condominio.token_hash, 'nuevo')
++
++    def test_procedencia_reintento_de_misma_sincronizacion_es_idempotente(self):
++        old = FCMDevice.objects.create(user=self.guard, registration_id='anterior', type='android', active=True)
++        self.assertEqual(self.sync('nuevo', 'anterior').status_code, 204)
++        self.assertEqual(self.sync('nuevo', 'anterior').status_code, 204)
++        old.refresh_from_db(); self.assertFalse(old.active)
++        self.assertEqual(FCMDevice.objects.filter(registration_id='nuevo').count(), 1)
++        self.assertEqual(ProcedenciaFCM.objects.count(), 1)
++
++    def test_procedencia_rol_invalidado_no_valida_ni_crea(self):
++        self.guard.groups.clear()
++        self.assertIn(self.sync('nuevo').status_code, (401, 403))
++        self.assertFalse(FCMDevice.objects.exists())
++        self.send.assert_not_called()
++
++    def test_procedencia_ajena_no_se_valida_ni_transfiere(self):
++        other = FCMDevice.objects.create(user=self.owner, registration_id='ajeno', type='android', active=True)
++        for current, previous in [('ajeno', None), ('nuevo', 'ajeno')]:
++            self.assertEqual(self.sync(current, previous).status_code, 400)
++        self.send.assert_not_called()
++        other.refresh_from_db(); self.assertTrue(other.active)
++        self.assertEqual(other.user_id, self.owner.pk)
++        self.assertFalse(FCMDevice.objects.filter(registration_id='nuevo').exists())
++
++    def test_procedencia_revalida_titular_despues_de_red(self):
++        def claim(*args, **kwargs):
++            FCMDevice.objects.create(user=self.owner, registration_id='en-carrera', type='android', active=True)
++            return 'simulado'
++        self.send.side_effect = claim
++        self.assertEqual(self.sync('en-carrera').status_code, 400)
++        device = FCMDevice.objects.get(registration_id='en-carrera')
++        self.assertEqual(device.user_id, self.owner.pk)
++        self.assertTrue(device.active)
++        self.assertFalse(ProcedenciaFCM.objects.filter(dispositivo=device).exists())
++
++    def test_procedencia_revalida_cuenta_despues_de_red(self):
++        def deactivate(*args, **kwargs):
++            type(self.guard).objects.filter(pk=self.guard.pk).update(is_active=False)
++            return 'simulado'
++        self.send.side_effect = deactivate
++        self.assertIn(self.sync('nuevo').status_code, (401, 403))
++        self.assertFalse(FCMDevice.objects.exists())
++
++    def test_procedencia_error_o_proveedor_caido_no_retiro_anterior(self):
++        old = FCMDevice.objects.create(user=self.guard, registration_id='anterior', type='android', active=True)
++        for error, status in [(messaging.SenderIdMismatchError('simulado'), 400),
++                              (messaging.UnregisteredError('simulado'), 400),
++                              (exceptions.InvalidArgumentError('simulado'), 400),
++                              (RuntimeError('simulado'), 503)]:
++            self.send.side_effect = error
++            self.assertEqual(self.sync('nuevo', 'anterior').status_code, status)
++            old.refresh_from_db(); self.assertTrue(old.active)
++            self.assertFalse(FCMDevice.objects.filter(registration_id='nuevo').exists())
++
++    def test_procedencia_cliente_heredado_no_reactiva(self):
++        old = FCMDevice.objects.create(user=self.guard, registration_id='antiguo', type='android', active=False)
++        self.assertEqual(self.client.post('/api/devices/', {'registration_id':'antiguo','type':'android'}, format='json').status_code, 400)
++        self.assertEqual(self.client.patch('/api/devices/antiguo/', {'active': True}, format='json').status_code, 400)
++        old.refresh_from_db(); self.assertFalse(old.active)
++        self.assertFalse(ProcedenciaFCM.objects.filter(dispositivo=old).exists())
++        self.send.assert_not_called()
++
++    def test_procedencia_desactivada_o_proyecto_distinto_falla_cerrado(self):
++        with override_settings(FCM_PROCEDENCIA_ACTIVA=False):
++            self.assertEqual(self.sync('nuevo').status_code, 503)
++        self.app.project_id='otro-proyecto'
++        self.assertEqual(self.sync('nuevo').status_code, 503)
++        self.send.assert_not_called()
++        self.assertEqual(FCMDevice.objects.count(), 0)
++
++    def test_procedencia_desactivada_conserva_bandeja_sin_entregas(self):
++        device = FCMDevice.objects.create(user=self.guard, registration_id='antiguo', type='android', active=True)
++        self.proof(device)
++        payload={'id':str(uuid.uuid4()), 'categoria':'Prueba','descripcion':'Prueba', 'fecha_evento':'2026-01-01T12:00:00Z'}
++        with override_settings(FCM_PROCEDENCIA_ACTIVA=False):
++            self.assertEqual(self.client.post('/api/eventos-seguridad/',payload,format='json').status_code,201)
++        self.assertEqual(NotificacionSeguridad.objects.filter(destinatario=self.guard).count(), 1)
++        self.assertFalse(EntregaFCMSeguridad.objects.exists())
++        self.send.assert_not_called()
++
++    def test_procedencia_seleccion_excluye_desconocido_otro_proyecto_y_hash_alterado(self):
++        good = FCMDevice.objects.create(user=self.guard, registration_id='bueno', type='android', active=True)
++        self.proof(good)
++        missing = FCMDevice.objects.create(user=self.guard, registration_id='desconocido', type='android', active=True)
++        wrong = FCMDevice.objects.create(user=self.guard, registration_id='viejo', type='android', active=True)
++        self.proof(wrong, project='otro')
++        altered = FCMDevice.objects.create(user=self.guard, registration_id='alterado', type='android', active=True)
++        self.proof(altered, digest=huella('distinto'))
++        inactive = FCMDevice.objects.create(user=self.guard, registration_id='inactivo', type='android', active=False)
++        self.proof(inactive)
++        self.assertEqual(list(dispositivos_elegibles(FCMDevice.objects.all()).values_list('pk', flat=True)), [good.pk])
++        self.assertTrue(missing.active)
++
++    def test_procedencia_cola_solo_guardia_valido_y_revalida_antes_de_enviar(self):
++        from seguridad_IA.fcm_delivery import reservar_entrega, procesar_reserva
++        good = FCMDevice.objects.create(user=self.guard, registration_id='bueno', type='android', active=True)
++        self.proof(good)
++        FCMDevice.objects.create(user=self.guard, registration_id='desconocido', type='android', active=True)
++        owner = FCMDevice.objects.create(user=self.owner, registration_id='propietario', type='android', active=True)
++        self.proof(owner)
++        payload={'id':str(uuid.uuid4()), 'categoria':'Prueba','descripcion':'Prueba', 'fecha_evento':'2026-01-01T12:00:00Z'}
++        self.assertEqual(self.client.post('/api/eventos-seguridad/',payload,format='json').status_code,201)
++        self.assertEqual(list(EntregaFCMSeguridad.objects.values_list('dispositivo_id', flat=True)), [good.pk])
++        reservation = reservar_entrega()
++        self.app.project_id = 'otro-proyecto'
++        self.assertEqual(procesar_reserva(*reservation), 'PROCEDENCIA_NO_DISPONIBLE')
++        self.assertEqual(EntregaFCMSeguridad.objects.get().estado, 'EN_PROCESO')
++        self.send.assert_not_called()
++
++    def test_procedencia_no_disponible_no_reserva_cola_previa(self):
++        from seguridad_IA.fcm_delivery import reservar_entrega
++        good = FCMDevice.objects.create(user=self.guard, registration_id='bueno', type='android', active=True)
++        self.proof(good)
++        payload={'id':str(uuid.uuid4()), 'categoria':'Prueba','descripcion':'Prueba', 'fecha_evento':'2026-01-01T12:00:00Z'}
++        self.assertEqual(self.client.post('/api/eventos-seguridad/',payload,format='json').status_code,201)
++        with override_settings(FCM_PROCEDENCIA_ACTIVA=False):
++            self.assertIsNone(reservar_entrega())
++        delivery = EntregaFCMSeguridad.objects.get()
++        self.assertEqual(delivery.estado, 'PENDIENTE')
++        self.assertEqual(delivery.intentos, 0)
++
++    def test_procedencia_cola_cancela_si_cambia_huella(self):
++        from seguridad_IA.fcm_delivery import reservar_entrega, procesar_reserva
++        device = FCMDevice.objects.create(user=self.guard, registration_id='bueno', type='android', active=True)
++        proof = self.proof(device)
++        payload={'id':str(uuid.uuid4()), 'categoria':'Prueba','descripcion':'Prueba', 'fecha_evento':'2026-01-01T12:00:00Z'}
++        self.assertEqual(self.client.post('/api/eventos-seguridad/',payload,format='json').status_code,201)
++        reservation = reservar_entrega()
++        proof.token_hash=huella('otra'); proof.save(update_fields=['token_hash'])
++        self.assertEqual(procesar_reserva(*reservation), 'CANCELADA')
++        self.send.assert_not_called()
++
++    def test_procedencia_cola_envia_al_guardia_y_notifica_admin_al_confirmar(self):
++        from seguridad_IA.fcm_delivery import reservar_entrega, procesar_reserva
++        from seguridad_IA.notificaciones import revisar_evento
++        guard = FCMDevice.objects.create(user=self.guard, registration_id='guardia', type='android', active=True)
++        admin = FCMDevice.objects.create(user=self.admin, registration_id='administrador', type='android', active=True)
++        resident = FCMDevice.objects.create(user=self.owner, registration_id='residente', type='android', active=True)
++        for device in (guard, admin, resident): self.proof(device)
++        event_id=str(uuid.uuid4())
++        payload={'id':event_id, 'categoria':'Prueba','descripcion':'Prueba', 'fecha_evento':'2026-01-01T12:00:00Z'}
++        self.assertEqual(self.client.post('/api/eventos-seguridad/',payload,format='json').status_code,201)
++        self.assertEqual(list(EntregaFCMSeguridad.objects.values_list('dispositivo_id',flat=True)),[guard.pk])
++        self.assertEqual(procesar_reserva(*reservar_entrega()), 'ENVIADA')
++        revisar_evento(self.guard, event_id, True)
++        self.assertEqual(set(EntregaFCMSeguridad.objects.values_list('dispositivo_id',flat=True)),{guard.pk,admin.pk})
++        self.assertEqual(procesar_reserva(*reservar_entrega()), 'ENVIADA')
++        self.assertEqual(self.send.call_count, 2)
++        self.assertFalse(EntregaFCMSeguridad.objects.filter(dispositivo=resident).exists())
++
++    @override_settings(ENVIO_FCM_LEGADO_ACTIVO=True)
++    def test_procedencia_envio_legado_expensa_filtra_desconocidos(self):
++        from finanzas.models import expensa
++        good = FCMDevice.objects.create(user=self.owner, registration_id='bueno', type='android', active=True)
++        self.proof(good)
++        FCMDevice.objects.create(user=self.owner, registration_id='desconocido', type='android', active=True)
++        with patch('fcm_django.models.FCMDeviceQuerySet.send_message', autospec=True) as send:
++            expensa.objects.create(unidad=self.unit, monto=3)
++            send.assert_called_once()
++            self.assertEqual(list(send.call_args.args[0].values_list('pk', flat=True)), [good.pk])
++
++    @override_settings(ENVIO_FCM_LEGADO_ACTIVO=True)
++    def test_procedencia_envio_legado_objeto_filtra_desconocidos(self):
++        from finanzas.signals import notificar_objeto_encontrado
++        good = FCMDevice.objects.create(user=self.owner, registration_id='bueno', type='android', active=True)
++        self.proof(good)
++        FCMDevice.objects.create(user=self.guard, registration_id='desconocido', type='android', active=True)
++        fake = SimpleNamespace(estado='P', titulo='prueba', lugar_encontrado='prueba', id=1)
++        with patch('fcm_django.models.FCMDeviceQuerySet.send_message', autospec=True) as send:
++            notificar_objeto_encontrado(None, fake, True)
++            send.assert_called_once()
++            self.assertEqual(list(send.call_args.args[0].values_list('pk', flat=True)), [good.pk])
++
++
++if __name__ == '__main__':
++    unittest.main()
+--- /dev/null
++++ b/Condominio-Backend/finanzas/tests_procedencia_postgres.py
+@@ -0,0 +1,46 @@
++"""Carreras exclusivas de un PostgreSQL temporal con Firebase simulado."""
++import os
++import unittest
++from pathlib import Path
++from types import SimpleNamespace
++from unittest.mock import patch
++from django.test import override_settings
++from django.db import connection
++from fcm_django.models import FCMDevice
++from administracion import tests_device_postgres as existing_tests
++from finanzas.models import ProcedenciaFCM
++from finanzas.procedencia_fcm import huella
++
++
++class ProcedenciaRaceTests(unittest.TestCase):
++    race = existing_tests.DeviceRaceTests.race
++    sync = existing_tests.DeviceRaceTests.sync
++
++    def setUp(self):
++        data = os.environ.get('FCM_TEST_PG_DATA')
++        if not data or connection.vendor != 'postgresql' or connection.settings_dict['USER'] != 'prueba_aislada':
++            raise unittest.SkipTest('Requiere PostgreSQL temporal comprobado por el ejecutor aislado.')
++        with connection.cursor() as cursor:
++            cursor.execute('SHOW data_directory')
++            if Path(cursor.fetchone()[0]).resolve() != Path(data).resolve():
++                raise RuntimeError('El directorio no coincide con el PostgreSQL temporal.')
++        existing_tests.DeviceRaceTests.setUp(self)
++        options = override_settings(FCM_PROCEDENCIA_ACTIVA=True, FCM_PROYECTO_ID='ficticio')
++        options.enable()
++        self.addCleanup(options.disable)
++        app = patch('finanzas.procedencia_fcm.firebase_admin.get_app', return_value=SimpleNamespace(project_id='ficticio'))
++        send = patch('finanzas.procedencia_fcm.messaging.send', return_value='simulado')
++        app.start(); send.start()
++        self.addCleanup(app.stop); self.addCleanup(send.stop)
++
++    def test_procedencia_carrera_dos_cuentas_token_nuevo(self):
++        results = self.race([self.sync(self.a), self.sync(self.b)], force_empty_lookup=True)
++        self.assertEqual(sorted(results), [204, 400])
++        device = FCMDevice.objects.get(registration_id=self.token)
++        self.assertEqual(device.user_id, (self.a.pk, self.b.pk)[results.index(204)])
++        proof = ProcedenciaFCM.objects.get(dispositivo=device)
++        self.assertEqual(proof.token_hash, huella(self.token))
++        self.assertEqual(proof.proyecto, 'ficticio')
++
++    def test_procedencia_carrera_baja_y_registro_ajeno(self):
++        existing_tests.DeviceRaceTests.test_owner_deactivation_and_foreign_claim_do_not_transfer(self)
+--- a/Condominio-Backend/administracion/tests_access.py
++++ b/Condominio-Backend/administracion/tests_access.py
+@@ -53,6 +53,23 @@
+         self.expense = expensa.objects.create(unidad=self.unit, monto=30)
+         self.other_expense = expensa.objects.create(unidad=self.other_unit, monto=50)
+         self.incident = incidente.objects.create(descripcion='Prueba', fecha_incidente=timezone.now())
++        if type(self) is AccessTests:
++            # Las regresiones preexistentes modelan dispositivos ya validados;
++            # los casos de procedencia desconocida están en tests_procedencia.
++            from django.db.models.signals import post_save
++            from finanzas.models import ProcedenciaFCM
++            from finanzas.procedencia_fcm import huella
++            opts = override_settings(FCM_PROCEDENCIA_ACTIVA=True, FCM_PROYECTO_ID='proyecto-ficticio')
++            opts.enable(); self.addCleanup(opts.disable)
++            app = patch('finanzas.procedencia_fcm.firebase_admin.get_app', return_value=SimpleNamespace(project_id='proyecto-ficticio'))
++            sender = patch('finanzas.procedencia_fcm.messaging.send', return_value='validacion-ficticia')
++            app.start(); sender.start(); self.addCleanup(app.stop); self.addCleanup(sender.stop)
++            def marcar_ficticio(sender, instance, created, **kwargs):
++                if created:
++                    ProcedenciaFCM.objects.create(dispositivo=instance, proyecto='proyecto-ficticio',
++                                                  token_hash=huella(instance.registration_id))
++            post_save.connect(marcar_ficticio, sender=FCMDevice, weak=False)
++            self.addCleanup(post_save.disconnect, marcar_ficticio, sender=FCMDevice)
+ 
+     def tearDown(self):
+         transaction.set_rollback(True)
+@@ -940,7 +957,9 @@
+         self.assertEqual(device.user_id, self.other.pk)
+         self.assertTrue(device.active)
+         response = self.client.post('/api/devices/', {'registration_id': 'token-prueba-propio', 'type': 'android'}, format='json')
+-        self.assertEqual(response.status_code, 201, response.data)
++        self.assertEqual(response.status_code, 400, response.data)
++        response = self.client.post('/api/devices/sincronizar/', {'registration_id': 'token-prueba-propio', 'type': 'android'}, format='json')
++        self.assertEqual(response.status_code, 204, response.data)
+         response = self.client.patch('/api/devices/token-prueba-propio/', {'registration_id': device.registration_id}, format='json')
+         self.assertEqual(response.status_code, 400)
+         device.refresh_from_db()
+@@ -1005,14 +1024,15 @@
+         self.auth(self.guard)
+         token = 'token-legado-ficticio'
+         initial = LogEntry.objects.count()
+-        self.assertEqual(self.client.post('/api/devices/', {'registration_id': token, 'type': 'android'}, format='json').status_code, 201)
+-        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 200)
+-        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 200)
++        self.assertEqual(self.client.post('/api/devices/', {'registration_id': token, 'type': 'android'}, format='json').status_code, 400)
++        self.assertEqual(self.client.post('/api/devices/sincronizar/', {'registration_id': token, 'type': 'android'}, format='json').status_code, 204)
++        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 400)
++        self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'name': 'Prueba'}, format='json').status_code, 400)
+         self.assertEqual(self.client.patch(f'/api/devices/{token}/', {'registration_id': 'otro-token'}, format='json').status_code, 400)
+         self.assertEqual(self.client.delete(f'/api/devices/{token}/').status_code, 204)
+         self.assertEqual(self.client.delete(f'/api/devices/{token}/').status_code, 204)
+         entries = list(LogEntry.objects.order_by('pk')[initial:])
+-        self.assertEqual(len(entries), 3)
++        self.assertEqual(len(entries), 2)
+         self.assertTrue(all(token not in entry.object_repr + entry.change_message for entry in entries))
+         device = FCMDevice.objects.get(registration_id=token)
+         self.assertFalse(device.active)
+@@ -1027,8 +1047,7 @@
+         device = FCMDevice.objects.create(user=self.guard, registration_id='rollback-legado', type='android', active=True)
+         self.auth(self.guard)
+         with patch('finanzas.devices.record_action', side_effect=RuntimeError('simulated')):
+-            with self.assertRaises(RuntimeError):
+-                self.client.patch('/api/devices/rollback-legado/', {'name': 'Prueba'}, format='json')
++            self.assertEqual(self.client.patch('/api/devices/rollback-legado/', {'name': 'Prueba'}, format='json').status_code, 400)
+             with self.assertRaises(RuntimeError):
+                 self.client.delete('/api/devices/rollback-legado/')
+         device.refresh_from_db()
+--- a/Condominio-Backend/administracion/run_access_tests.py
++++ b/Condominio-Backend/administracion/run_access_tests.py
+@@ -18,6 +18,9 @@
+ os.environ['STRIPE_SECRET_KEY'] = ''
+ os.environ['STRIPE_PUBLISHABLE_KEY'] = ''
+ os.environ['FIREBASE_CREDENTIALS_JSON'] = '{}'
++os.environ['DEBUG'] = 'False'
++os.environ['ROLES_PERSONALIZADOS_ACTIVOS'] = 'False'
++os.environ['ENVIO_FCM_LEGADO_ACTIVO'] = 'True'
+ 
+ import django
+ with patch('firebase_admin.credentials.Certificate'), patch('firebase_admin.initialize_app'), redirect_stdout(StringIO()):
+@@ -35,6 +38,11 @@
+         if model._meta.managed and not model._meta.proxy and not model._meta.swapped:
+             schema.create_model(model)
+ 
++# schema_editor no emite post_migrate; crear permisos predeterminados de prueba.
++from django.contrib.auth.management import create_permissions
++for app in apps.get_app_configs():
++    create_permissions(app, verbosity=0)
++
+ suite = unittest.defaultTestLoader.loadTestsFromName('administracion.tests_access')
+ result = unittest.TextTestRunner(verbosity=2).run(suite)
+ sys.exit(0 if result.wasSuccessful() else 1)
+--- /dev/null
++++ b/Condominio-Backend/administracion/run_procedencia_postgres_isolated.py
+@@ -0,0 +1,113 @@
++"""Run role and device tests against a fresh, temporary PostgreSQL cluster.
++
++Never reads the project's database settings or connects to an existing server.
++"""
++import os
++import secrets
++import socket
++import subprocess
++import tempfile
++import threading
++import time
++import unittest
++from contextlib import redirect_stdout
++from io import StringIO
++from pathlib import Path
++from unittest.mock import patch
++
++
++def main():
++    binary_dir = Path(r'C:\Program Files\PostgreSQL\17\bin')
++    initdb = binary_dir / 'initdb.exe'
++    postgres = binary_dir / 'postgres.exe'
++    pg_ctl = binary_dir / 'pg_ctl.exe'
++    if not all(path.is_file() for path in (initdb, postgres, pg_ctl)):
++        raise RuntimeError('No se encontraron los binarios locales de PostgreSQL 17.')
++
++    with tempfile.TemporaryDirectory(prefix='condominio-pg-aislado-') as temp:
++        root = Path(temp)
++        data = root / 'data'
++        password = secrets.token_hex(24)
++        password_file = root / 'password.txt'
++        password_file.write_text(password, encoding='ascii')
++        hidden = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
++        subprocess.run([str(initdb), '-D', str(data), '-U', 'prueba_aislada',
++                        '--auth=scram-sha-256', '--pwfile', str(password_file),
++                        '--encoding=UTF8', '--no-instructions'], check=True,
++                       stdout=subprocess.DEVNULL, creationflags=hidden)
++        password_file.unlink()
++        with socket.socket() as sock:
++            sock.bind(('127.0.0.1', 0))
++            port = sock.getsockname()[1]
++        server = subprocess.Popen([str(postgres), '-D', str(data), '-h', '127.0.0.1', '-p', str(port)],
++                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
++                                  creationflags=hidden)
++        try:
++            import psycopg2
++            deadline = time.monotonic() + 20
++            while True:
++                if server.poll() is not None:
++                    raise RuntimeError('La instancia temporal de PostgreSQL no pudo arrancar.')
++                try:
++                    conn = psycopg2.connect(host='127.0.0.1', port=port, dbname='postgres',
++                                            user='prueba_aislada', password=password, connect_timeout=1)
++                    with conn.cursor() as cursor:
++                        cursor.execute('SHOW data_directory')
++                        if Path(cursor.fetchone()[0]).resolve() != data.resolve():
++                            conn.close()
++                            raise RuntimeError('El servidor no corresponde al directorio temporal.')
++                    conn.close()
++                    break
++                except psycopg2.OperationalError:
++                    if time.monotonic() > deadline:
++                        raise RuntimeError('No se pudo conectar a la instancia temporal.')
++                    time.sleep(.2)
++            os.environ.update(DJANGO_SETTINGS_MODULE='condominioBACK.settings',
++                DATABASE_URL=f'postgresql://prueba_aislada:{password}@127.0.0.1:{port}/postgres',
++                SECRET_KEY='solo-pruebas-aisladas', PLATE_TOKEN='', LUXAND_TOKEN='',
++                STRIPE_SECRET_KEY='', STRIPE_PUBLISHABLE_KEY='', FIREBASE_CREDENTIALS_JSON='{}',
++                DEBUG='False', ROLES_PERSONALIZADOS_ACTIVOS='False',
++                NOTIFICACIONES_SEGURIDAD_ACTIVAS='False', COLA_FCM_SEGURIDAD_ACTIVA='False',
++                ENVIO_FCM_SEGURIDAD_ACTIVO='False', FCM_TEST_PG_DATA=str(data))
++            import django
++            with patch('firebase_admin.credentials.Certificate'), patch('firebase_admin.initialize_app'), redirect_stdout(StringIO()):
++                django.setup()
++            from django.conf import settings
++            from django.core.management import call_command
++            from django.db import connection
++            if connection.settings_dict['NAME'] != 'postgres' or str(connection.settings_dict['PORT']) != str(port):
++                raise RuntimeError('La conexión no apunta a la instancia temporal.')
++            settings.PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
++            call_command('migrate', interactive=False, verbosity=0)
++            from finanzas.tests_procedencia import ProcedenciaTests
++            from finanzas.tests_procedencia_postgres import ProcedenciaRaceTests
++            suite = unittest.TestSuite([
++                unittest.TestSuite(ProcedenciaTests(n) for n in dir(ProcedenciaTests) if n.startswith('test_procedencia_')),
++                unittest.TestSuite(ProcedenciaRaceTests(n) for n in dir(ProcedenciaRaceTests) if n.startswith('test_procedencia_')),
++            ])
++            result = unittest.TextTestRunner(verbosity=2).run(suite)
++            if result.wasSuccessful():
++                call_command('migrate', 'finanzas', '0002', interactive=False, verbosity=0)
++                if 'finanzas_procedenciafcm' in connection.introspection.table_names():
++                    raise RuntimeError('La migración de procedencia no fue revertida.')
++                call_command('migrate', 'finanzas', '0003', interactive=False, verbosity=0)
++                if 'finanzas_procedenciafcm' not in connection.introspection.table_names():
++                    raise RuntimeError('La migración de procedencia no fue reaplicada.')
++                print('Migración aislada revertida y aplicada nuevamente.')
++            connection.close()
++            if not result.wasSuccessful():
++                raise SystemExit(1)
++        finally:
++            if server.poll() is None:
++                subprocess.run([str(pg_ctl), '-D', str(data), '-m', 'fast', '-w', 'stop'],
++                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
++                               timeout=25, creationflags=hidden)
++            try:
++                server.wait(timeout=10)
++            except subprocess.TimeoutExpired:
++                server.terminate()
++                server.wait(timeout=10)
++
++
++if __name__ == '__main__':
++    main()

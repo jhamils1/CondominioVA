@@ -1,0 +1,11 @@
+# Prueba de la cola automática en el sistema local
+
+Fecha: 2026-11-01 (America/La_Paz). El usuario pidió probar el recorrido completo en la aplicación y base habituales y se le informó de que el evento quedaría identificado en el historial.
+
+Se creó en la base PostgreSQL local un único evento **manual y ficticio**, con categoría `PRUEBA_COLA_AUTOMATICA_20261101` y descripción que indica «PRUEBA CONTROLADA» y que no es una incidencia real. Se utilizó el usuario `guardia_prueba` como actor, después de comprobar que estaba activo y autorizado. La creación se hizo desde un ejecutor local que llamó al servicio `registrar_evento`; no se probó la creación mediante el formulario web ni autenticación HTTP en este paso.
+
+Antes de crear el evento se verificó que la bandeja, procedencia, cola y envío de seguridad estuvieran activos, que los push de expensas y objetos siguieran pausados, que no hubiera entregas anteriores pendientes y que el único dispositivo validado perteneciera al guardia de prueba. La transacción verificó que se había creado la notificación y una entrega pendiente para ese dispositivo. El procesador continuo previamente iniciado tomó la entrega y la registró como `ENVIADA`; Firebase aceptó el envío. El usuario confirmó que recibió el nuevo aviso «Seguridad del condominio» en el teléfono.
+
+Una comprobación posterior de solo lectura confirmó que el evento conserva el texto de prueba, sigue pendiente de revisión y no está vinculado a una incidencia. Los destinatarios internos coinciden con los guardias activos autorizados; hay una entrega aceptada por Firebase, ninguna pendiente o fallida para este evento y un registro de creación en el historial. No se confirmó ni descartó el evento, no se imputó responsabilidad y no se borró el historial. Queda en la bandeja identificado como prueba.
+
+La prueba confirma el recorrido del servicio de registro a la cola, procesador, Firebase y teléfono habitual para este evento manual. No demuestra creación desde cámara ni procesamiento por IA, ni que otros teléfonos no validados reciban avisos. Tampoco verifica el formulario web, la visualización del detalle o el flujo posterior de confirmación y aviso al administrador. El servidor y procesador se mantienen en segundo plano y el enlace USB activo; no están configurados para iniciarse automáticamente con Windows.

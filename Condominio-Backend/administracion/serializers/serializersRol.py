@@ -20,6 +20,11 @@ class RolSerializer(serializers.ModelSerializer):
         model = Group
         fields = ['id', 'name', 'permissions', 'permission_ids']
 
+    def validate(self, attrs):
+        if not self.instance and attrs.get('permissions'):
+            raise serializers.ValidationError({'permission_ids': 'Los roles predeterminados se habilitan sin permisos adicionales de Django.'})
+        return attrs
+
     def validate_name(self, value):
         canonical = ROLE_NAMES.get(value.strip().casefold())
         if not canonical:

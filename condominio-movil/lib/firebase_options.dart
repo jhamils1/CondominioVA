@@ -50,11 +50,11 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCTiQWpY_EHiPCkAuL7Lecv6_0caPcyGeU',
-    appId: '1:31922065886:android:aa90f492216aab2c910d4f',
-    messagingSenderId: '31922065886',
-    projectId: 'smart-condominiun',
-    storageBucket: 'smart-condominiun.firebasestorage.app',
+    apiKey: "AIzaSyAXsZ4YBmFjFVPUbdtNxd5YQ6fc0Pazevs",
+    appId: "1:938056785584:android:d1ebe2583ddd6cf486e575",
+    messagingSenderId: "938056785584",
+    projectId: "condominio-seguridad",
+    storageBucket: "condominio-seguridad.firebasestorage.app",
   );
 
   static const FirebaseOptions ios = FirebaseOptions(

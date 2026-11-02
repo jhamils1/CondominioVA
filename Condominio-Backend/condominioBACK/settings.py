@@ -18,7 +18,7 @@ import os
 import cloudinary
 import firebase_admin
 from firebase_admin import credentials
-import json
+from .firebase_credentials import seleccionar_credencial
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -101,18 +101,7 @@ DATABASES = {
 
 try:
     if not firebase_admin._apps:
-        # 1. Intentamos leer la variable de entorno (Ideal para Railway/Producción)
-        # Usamos default=None para que no de error si no existe en tu .env local
-        firebase_json_str = config('FIREBASE_CREDENTIALS_JSON', default=None)
-
-        if firebase_json_str:
-            # Si existe la variable (Producción), convertimos el texto a diccionario
-            cred_dict = json.loads(firebase_json_str)
-            cred = credentials.Certificate(cred_dict)
-        else:
-            # 2. Fallback: Leemos el archivo físico (Ideal para Local)
-            # Asegúrate de que este nombre sea correcto
-            cred = credentials.Certificate("smart-condominiun-firebase-adminsdk-fbsvc-30dd8b557d.json")
+        cred = seleccionar_credencial(config, credentials, BASE_DIR)
         firebase_admin.initialize_app(cred)
         print("Firebase inicializado correctamente.")
 
@@ -165,10 +154,18 @@ STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Activar únicamente después de aplicar y verificar las migraciones de roles.
+ROLES_PERSONALIZADOS_ACTIVOS = config('ROLES_PERSONALIZADOS_ACTIVOS', default=False, cast=bool)
+
 # Se habilita únicamente después de crear y aplicar el esquema aprobado.
 NOTIFICACIONES_SEGURIDAD_ACTIVAS = config('NOTIFICACIONES_SEGURIDAD_ACTIVAS', default=False, cast=bool)
 COLA_FCM_SEGURIDAD_ACTIVA = config('COLA_FCM_SEGURIDAD_ACTIVA', default=False, cast=bool)
 ENVIO_FCM_SEGURIDAD_ACTIVO = config('ENVIO_FCM_SEGURIDAD_ACTIVO', default=False, cast=bool)
+# Permite pausar de forma explícita los avisos antiguos durante una migración FCM.
+ENVIO_FCM_LEGADO_ACTIVO = config('ENVIO_FCM_LEGADO_ACTIVO', default=True, cast=bool)
+# Desactivado hasta migración y pruebas autorizadas; sin validación no se envía.
+FCM_PROCEDENCIA_ACTIVA = config('FCM_PROCEDENCIA_ACTIVA', default=False, cast=bool)
+FCM_PROYECTO_ID = config('FCM_PROYECTO_ID', default='')
 
 CORS_ALLOW_ALL_ORIGINS = True
 

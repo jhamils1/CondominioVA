@@ -18,6 +18,9 @@ os.environ['LUXAND_TOKEN'] = ''
 os.environ['STRIPE_SECRET_KEY'] = ''
 os.environ['STRIPE_PUBLISHABLE_KEY'] = ''
 os.environ['FIREBASE_CREDENTIALS_JSON'] = '{}'
+os.environ['DEBUG'] = 'False'
+os.environ['ROLES_PERSONALIZADOS_ACTIVOS'] = 'False'
+os.environ['ENVIO_FCM_LEGADO_ACTIVO'] = 'True'
 
 import django
 with patch('firebase_admin.credentials.Certificate'), patch('firebase_admin.initialize_app'), redirect_stdout(StringIO()):
@@ -34,6 +37,11 @@ with connection.schema_editor() as schema:
     for model in apps.get_models():
         if model._meta.managed and not model._meta.proxy and not model._meta.swapped:
             schema.create_model(model)
+
+# schema_editor no emite post_migrate; crear permisos predeterminados de prueba.
+from django.contrib.auth.management import create_permissions
+for app in apps.get_app_configs():
+    create_permissions(app, verbosity=0)
 
 suite = unittest.defaultTestLoader.loadTestsFromName('administracion.tests_access')
 result = unittest.TextTestRunner(verbosity=2).run(suite)

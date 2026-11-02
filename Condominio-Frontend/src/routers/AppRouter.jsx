@@ -51,9 +51,9 @@ const ProtectedRoute = () => {
 
 const RolePage = ({ path, children }) => {
   const { user } = useSession();
-  if (!canAccess(user.role, path)) return <div role="alert">No tienes permiso para acceder a esta página.</div>;
+  if (!canAccess(user.role, path, user.capacidades)) return <div role="alert">No tienes permiso para acceder a esta página.</div>;
   if (path === 'dashboard' && user.role !== 'administrador') return <div className="bg-white p-6 rounded-lg shadow"><h2 className="text-2xl font-semibold">Bienvenido, {user.username}</h2><p>Selecciona una opción del menú.</p></div>;
-  if (path === 'perfil' || (['propietario', 'inquilino'].includes(user.role) && ['unidades','vehiculos','contratos','expensas','visitas'].includes(path)) || (user.role === 'guardia' && path === 'vehiculos')) return <ConsultaPage resource={path} />;
+  if (path === 'perfil' || (['propietario', 'inquilino'].includes(user.role) && ['unidades','vehiculos','contratos','expensas','visitas'].includes(path)) || (user.role === 'guardia' && path === 'vehiculos') || (user.role === 'personalizado' && path === 'visitas')) return <ConsultaPage resource={path} />;
   if (path === 'incidentes' && user.role === 'guardia') return <IncidentesGuardia />;
   return children;
 };
