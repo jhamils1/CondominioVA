@@ -1097,6 +1097,107 @@ class AccessTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/notificaciones-seguridad/').status_code, 503)
 
     @override_settings(NOTIFICACIONES_SEGURIDAD_ACTIVAS=True)
+    def test_evidencia_imou_is_private_atomic_and_idempotent(self):
+        import io
+        from PIL import Image
+        from seguridad_IA.models import EvidenciaEventoSeguridad
+
+        def jpeg(color):
+            out = io.BytesIO()
+            image = Image.new('RGB', (64, 48), color)
+            exif = Image.Exif(); exif[270] = 'metadato privado ficticio'
+            image.save(out, format='JPEG', exif=exif)
+            return out.getvalue()
+
+        event_id = str(uuid.uuid4())
+        base = {'id': event_id, 'categoria': 'Posible estacionamiento',
+                'descripcion': 'Fotograma de prueba', 'camara': 'Imou (vista local)',
+                'fecha_evento': '2026-01-01T12:00:00Z'}
+        original = jpeg('red')
+        def enviar(content):
+            return self.client.post('/api/eventos-seguridad/',
+                {**base, 'evidencia': SimpleUploadedFile('foto.jpg', content, content_type='image/jpeg')}, format='multipart')
+
+        self.auth(self.admin)
+        response = enviar(original)
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(response.data['evidencia_disponible'])
+        self.assertEqual(enviar(original).status_code, 200)
+        self.assertEqual(enviar(jpeg('blue')).status_code, 400)
+        self.assertEqual(EvidenciaEventoSeguridad.objects.filter(evento_id=event_id).count(), 1)
+        self.assertEqual(NotificacionSeguridad.objects.filter(evento_id=event_id, destinatario=self.guard, tipo='REVISION').count(), 1)
+        url = f'/api/eventos-seguridad/{event_id}/evidencia/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+        self.assertIn('no-store', response['Cache-Control'])
+        with Image.open(io.BytesIO(response.content)) as stored:
+            self.assertEqual(stored.size, (64, 48))
+            self.assertFalse(stored.getexif())
+        self.auth(self.guard)
+        self.assertEqual(self.client.get(url).status_code, 200)
+        for resident in (self.owner, self.tenant):
+            self.auth(resident)
+            self.assertEqual(self.client.get(url).status_code, 403)
+            self.assertEqual(enviar(original).status_code, 403)
+        self.guard.is_active = False
+        self.guard.save(update_fields=['is_active'])
+        self.client.force_authenticate(user=self.guard)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.force_authenticate(user=None)
+        self.assertIn(self.client.get(url).status_code, (401, 403))
+
+    @override_settings(NOTIFICACIONES_SEGURIDAD_ACTIVAS=True)
+    def test_invalid_or_failed_evidence_does_not_create_event(self):
+        import io
+        from PIL import Image
+        from seguridad_IA.models import EvidenciaEventoSeguridad
+
+        self.auth(self.admin)
+        event_id = str(uuid.uuid4())
+        base = {'id': event_id, 'categoria': 'Prueba', 'descripcion': 'Prueba',
+                'fecha_evento': '2026-01-01T12:00:00Z'}
+        bad = SimpleUploadedFile('foto.jpg', b'no es imagen', content_type='image/jpeg')
+        self.assertEqual(self.client.post('/api/eventos-seguridad/', {**base, 'evidencia': bad}, format='multipart').status_code, 400)
+        oversized = SimpleUploadedFile('foto.jpg', b'\xff\xd8\xff' + b'x' * (1024 * 1024), content_type='image/jpeg')
+        self.assertEqual(self.client.post('/api/eventos-seguridad/', {**base, 'evidencia': oversized}, format='multipart').status_code, 400)
+        wide = io.BytesIO(); Image.new('RGB', (1281, 1)).save(wide, format='JPEG')
+        self.assertEqual(self.client.post('/api/eventos-seguridad/', {**base, 'evidencia': SimpleUploadedFile('foto.jpg', wide.getvalue(), content_type='image/jpeg')}, format='multipart').status_code, 400)
+        self.assertFalse(EventoSeguridad.objects.filter(pk=event_id).exists())
+        out = io.BytesIO(); Image.new('RGB', (32, 32)).save(out, format='JPEG')
+        with patch('seguridad_IA.api_notificaciones.EvidenciaEventoSeguridad.objects.create', side_effect=RuntimeError('fallo ficticio')):
+            with self.assertRaises(RuntimeError):
+                with transaction.atomic():
+                    self.client.post('/api/eventos-seguridad/', {**base, 'evidencia': SimpleUploadedFile('foto.jpg', out.getvalue(), content_type='image/jpeg')}, format='multipart')
+        self.assertFalse(EventoSeguridad.objects.filter(pk=event_id).exists())
+        self.assertFalse(NotificacionSeguridad.objects.filter(evento_id=event_id).exists())
+        self.assertFalse(EvidenciaEventoSeguridad.objects.filter(evento_id=event_id).exists())
+
+    @override_settings(NOTIFICACIONES_SEGURIDAD_ACTIVAS=True)
+    def test_imou_event_retries_preserve_origin_and_notify_guards(self):
+        second = User.objects.create_user(username='guardia_imou_segundo', password='Prueba1234')
+        second.groups.add(self.groups['Seguridad'])
+        Empleado.objects.create(nombre='Otro', apellido='Guardia', direccion='X', sexo='M',
+                                CI='304', sueldo=1, cargo=Cargo.objects.first(), user=second)
+        event_id = str(uuid.uuid4())
+        payload = {'id': event_id, 'categoria': 'Posible estacionamiento en zona prohibida',
+                   'camara': 'Imou (vista local)',
+                   'descripcion': 'Detección automática desde la vista local Imou. Requiere revisión. No se adjunta evidencia.',
+                   'fecha_evento': '2026-01-01T12:00:00Z'}
+        self.auth(self.admin)
+        first = self.client.post('/api/eventos-seguridad/', payload, format='json')
+        self.assertEqual(first.status_code, 201, first.data)
+        self.assertEqual(first.data['origen'], 'MANUAL')
+        self.assertEqual(first.data['estado'], 'PENDIENTE_REVISION')
+        self.assertEqual(first.data['camara'], 'Imou (vista local)')
+        self.assertEqual(self.client.post('/api/eventos-seguridad/', payload, format='json').status_code, 200)
+        self.assertEqual(EventoSeguridad.objects.filter(pk=event_id).count(), 1)
+        recipients = NotificacionSeguridad.objects.filter(evento_id=event_id, tipo='REVISION')
+        self.assertEqual(set(recipients.values_list('destinatario_id', flat=True)), {self.guard.pk, second.pk})
+        self.assertFalse(NotificacionSeguridad.objects.filter(evento_id=event_id, destinatario__in=[self.admin, self.owner, self.tenant]).exists())
+        self.assertIsNone(EventoSeguridad.objects.get(pk=event_id).incidencia_id)
+
+    @override_settings(NOTIFICACIONES_SEGURIDAD_ACTIVAS=True)
     def test_event_notification_review_and_idempotency(self):
         second = User.objects.create_user(username='guardia2', password='Prueba1234')
         second.groups.add(self.groups['Seguridad'])

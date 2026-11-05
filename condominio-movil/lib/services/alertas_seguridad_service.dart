@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
@@ -27,22 +28,26 @@ class AlertaSeguridad {
 }
 
 class DetalleEventoSeguridad {
+  final String id;
   final String categoria;
   final String descripcion;
   final String estado;
   final String fecha;
+  final bool evidenciaDisponible;
 
-  const DetalleEventoSeguridad({required this.categoria, required this.descripcion,
-    required this.estado, required this.fecha});
+  const DetalleEventoSeguridad({required this.id, required this.categoria, required this.descripcion,
+    required this.estado, required this.fecha, this.evidenciaDisponible = false});
 
   factory DetalleEventoSeguridad.fromJson(dynamic data, String esperado) {
     if (data is! Map<String, dynamic> || data['id'] != esperado ||
         data['categoria'] is! String || data['descripcion'] is! String ||
-        data['estado'] is! String || data['fecha_evento'] is! String) {
+        data['estado'] is! String || data['fecha_evento'] is! String ||
+        (data['evidencia_disponible'] != null && data['evidencia_disponible'] is! bool)) {
       throw const FormatException('Evento inválido');
     }
-    return DetalleEventoSeguridad(categoria: data['categoria'],
-        descripcion: data['descripcion'], estado: data['estado'], fecha: data['fecha_evento']);
+    return DetalleEventoSeguridad(id: esperado, categoria: data['categoria'],
+        descripcion: data['descripcion'], estado: data['estado'], fecha: data['fecha_evento'],
+        evidenciaDisponible: data['evidencia_disponible'] == true);
   }
 }
 
@@ -113,5 +118,17 @@ class AlertasSeguridadService {
     }
     await _request('/notificaciones-seguridad/${alerta.id}/leer/', post: true);
     return detail;
+  }
+
+  Future<Uint8List> obtenerEvidencia(String eventoId) async {
+    if (!_validId(eventoId)) throw const AlertasException('El evento no es válido.');
+    final response = await _request('/eventos-seguridad/$eventoId/evidencia/');
+    final bytes = response.bodyBytes;
+    final tipo = response.headers['content-type']?.toLowerCase() ?? '';
+    if (!tipo.startsWith('image/jpeg') || bytes.length < 3 || bytes.length > 1024 * 1024 ||
+        bytes[0] != 0xff || bytes[1] != 0xd8 || bytes[2] != 0xff) {
+      throw const AlertasException('La evidencia recibida no es válida.');
+    }
+    return bytes;
   }
 }

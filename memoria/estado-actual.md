@@ -1,5 +1,79 @@
 # Estado actual
 
+2026-11-05: usuario confirmó flujo real Imou → rojo → notificación móvil. Se implementó evidencia JPEG privada para eventos nuevos, vista autenticada web/móvil y migración aditiva PostgreSQL local con respaldo estructuralmente verificado. Pruebas Django/Edge/Flutter correctas; falta recargar Flutter y comprobar evidencia real. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
+2026-11-05: registro automático optativo Imou conectado a API manual y avisos a guardias; sin evidencia ni vigilancia autónoma. Diez pruebas Node, cuatro Django en SQLite en memoria, dos recorridos Edge simulados, build y lint correctos. Procesador FCM continuo detectado activo; falta prueba real de Imou y recepción móvil. [Informe](../documentacion/seguridad/REGISTRO_IMOU_LOCAL.md).
+
+2026-11-05: zona temporal para Imou implementada sobre la imagen analizada; permanencia configurable y recuadro rojo, sin eventos ni notificaciones. Ocho pruebas de reglas, interfaz simulada, build y lint correctos. Falta prueba del usuario con cámara y maqueta. [Informe](../documentacion/seguridad/ZONA_IMOU_TEMPORAL.md).
+
+2026-11-05: usuario mostró Imou con recuadros de IA. Se alinearon las vistas y se colocaron controles arriba; en pantalla estrecha se apilan. Build, lint y pruebas de interfaz simulada correctos; falta revisión visual del usuario. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: IA local optativa añadida a la vista Imou, en panel separado con el fotograma exacto analizado. El usuario confirmó haber probado la vista anterior; la nueva interfaz aún requiere su comprobación con objetos. Un fotograma real recibió respuesta de IA sin detecciones. Sin zona, eventos ni alertas de la Imou en esta etapa. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: añadida vista Imou en web, con inicio/detención/ampliación y puente RTSP separado, local y autenticado. Nueve pruebas Python, build/lint y prueba Edge simulada correctos; tres JPEG reales recibidos. Puente iniciado; falta confirmación del usuario en su sesión web. Webcam conservada, sin IA/alertas para Imou aún. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: conexión Imou por Wi-Fi comprobada tras corregir la clave local con autorización. Decodificado un fotograma de 640 x 480 del flujo secundario; conexión cerrada sin grabaciones ni alertas. Falta incorporar la fuente IP a la web/IA. [Resultado](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: prueba Imou por Wi-Fi con clave local completada por el usuario no abrió video. RTSP DESCRIBE devolvió 401 también con Digest; falta verificar credenciales del dispositivo. Sin cambios en la cámara. [Detalle](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+## Preparación Imou local — 2026-11-05
+
+Comprobados puertos 80/554 y respuesta RTSP 401 sin autenticación fuera del entorno restringido. Preparado diagnóstico de un fotograma y configuración privada ignorada por Git; falta completar credenciales y leer video. El usuario confirmó recepción móvil de un evento de video previo, independiente de la Imou. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+## Carátula e índice académico — 2026-11-05
+
+Corrección posterior: el primer Word tenía un índice manual. Con autorización para añadir la estructura sin redactar capítulos, se creó [Word con índice automático](../output/pdf/caratula_indice_condominio_automatico.docx): 193 títulos fuente, campo TOC e hipervínculos, 23 páginas con numeración real calculada por Word. Se verificó que modificar un título e insertar un salto actualiza texto y página en el índice; cambios de prueba descartados. Exportación Word e inspección visual completadas; este archivo sustituye la entrega manual para continuar redactando.
+
+Se preparó también una [versión Word editable](../output/pdf/caratula_indice_condominio_editable.docx) a petición del usuario. Su texto y numeración son editables; el renderizador no pudo comprobar el diseño porque LibreOffice no está disponible y el intento con Word no se completó.
+
+Se creó [un PDF de siete páginas](../output/pdf/caratula_indice_condominio.pdf) con carátula e índice adaptados al condominio a partir de `PROYECTO-SI2 (3).pdf`. Grupo, integrantes y docente en blanco por solicitud del usuario; 193 entradas, cinco capítulos y cuatro sprints temáticos propuestos. Se revisaron visualmente las siete páginas. La paginación derecha conserva los valores de referencia, no páginas reales del informe del condominio; falta actualizarla cuando exista el desarrollo completo. Sin cambios funcionales ni al PDF original.
+
+## Cola de guardia reactivada — 2026-11-05
+
+Se comprobó el evento de video y tres entregas pendientes a guardia de prueba; Firebase las aceptó y el usuario confirmó recibir una notificación en el teléfono. El procesador continuo local se inició y verificó; no tiene arranque automático. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+## Revisión de repetición de video — 2026-11-05
+
+El usuario aclaró que se equivocó sobre la repetición. En Edge con video sintético y API simulada, seis muestras se analizaron una vez y ambos reproductores se detuvieron al final. [Informe](../documentacion/seguridad/VIDEO_ARCHIVO_DEMOSTRACION.md).
+
+## Comprobación simulada de cámara — 2026-11-04
+
+En Edge con cámara y API simuladas pasaron zona, ocultación, error de registro y reintento con los mismos datos. Falta prueba con cámara física y entrega real del flujo automático. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+## Registro optativo desde cámara — 2026-11-04
+
+La prueba de cámara puede registrar un evento pendiente mediante la API manual si el operador activa la opción. Se desactiva por defecto o ante fallos y conserva reintentos en memoria. Pueden existir duplicados al perder seguimiento; no hay evidencia ni servicio autónomo. Diez pruebas Node y build correctos; falta prueba de interfaz/cámara y entrega. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+## Zona temporal en cámara local — 2026-11-04
+
+La prueba de cámara permite dibujar y mostrar/ocultar zona y marcar en rojo una posible permanencia, sin eventos ni avisos. La zona se pierde al detener la cámara. Nueve pruebas de reglas y build correctos; falta verificar con cámara y usuario. [Informe](../documentacion/seguridad/ZONA_CAMARA_DEMOSTRACION.md).
+
+## Registro automático optativo desde video — 2026-11-04
+
+El análisis puede registrar eventos mediante la API manual existente si el usuario activa la opción; reintentos conservan identificador. Quedan límites de seguimiento, duplicados y memoria, sin ingesta de servicio ni evidencia. Ocho pruebas Node, 100 de backend aisladas y build pasaron; falta prueba de interfaz y entrega del nuevo flujo. [Informe](../documentacion/seguridad/REGISTRO_AUTOMATICO_VIDEO.md).
+
+El usuario confirmó que recibió en el móvil el aviso anterior del evento manual preparado desde video.
+
+## Evento de video y envío a Firebase — 2026-11-04
+
+El usuario envió el evento manual preparado desde video. Notificación interna para guardia de prueba creada; el segundo intento del lote único quedó ENVIADA tras un fallo inicial. Falta confirmar recepción en el teléfono; no se inició procesador continuo. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+## Preparar evento manual desde video — 2026-11-04
+
+Cada hallazgo puede preparar el formulario existente; solo al enviarlo se crea el evento manual y se distribuyen avisos según configuración. No se adjunta evidencia ni se implementó ingesta automática. Build y siete pruebas de lógica pasaron; recorrido interactivo y entrega no verificados. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+## Estimación de permanencia en video — 2026-11-04
+
+Se añadió una estimación temporal para vehículos casi quietos dentro de la zona marcada, con umbral configurable y vínculo al momento. Son resultados orientativos, en memoria y sin eventos ni alertas; no funciona aún con cámara. Siete pruebas Node y build correctos; falta comprobar con el video del usuario. [Informe](../documentacion/seguridad/PERMANENCIA_VIDEO.md).
+
+## Retiro de la guía de ejemplo — 2026-11-04
+
+A petición del usuario se retiraron la guía y el enlace añadidos en el cambio anterior. Se conserva el editor temporal de zona. [Detalle](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
+## Zona temporal sobre video — 2026-11-04
+
+Se puede dibujar y validar un polígono de zona prohibida en el video seleccionado, visible en ambas vistas y temporal a la sesión. Pruebas geométricas y navegador simulado pasaron; falta revisión manual. No hay todavía permanencia, configuración persistente ni alertas. [Informe](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
 ## Video fijo retirado — 2026-11-02
 
 Con aprobación del usuario se retiraron la sección web del video público fijo, su ruta y los tres archivos de muestra. Permanecen cámara, análisis de archivos propios, pesos y notificaciones. Build, tres pruebas de cámara y comprobación web con sesión simulada pasaron. [Informe](../documentacion/seguridad/RETIRO_VIDEO_DEMOSTRACION.md).

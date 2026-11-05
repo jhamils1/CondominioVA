@@ -10,6 +10,17 @@ export async function estadoCamaraDemo(signal) {
   return (await client.get('vision-camara/estado/', { signal })).data;
 }
 
+export async function fotogramaImou(signal) {
+  const response = await client.post('vision-imou/fotograma/', null, {
+    signal, responseType: 'blob', timeout: 6000,
+  });
+  if (response.status === 202) return null;
+  if (response.status !== 200 || response.data.type !== 'image/jpeg') {
+    throw new Error('Respuesta de cámara inválida.');
+  }
+  return response.data;
+}
+
 export async function analizarFotograma(imagen, signal) {
   const datos = new FormData();
   datos.append('imagen', imagen, 'fotograma.jpg');

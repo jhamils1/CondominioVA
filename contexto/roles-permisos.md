@@ -24,6 +24,11 @@ La tabla distingue la política aprobada de los límites actuales; las capacidad
 
 La operación de estados está disponible en web. La bandeja Flutter consulta alertas/detalle y lectura; no implementa esas acciones de revisión. La tabla no certifica cada endpoint ni reemplaza las restricciones concretas de las vistas.
 
+Desde 2026-11-05 la imagen de evidencia de eventos nuevos puede consultarse por
+API autenticada por administradores o guardias activos. La autorización
+individual por cámara aún no está implementada; propietarios e inquilinos no
+tienen acceso. [Implementación y pruebas](../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
 ## Requisitos efectivos
 
 La página «Roles y accesos» presenta los cuatro roles predeterminados sin edición. La API rechaza cambios o eliminación de esos grupos; si uno falta, puede habilitarse mediante una acción explícita sin crear cuentas y sin permisos técnicos adicionales. Las reglas de aplicación continúan definidas en backend y los permisos históricos de grupos existentes se conservan. Esta protección afecta la API funcional; no reemplaza el control del administrador técnico de Django. Ver [resultado de la etapa](../documentacion/seguridad/RESULTADO_ROLES_PREDETERMINADOS.md).

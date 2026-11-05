@@ -1,5 +1,42 @@
 # Prueba local de RF-DETR Nano
 
+Para la primera comprobación de una cámara Imou por red, consultar
+[conexión local Imou](../../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+`probar_imou.py` solo comprueba un fotograma con credenciales locales; todavía
+no incorpora una fuente IP a la web ni al análisis con IA.
+
+## Ver la Imou en la web
+
+Con Django y frontend iniciados, ejecutar desde la raíz:
+
+```powershell
+.\Condominio-Backend\seguridad_vision\.venv\Scripts\python.exe .\Condominio-Backend\seguridad_vision\imou_local.py
+```
+
+En **Seguridad → Eventos e incidencias → Cámara Imou por red**, pulsar
+**Ver cámara Imou**. Requiere administrador o guardia y navegador en la misma
+laptop que Django. **Detener vista Imou** oculta la imagen y deja de solicitarla.
+El puente libera RTSP tras unos segundos sin espectadores. Cambiar de pestaña
+detiene la vista; volver no la inicia automáticamente. La webcam se conserva.
+
+Esta vista usa imágenes JPEG actualizadas hasta cinco veces por segundo.
+**Activar IA en Imou** analiza muestras en un panel separado con el proceso
+`camara_local.py` ya existente. Los recuadros corresponden al fotograma analizado;
+el análisis puede ser más lento. No hay audio ni grabación para esta fuente.
+El registro de eventos y avisos es opcional y requiere activarlo tras marcar
+una zona. Las credenciales permanecen en el archivo local ignorado. Los procesos
+se inician manualmente tras reiniciar; Ctrl+C los detiene cuando se ejecutan en
+una terminal. Ver alcance y pruebas en
+[conexión Imou](../../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+En la vista analizada se puede dibujar una zona temporal de estacionamiento y
+marcar en rojo posibles vehículos detenidos. Es orientativo y no guarda la zona.
+El registro optativo puede generar eventos y avisos reales; [instrucciones y
+límites](../../documentacion/seguridad/REGISTRO_IMOU_LOCAL.md).
+
+Los eventos nuevos de la Imou adjuntan el fotograma analizado como evidencia
+protegida en la base de datos. [Consulta, permisos y límites](../../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
 Este directorio forma parte del backend y ejecuta el análisis como proceso
 independiente de Django. La prueba de cámara requiere que el usuario la inicie
 desde la web; todavía no crea eventos ni envía notificaciones. Los recursos y

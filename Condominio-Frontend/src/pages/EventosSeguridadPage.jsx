@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { crearEvento, listarEventos, listarHistorialEvento, revisarEvento, atenderEvento } from '../api/notificacionesApi.js';
 import { useSession } from '../auth/sessionContext.js';
 import CamaraDemostracion from './CamaraDemostracion.jsx';
+import CamaraImou from './CamaraImou.jsx';
 import VideoArchivoDemostracion from './VideoArchivoDemostracion.jsx';
+import EvidenciaEvento from '../components/EvidenciaEvento.jsx';
 
 export default function EventosSeguridadPage() {
   const { user } = useSession();
@@ -18,6 +20,7 @@ export default function EventosSeguridadPage() {
   const [creating, setCreating] = useState(false);
   const [notice, setNotice] = useState('');
   const pendingEvent = useRef(null);
+  const manualForm = useRef(null);
   const load = useCallback(async () => {
     const data = await listarEventos();
     setItems(data.results || data);
@@ -55,6 +58,24 @@ export default function EventosSeguridadPage() {
       setError('No se pudo confirmar el registro. Puedes reintentar sin cambiar los datos.');
     } finally { setCreating(false); }
   }
+  function prepararEventoVideo(hallazgo) {
+    if (creating || category.trim() || description.trim() || pendingEvent.current) {
+      setError('El formulario ya contiene datos o un envío pendiente. Complétalo o límpialo antes de preparar otro evento.');
+      manualForm.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const momento = `${Math.floor(hallazgo.tiempo / 60)}:${String(Math.floor(hallazgo.tiempo % 60)).padStart(2, '0')}`;
+    setCategory('Posible estacionamiento en zona prohibida');
+    setDescription(`Resultado orientativo de análisis de video seleccionado: ${hallazgo.clase}, aproximadamente ${Math.floor(hallazgo.duracion)} segundos detenido en la zona marcada, en el minuto ${momento} del video. La fecha de grabación y la ubicación no están verificadas. Requiere revisión. No se adjunta el video.`);
+    setError('');
+    setNotice('Datos preparados. Revisa el formulario: todavía no se ha registrado el evento ni se han enviado avisos.');
+    manualForm.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  const registrarEventoVideo = useCallback(async (datos, configuracion) => {
+    const creado = await crearEvento(datos, configuracion);
+    setItems(actual => [creado, ...actual.filter(item => item.id !== creado.id)]);
+    return creado;
+  }, []);
   async function execute(action) {
     if (['descartar', 'resolver', 'actuaciones'].includes(action) && !observation.trim()) {
       setError('Escribe el motivo o la observación requerida.'); return;
@@ -72,12 +93,14 @@ export default function EventosSeguridadPage() {
     finally { setBusy(false); }
   }
   return <div className="bg-white p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold mb-4">Eventos e incidencias de seguridad</h2>
-    <CamaraDemostracion />
-    <VideoArchivoDemostracion />
+    <CamaraDemostracion onRegistrarEvento={registrarEventoVideo} />
+    <CamaraImou onRegistrarEvento={registrarEventoVideo} />
+    <VideoArchivoDemostracion onPrepararEvento={prepararEventoVideo} onRegistrarEvento={registrarEventoVideo} />
     {error && <p role="alert" className="text-red-700 mb-4">{error}</p>}
     {notice && <p role="status" className="text-green-700 mb-4">{notice}</p>}
-    <form onSubmit={create} className="border rounded p-4 mb-5 space-y-3">
+    <form ref={manualForm} onSubmit={create} className="border rounded p-4 mb-5 space-y-3">
       <h3 className="font-semibold">Registrar evento manual</h3>
+      <p className="text-sm">Al enviar se registra un evento manual pendiente de revisión y se generan avisos para los guardias activos. La fecha registrada corresponde al envío; no se adjunta el video.</p>
       <label className="block">Categoría <input required maxLength={80} disabled={creating} value={category} onChange={e => { setCategory(e.target.value); pendingEvent.current = null; }} className="block w-full border rounded p-2" /></label>
       <label className="block">Descripción <textarea required disabled={creating} value={description} onChange={e => { setDescription(e.target.value); pendingEvent.current = null; }} className="block w-full border rounded p-2" /></label>
       <button disabled={creating} className="bg-indigo-600 text-white rounded px-3 py-2 disabled:opacity-50">{creating ? 'Registrando…' : 'Enviar a revisión'}</button>
@@ -86,6 +109,7 @@ export default function EventosSeguridadPage() {
     {selected && <section className="mt-5 border rounded p-4"><h3 className="font-semibold">Detalle</h3>
       <p>{selected.descripcion}</p><p>{selected.camara || 'Sin cámara'} · {selected.ubicacion || 'Sin ubicación'}</p>
       <p>Estado: {selected.estado} · Origen: {selected.origen}</p>
+      <EvidenciaEvento key={selected.id} evento={selected} />
       {user.role === 'guardia' && ['PENDIENTE_REVISION', 'CONFIRMADA', 'EN_ATENCION'].includes(selected.estado) && <div className="mt-3 space-y-2">
         <label className="block">Motivo u observación <textarea className="block w-full border rounded p-2" value={observation} onChange={e => setObservation(e.target.value)} /></label>
         {selected.estado === 'PENDIENTE_REVISION' && <><button disabled={busy} className="mr-4 text-indigo-700" onClick={() => execute('confirmar')}>Confirmar</button><button disabled={busy} className="text-red-700" onClick={() => execute('descartar')}>Descartar</button></>}

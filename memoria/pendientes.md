@@ -1,5 +1,47 @@
 # Pendientes
 
+2026-11-05: recargar la sesión Flutter y validar un nuevo evento real Imou con evidencia en web y móvil. Pendientes política de retención, cuotas, restauración de respaldo, asignación por cámara, deduplicación y operación sin navegador. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
+2026-11-05: usuario probará después zona, permanencia y entrega real desde Imou a móvil. Pendientes evidencia, deduplicación robusta, reintentos persistentes, identificación de cámara y operación sin navegador; inicio automático de procesos no implementado. [Informe](../documentacion/seguridad/REGISTRO_IMOU_LOCAL.md).
+
+2026-11-05: el usuario debe comprobar zona y permanencia Imou con cámara y maqueta; pruebas actuales son simuladas. Después, por etapa aprobada, diseñar registro/notificación confiables, evidencia y operación autónoma. [Informe](../documentacion/seguridad/ZONA_IMOU_TEMPORAL.md).
+
+2026-11-05: confirmar con el usuario la nueva alineación de las vistas Imou. Su captura ya muestra recuadros de IA; siguen pendientes precisión, rendimiento sostenido, zonas, alertas y evidencia. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: probar con el usuario detecciones visibles de objetos en la Imou y rendimiento sostenido. Pendientes etapa de zonas y alertas para Imou, evidencia y vigilancia autónoma. La vista y la IA existentes requieren servicios locales y la página activa. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: vista Imou implementada y puente real verificado; confirmar visualización/ampliación en sesión web del usuario y coexistencia con Imou Life. Siguiente etapa requiere aprobación: conectar fuente IP a IA/reglas. No hay arranque automático, grabación ni alertas desde Imou. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: autenticación y lectura de un fotograma Imou resueltas por Wi-Fi (640 x 480). Siguiente etapa por aprobar: visualización IP en web preservando webcam; después IA, reconexión y reglas por cámara. Simultaneidad con Imou Life y Ethernet aún no comprobados. [Resultado](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: verificar usuario y clave local de la Imou antes de repetir lectura: DESCRIBE autenticado devolvió 401. La clave ya está completada, no debe solicitarse en el chat. Se mantiene Wi-Fi por decisión del usuario. [Detalle](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: índice automático corregido y comprobado en Word. Completar datos y redactar bajo los títulos del [nuevo documento](../output/pdf/caratula_indice_condominio_automatico.docx); usar «Actualizar toda la tabla» tras editar. La comprobación visual pendiente del Word anterior queda superada por esta versión.
+
+2026-11-05: completar localmente credenciales de la Imou y confirmar IP si se conecta por RJ45; probar lectura de un fotograma. Pendientes integración RTSP en web/IA y coexistencia con Imou Life. La webcam se conserva. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: revisar visualmente la versión Word editable en Word o LibreOffice; el renderizador de documentos no encontró LibreOffice y la exportación de prueba con Word no se completó.
+
+2026-11-05: para usar la [carátula e índice académico](../output/pdf/caratula_indice_condominio.pdf), completar grupo, integrantes y docente y actualizar las páginas de referencia al integrar el informe completo. Esta entrega solicitada contiene únicamente carátula e índice; no autoriza redactar capítulos ni ejecutar sprints.
+
+2026-11-05: el usuario aclaró que la repetición reportada fue una equivocación; no queda esa investigación pendiente.
+
+2026-11-05: el usuario confirmó recibir una notificación tras el envío de tres avisos de prueba aceptados por Firebase; no precisó cuántos recibió. El procesador continuo se inició localmente y falta preparar su arranque automático. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+2026-11-04: comprobados zona y reintento con cámara y API simuladas; verificar con el usuario la cámara física y entrega real. Deduplicación ante pérdida, reintentos persistentes, evidencias, identificación de cámara y operación autónoma continúan pendientes. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: verificar dibujo, ocultación y permanencia de zona en cámara con maqueta; medir la separación de muestras. Pendientes zona persistente por cámara, evidencia, evento/aviso y operación autónoma. [Informe](../documentacion/seguridad/ZONA_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: el usuario confirmó recepción en el teléfono del evento manual de video. El procesador se ejecutó para un lote único; funcionamiento continuo sigue pendiente. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+2026-11-04: verificar en interfaz el nuevo registro automático optativo con el usuario; deduplicación entre análisis, persistencia de reintentos, ingesta de servicio IA, evidencias y cámara permanecen pendientes. [Informe](../documentacion/seguridad/REGISTRO_AUTOMATICO_VIDEO.md).
+
+2026-11-04: probar con el usuario la preparación de un evento desde video; cualquier envío real crea un evento y avisos para guardias. Diseñar ingesta automática autenticada, evidencia y deduplicación antes de uso operativo. [Detalle](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+## Zona y permanencia — 2026-11-04
+
+Zona temporal y estimación básica de permanencia en video disponibles; falta revisión con el usuario y medir precisión. Pendientes zonas persistentes por cámara, seguimiento robusto en vivo, deduplicación confiable, evidencia y conexión segura con eventos/alertas de Django. [Informe](../documentacion/seguridad/PERMANENCIA_VIDEO.md).
+
 ## Archivo de video desde la web — 2026-11-02
 
 El usuario pidió controles dentro del video; se incorporó reproductor nativo con recuadros superpuestos y falta que lo pruebe en su sesión. No genera video descargable, eventos ni alertas. [Informe](../documentacion/seguridad/VIDEO_ARCHIVO_DEMOSTRACION.md).

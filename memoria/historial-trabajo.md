@@ -1,5 +1,55 @@
 # Historial del trabajo
 
+2026-11-05: usuario confirmó recepción móvil de detección Imou y aprobó evidencia. Se respaldó base, aplicó migración aditiva, incorporó captura atómica y consulta privada en web/móvil; pruebas simuladas y permisos verificadas. Sin instalación móvil ni nuevas notificaciones reales. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
+2026-11-05: usuario postergó prueba con maqueta y aprobó registro automático y notificación Imou. Se usó API y cola existentes con activación optativa, reintentos y pruebas simuladas. Sin tocar configuración Firebase ni datos reales. [Informe](../documentacion/seguridad/REGISTRO_IMOU_LOCAL.md).
+
+2026-11-05: aprobada e implementada zona temporal en la Imou, con permanencia y recuadros rojos. Se reutilizó el seguimiento existente; no se conectaron notificaciones ni se realizaron envíos. [Informe](../documentacion/seguridad/ZONA_IMOU_TEMPORAL.md).
+
+2026-11-05: usuario mostró recuadros de IA en Imou y solicitó alinear las dos vistas. Se movieron controles arriba y se ajustó la presentación responsiva. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: usuario confirmó probar la vista Imou y autorizó conectar IA. Implementado panel de muestras con recuadros sincronizados, reutilizando API de webcam. Prueba sintética de interfaz y un fotograma real procesado, sin cambios de datos ni avisos. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: con aprobación se incorporó visualización Imou a eventos de seguridad conservando webcam. Corregido arranque del socket Windows, probado y dejado puente local en segundo plano. Sin modificar configuración física ni crear eventos. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: el usuario autorizó copiar el código de su etiqueta física al archivo local privado. Clave corregida y lectura RTSP comprobada por Wi-Fi; sin modificar cámara, firmware o red. [Resultado](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: usuario encontró y guardó clave local; prueba por Wi-Fi y diagnóstico autenticado rechazados con 401. Se detuvieron reintentos para verificar credenciales. [Detalle](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: corregido índice manual tras observación del usuario. Autorizó añadir estructura de títulos sin contenido; generado y actualizado índice nativo de Word con 193 entradas. [Resultado](estado-actual.md#carátula-e-índice-académico--2026-11-05).
+
+2026-11-05: usuario autorizó comenzar la prueba Imou y consultó RJ45. Se preparó lector local y archivo privado sin clave. Se corrigió diagnóstico previo: las conexiones hab?an sido bloqueadas por el entorno del agente; RTSP sí respondió. No se modificó la cámara. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: a petición del usuario se preparó la carátula y el índice en Word editable a partir del PDF adaptado.
+
+2026-11-05: adaptadas únicamente carátula e índice académico, con título de gestión y seguridad inteligente de condominios, subtítulos pertinentes y espacios para los datos académicos. Se eliminó la repetición del índice del original y se corrigió el apartado 3.5 duplicado. [Resultado y límites](estado-actual.md#carátula-e-índice-académico--2026-11-05).
+
+2026-11-05: el usuario confirmó recepción en su teléfono después de procesar las entregas pendientes del guardia. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+2026-11-05: el usuario aclaró que no existía el problema de repetición. Se procesaron tres avisos de prueba pendientes del guardia y se inició el procesador continuo local; falta confirmación telefónica. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+2026-11-05: se investigó la repetición de video reportada; un escenario sintético de reproducción finalizó sin repetir inferencia. [Informe](../documentacion/seguridad/VIDEO_ARCHIVO_DEMOSTRACION.md).
+
+2026-11-04: comprobación de cámara, zona y reintento en Edge con fuente y API simuladas; sin usar dispositivo o Firebase reales. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: añadido registro optativo desde la prueba de cámara mediante API existente; no se enviaron avisos durante la etapa. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: se añadió zona temporal ocultable y resaltado por permanencia a la prueba de cámara, sin eventos ni avisos. [Informe](../documentacion/seguridad/ZONA_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: se añadió registro automático optativo de hallazgos de video por API manual y reintentos con identificador estable; el usuario confirmó recepción de la prueba manual anterior. [Informe](../documentacion/seguridad/REGISTRO_AUTOMATICO_VIDEO.md).
+
+2026-11-04: el usuario envió el evento de video; se procesó su única entrega pendiente y Firebase la aceptó en el segundo intento. Falta confirmar recepción. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+2026-11-04: conectada la preparación voluntaria de un evento manual con un hallazgo del video; el envío usa el flujo de alertas existente. No se enviaron eventos durante la implementación. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+2026-11-04: aprobada e implementada estimación de permanencia para video, con seguimiento básico y sin alertas. [Informe](../documentacion/seguridad/PERMANENCIA_VIDEO.md).
+
+2026-11-04: se añadió una guía con enlace al video público anterior; posteriormente se retiró a petición del usuario. El archivo no se descargó. [Detalle](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
+## 2026-11-04: marcado de zona en video
+
+Se incorporó un editor temporal de polígonos sobre video y se verificó en navegador con API simulada. [Informe](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
 ## 2026-11-02: retiro del video fijo
 
 Se retiró la muestra pública fija con autorización, preservando cámara y análisis de archivos elegidos. [Informe](../documentacion/seguridad/RETIRO_VIDEO_DEMOSTRACION.md).

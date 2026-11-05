@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import '../services/alertas_seguridad_service.dart';
 
 class AlertasSeguridadPage extends StatefulWidget {
@@ -70,6 +71,11 @@ class _AlertasSeguridadPageState extends State<AlertasSeguridadPage> {
             const SizedBox(height: 12), Text(detalle!.descripcion),
             const SizedBox(height: 12), Text('Estado: ${detalle!.estado}'),
             Text('Fecha: ${detalle!.fecha}'),
+            if (detalle!.evidenciaDisponible) ...[
+              const SizedBox(height: 16),
+              Text('Evidencia del evento', style: Theme.of(context).textTheme.titleMedium),
+              _EvidenciaEvento(key: ValueKey(detalle!.id), eventoId: detalle!.id, service: service),
+            ],
             TextButton(onPressed: () => setState(() { detalle = null; }), child: const Text('Volver a las alertas')),
           ])))
       : alertas.isEmpty ? const Center(child: Text('No hay alertas de seguridad.'))
@@ -82,5 +88,60 @@ class _AlertasSeguridadPageState extends State<AlertasSeguridadPage> {
             onTap: () => abrir(alerta),
           );
         }),
+  );
+}
+
+class _EvidenciaEvento extends StatefulWidget {
+  final String eventoId;
+  final AlertasSeguridadService service;
+  const _EvidenciaEvento({super.key, required this.eventoId, required this.service});
+
+  @override
+  State<_EvidenciaEvento> createState() => _EvidenciaEventoState();
+}
+
+class _EvidenciaEventoState extends State<_EvidenciaEvento> {
+  late Future<Uint8List?> imagen;
+  Uint8List? ultimaImagen;
+
+  Future<Uint8List?> cargarImagen() async {
+    try {
+      final bytes = await widget.service.obtenerEvidencia(widget.eventoId);
+      if (mounted) ultimaImagen = bytes;
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    imagen = cargarImagen();
+  }
+
+  @override
+  void dispose() {
+    if (ultimaImagen != null) PaintingBinding.instance.imageCache.evict(MemoryImage(ultimaImagen!));
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Uint8List?>(
+    future: imagen,
+    builder: (context, resultado) {
+      if (resultado.connectionState != ConnectionState.done) {
+        return const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator());
+      }
+      if (resultado.hasError || resultado.data == null) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('No se pudo cargar la evidencia.'),
+          TextButton(onPressed: () => setState(() { imagen = cargarImagen(); }),
+              child: const Text('Reintentar evidencia')),
+        ]);
+      }
+      return Image.memory(resultado.data!, semanticLabel: 'Fotograma de evidencia del evento',
+          errorBuilder: (context, error, stack) => const Text('No se pudo mostrar la evidencia.'));
+    },
   );
 }

@@ -10,6 +10,21 @@ export async function obtenerEvento(id) { return (await client.get(`eventos-segu
 export async function revisarEvento(id, accion, motivo) { return (await client.post(`eventos-seguridad/${id}/${accion}/`, { motivo })).data; }
 export async function atenderEvento(id, accion, observacion) { return (await client.post(`eventos-seguridad/${id}/${accion}/`, { observacion })).data; }
 export async function listarEventos() { return (await client.get('eventos-seguridad/')).data; }
-export async function crearEvento(datos) { return (await client.post('eventos-seguridad/', datos)).data; }
+export async function crearEvento(datos, configuracion) {
+  if (datos.evidencia instanceof Blob) {
+    const cuerpo = new FormData();
+    for (const [clave, valor] of Object.entries(datos)) {
+      if (clave === 'evidencia') cuerpo.append(clave, valor, 'evidencia.jpg');
+      else cuerpo.append(clave, valor);
+    }
+    return (await client.post('eventos-seguridad/', cuerpo, configuracion)).data;
+  }
+  return (await client.post('eventos-seguridad/', datos, configuracion)).data;
+}
+export async function obtenerEvidencia(id, signal) {
+  const respuesta = await client.get(`eventos-seguridad/${id}/evidencia/`, { signal, responseType: 'blob', timeout: 10000 });
+  if (respuesta.data.type !== 'image/jpeg' || respuesta.data.size > 1024 * 1024) throw new Error('Evidencia inválida');
+  return respuesta.data;
+}
 export async function redistribuirEvento(id) { return (await client.post(`eventos-seguridad/${id}/redistribuir/`)).data; }
 export async function listarHistorialEvento(id) { return (await client.get(`eventos-seguridad/${id}/historial/`)).data; }

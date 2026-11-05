@@ -31,6 +31,15 @@ class EventoSeguridad(models.Model):
     incidencia = models.OneToOneField('residencial.incidente', on_delete=models.PROTECT, null=True, related_name='evento_seguridad')
 
 
+class EvidenciaEventoSeguridad(models.Model):
+    # Se guarda fuera de MEDIA_ROOT y solo se entrega mediante una API autorizada.
+    evento = models.OneToOneField(EventoSeguridad, on_delete=models.PROTECT,
+                                  primary_key=True, related_name='evidencia_privada')
+    imagen = models.BinaryField()
+    sha256 = models.CharField(max_length=64)
+    creada = models.DateTimeField(default=timezone.now)
+
+
 class NotificacionSeguridad(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     evento = models.ForeignKey(EventoSeguridad, on_delete=models.PROTECT, related_name='notificaciones')

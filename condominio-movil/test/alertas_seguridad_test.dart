@@ -55,6 +55,59 @@ void main() {
     await expectLater(offline.listar(), throwsA(isA<AlertasException>()));
   });
 
+  test('descarga evidencia autenticada y rechaza respuestas no JPEG', () async {
+    var requests = 0;
+    final service = AlertasSeguridadService(client: MockClient((request) async {
+      requests++;
+      expect(request.url.path, '/api/eventos-seguridad/$eventId/evidencia/');
+      expect(request.headers['authorization'], 'Bearer prueba');
+      return http.Response.bytes([0xff, 0xd8, 0xff, 0x01], 200,
+          headers: {'content-type': 'image/jpeg'});
+    }), readToken: () async => 'prueba');
+    expect(await service.obtenerEvidencia(eventId), [0xff, 0xd8, 0xff, 0x01]);
+    await expectLater(service.obtenerEvidencia('../usuarios'), throwsA(isA<AlertasException>()));
+    expect(requests, 1);
+    final invalid = AlertasSeguridadService(client: MockClient((_) async =>
+        http.Response('no es imagen', 200, headers: {'content-type': 'text/html'})),
+        readToken: () async => 'prueba');
+    await expectLater(invalid.obtenerEvidencia(eventId), throwsA(isA<AlertasException>()));
+  });
+
+  testWidgets('muestra error y permite reintentar evidencia protegida', (tester) async {
+    var evidenceRequests = 0;
+    final service = AlertasSeguridadService(client: MockClient((request) async {
+      if (request.url.path.endsWith('/notificaciones-seguridad/')) return http.Response(jsonEncode([notification]), 200);
+      if (request.url.path.endsWith('/evidencia/')) { evidenceRequests++; return http.Response('', 403); }
+      if (request.method == 'GET') return http.Response(jsonEncode({...detail, 'evidencia_disponible': true}), 200);
+      return http.Response('{}', 200);
+    }), readToken: () async => 'prueba');
+    await tester.pumpWidget(MaterialApp(home: AlertasSeguridadPage(service: service)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Evento enviado a revisión'));
+    await tester.pumpAndSettle();
+    expect(find.text('Evidencia del evento'), findsOneWidget);
+    expect(find.text('No se pudo cargar la evidencia.'), findsOneWidget);
+    await tester.tap(find.text('Reintentar evidencia'));
+    await tester.pumpAndSettle();
+    expect(evidenceRequests, 2);
+  });
+
+  testWidgets('muestra el fotograma autorizado en el detalle de la alerta', (tester) async {
+    final jpeg = base64Decode('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDACgcHiMeGSgjISMtKygwPGRBPDc3PHtYXUlkkYCZlo+AjIqgtObDoKrarYqMyP/L2u71////m8H////6/+b9//j/2wBDASstLTw1PHZBQXb4pYyl+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj/wAARCAACAAIDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/ALIAP//Z');
+    final service = AlertasSeguridadService(client: MockClient((request) async {
+      if (request.url.path.endsWith('/notificaciones-seguridad/')) return http.Response(jsonEncode([notification]), 200);
+      if (request.url.path.endsWith('/evidencia/')) return http.Response.bytes(jpeg, 200, headers: {'content-type': 'image/jpeg'});
+      if (request.method == 'GET') return http.Response(jsonEncode({...detail, 'evidencia_disponible': true}), 200);
+      return http.Response('{}', 200);
+    }), readToken: () async => 'prueba');
+    await tester.pumpWidget(MaterialApp(home: AlertasSeguridadPage(service: service)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Evento enviado a revisión'));
+    await tester.pumpAndSettle();
+    expect(find.byWidgetPredicate((widget) => widget is Image &&
+        widget.semanticLabel == 'Fotograma de evidencia del evento', skipOffstage: false), findsOneWidget);
+  });
+
   test('rechaza datos inválidos y no consulta URL creada con identificadores falsos', () async {
     var requests = 0;
     final service = AlertasSeguridadService(client: MockClient((_) async {

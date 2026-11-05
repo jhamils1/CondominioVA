@@ -1,5 +1,16 @@
 # Análisis de video seleccionado en la web — 2026-11-02
 
+## Revisión de posible repetición — 2026-11-05
+
+El usuario informó que su video parece repetirse. Su captura mostró 67 de 67
+imágenes analizadas y un evento registrado. En una prueba de Edge con un video
+sintético de tres segundos y API simulada se analizaron seis muestras; tras
+reproducir hasta el final, ambos videos quedaron detenidos y el número de
+solicitudes de análisis siguió en seis. La prueba se repite mediante
+`node e2e/video_fin_simulado.mjs` después del build. No se reprodujo el problema
+en ese caso sintético y no se examinó el archivo del usuario; sigue pendiente
+identificar si se refiere al análisis, a la reproducción o al contenido.
+
 Se agregó la opción «Analizar un video desde un archivo» en eventos de
 seguridad. El usuario selecciona un archivo local de hasta 250 MB y cinco
 minutos, en un formato que pueda reproducir su navegador. El navegador lee el

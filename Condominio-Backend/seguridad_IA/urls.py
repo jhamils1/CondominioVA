@@ -3,6 +3,7 @@ from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 from .api_notificaciones import EventoViewSet, NotificacionViewSet
 from .api_camara_demo import CamaraAnalizarDemo, CamaraEstadoDemo
+from .api_imou_local import ImouFotogramaLocal
 from .views import AlprScanView, ReconocimientoGlobalView, EnrolarPersonaView, VerificarEnrolamientoView, VerificarLuxandAPIView, ProbarLuxandView
 
 router = SimpleRouter()
@@ -10,6 +11,7 @@ router.register('eventos-seguridad', EventoViewSet, basename='eventos-seguridad'
 router.register('notificaciones-seguridad', NotificacionViewSet, basename='notificaciones-seguridad')
 
 urlpatterns = [
+    path('vision-imou/fotograma/', ImouFotogramaLocal.as_view(), name='vision-imou-fotograma'),
     path('vision-camara/estado/', CamaraEstadoDemo.as_view(), name='vision-camara-estado'),
     path('vision-camara/analizar/', CamaraAnalizarDemo.as_view(), name='vision-camara-analizar'),
     path('', include(router.urls)),

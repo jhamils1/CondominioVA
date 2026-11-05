@@ -1,4 +1,7 @@
 from django.conf import settings
+from django.db import transaction
+from django.db.models import Exists, OuterRef
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import serializers, status, viewsets
@@ -6,8 +9,9 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from administracion.access import SecurityOperator, effective_role
-from .models import EntregaFCMSeguridad, EventoSeguridad, HistorialEventoSeguridad, NotificacionSeguridad
+from .models import EntregaFCMSeguridad, EventoSeguridad, EvidenciaEventoSeguridad, HistorialEventoSeguridad, NotificacionSeguridad
 from .notificaciones import atender_evento, distribuir_revision, registrar_actuacion, registrar_evento, revisar_evento, TransicionInvalida
+from .evidencia import procesar_evidencia
 
 
 class ServicioNoActivado(APIException):
@@ -23,11 +27,20 @@ class ActivacionRequerida:
 
 
 class EventoSerializer(serializers.ModelSerializer):
+    evidencia = serializers.FileField(write_only=True, required=False)
+    evidencia_disponible = serializers.SerializerMethodField()
+
+    def get_evidencia_disponible(self, obj):
+        if hasattr(obj, '_evidencia_disponible'):
+            return obj._evidencia_disponible
+        return EvidenciaEventoSeguridad.objects.filter(evento_id=obj.pk).exists()
+
     class Meta:
         model = EventoSeguridad
         fields = ['id', 'origen', 'categoria', 'descripcion', 'camara', 'ubicacion', 'prioridad',
                   'fecha_evento', 'fecha_recepcion', 'estado', 'sin_guardias', 'revisor',
-                  'fecha_revision', 'motivo_descarte', 'incidencia', 'atendido_por', 'observaciones', 'fecha_resolucion']
+                  'fecha_revision', 'motivo_descarte', 'incidencia', 'atendido_por', 'observaciones', 'fecha_resolucion',
+                  'evidencia', 'evidencia_disponible']
         read_only_fields = ['origen', 'fecha_recepcion', 'estado', 'sin_guardias', 'revisor',
                             'fecha_revision', 'motivo_descarte', 'incidencia', 'atendido_por', 'observaciones', 'fecha_resolucion']
         extra_kwargs = {'id': {'read_only': False, 'required': True}}
@@ -49,19 +62,39 @@ class NotificacionSerializer(serializers.ModelSerializer):
 class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
     permission_classes = [SecurityOperator]
     serializer_class = EventoSerializer
-    queryset = EventoSeguridad.objects.all().order_by('-fecha_recepcion')
+    queryset = EventoSeguridad.objects.annotate(
+        _evidencia_disponible=Exists(EvidenciaEventoSeguridad.objects.filter(evento_id=OuterRef('pk')))
+    ).order_by('-fecha_recepcion')
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = dict(serializer.validated_data)
+        archivo = data.pop('evidencia', None)
+        imagen, huella = procesar_evidencia(archivo) if archivo is not None else (None, None)
         event_id = data.pop('id')
         data['origen'] = 'MANUAL'
         try:
-            evento, created = registrar_evento(request.user, event_id, data)
+            with transaction.atomic():
+                evento, created = registrar_evento(request.user, event_id, data)
+                if created and imagen is not None:
+                    EvidenciaEventoSeguridad.objects.create(evento=evento, imagen=imagen, sha256=huella)
+                elif not created:
+                    previo = EvidenciaEventoSeguridad.objects.filter(evento=evento).values_list('sha256', flat=True).first()
+                    if previo != huella:
+                        raise TransicionInvalida('El identificador ya corresponde a un evento con otra evidencia.')
         except TransicionInvalida as exc:
             raise ValidationError(str(exc))
         return Response(self.get_serializer(evento).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='evidencia')
+    def evidencia(self, request, pk=None):
+        evento = self.get_object()
+        registro = get_object_or_404(EvidenciaEventoSeguridad, evento=evento)
+        response = HttpResponse(bytes(registro.imagen), content_type='image/jpeg')
+        response['Cache-Control'] = 'private, no-store, max-age=0'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
     @action(detail=True, methods=['post'])
     def confirmar(self, request, pk=None):

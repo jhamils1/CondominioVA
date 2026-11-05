@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { listarNotificaciones, leerNotificacion, obtenerEvento, revisarEvento, atenderEvento, listarEventos, redistribuirEvento } from '../api/notificacionesApi.js';
 import { useSession } from '../auth/sessionContext.js';
+import EvidenciaEvento from '../components/EvidenciaEvento.jsx';
 
 export default function NotificacionesPage() {
   const [items, setItems] = useState([]);
@@ -56,6 +57,7 @@ export default function NotificacionesPage() {
     {event && <section className="mt-5 border rounded p-4"><h3 className="font-semibold">Detalle del evento</h3>
       <p>{event.categoria} · {event.estado}</p><p>{event.descripcion}</p><p>{event.camara || 'Sin cámara'} · {event.ubicacion || 'Sin ubicación'}</p>
       <p>{new Date(event.fecha_evento).toLocaleString()}</p>
+      <EvidenciaEvento key={event.id} evento={event} />
       {user.role === 'guardia' && event.estado === 'PENDIENTE_REVISION' && <div className="mt-3 space-y-2">
         <button className="bg-indigo-600 text-white rounded px-3 py-2" onClick={() => review('confirmar')}>Confirmar incidencia</button>
         <label className="block">Motivo del descarte <input className="border rounded p-1" value={motivo} onChange={e => setMotivo(e.target.value)} /></label>

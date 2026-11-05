@@ -1,5 +1,55 @@
 # Cambios realizados
 
+2026-11-05: añadidos modelo/migración de evidencia privada, validación JPEG y descarga protegida; Imou adjunta fotograma y web/Flutter lo muestran. Respaldo y migración local verificados; sin cambios de Firebase ni datos de prueba persistentes. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
+2026-11-05: Imou registra hallazgos de forma optativa mediante la API existente; añade etiqueta de fuente y reintento UUID estable. Se amplió prueba backend y Edge, sin migraciones ni cambios del modelo/API del servidor. [Informe](../documentacion/seguridad/REGISTRO_IMOU_LOCAL.md).
+
+2026-11-05: `AnalisisImou.jsx`, `CamaraImou.jsx` y CSS muestran zona editable y usan el seguimiento existente; extendida prueba Edge. Sin cambios de backend, dependencias o permisos. [Informe](../documentacion/seguridad/ZONA_IMOU_TEMPORAL.md).
+
+2026-11-05: reorganizados `CamaraImou.jsx` y `AnalisisImou.jsx` con `CamaraImou.css`; ampliada prueba simulada de alineación. Sin cambios de backend ni reglas de visión. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: añadido `AnalisisImou.jsx` y conectado a `CamaraImou.jsx`, usando la API existente. Actualizada prueba Edge y documentación. No se cambiaron backend, permisos, dependencias ni app móvil. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: añadidos puente `imou_local.py`, pasarela `api_imou_local.py`, ruta autenticada y componente `CamaraImou.jsx`; pruebas Python/Edge y documentación. Sin dependencias nuevas, migraciones ni cambios móviles. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: corregida únicamente la clave en la configuración privada ignorada de la Imou con autorización; documentada lectura real satisfactoria. No se incluye la clave en informes ni se cambió código funcional. [Resultado](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: documentado resultado de autenticación Imou por Wi-Fi (401). Sin cambios funcionales ni en configuración de la cámara; clave ingresada localmente por el usuario. [Detalle](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: añadido `output/pdf/caratula_indice_condominio_automatico.docx`, conservando el Word anterior renombrado por el usuario. Incluye carátula, TOC nativo y estructura de títulos para redactar.
+
+2026-11-05: añadido `seguridad_vision/probar_imou.py`, plantilla local ignorada `recursos/imou.local.ini` y guía de conexión Wi-Fi/RJ45. Sin cambios en Django, frontend, móvil ni base de datos. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: preparada versión Word editable de la carátula y el índice; ver límite de comprobación visual en [estado actual](estado-actual.md#carátula-e-índice-académico--2026-11-05).
+
+2026-11-05: añadido `output/pdf/caratula_indice_condominio.pdf` y registro documental de la adaptación académica. Solo carátula e índice; los sprints son una propuesta de organización del informe, no evidencia de ejecución histórica. [Resultado](estado-actual.md#carátula-e-índice-académico--2026-11-05).
+
+2026-11-05: se documentó la confirmación del usuario de una notificación recibida en el teléfono; sin cambios adicionales de código. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+2026-11-05: procesadas tres entregas pendientes de prueba y procesador FCM continuo iniciado sin cambios de configuración. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+2026-11-05: añadida prueba `Condominio-Frontend/e2e/video_fin_simulado.mjs` para comprobar fin de reproducción y ausencia de solicitudes adicionales, sin cambios en el reproductor. [Informe](../documentacion/seguridad/VIDEO_ARCHIVO_DEMOSTRACION.md).
+
+2026-11-04: añadida prueba reproducible de cámara y registro con navegador y API simulados en `Condominio-Frontend/e2e/camara_simulada.mjs`. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: opción y reintento en la cámara web de prueba, con contenido que identifica la procedencia y sin cambios en backend. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: editor y capa de zona en `CamaraDemostracion.jsx`, con regla temporal de permanencia y descarte de intervalos largos. [Informe](../documentacion/seguridad/ZONA_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: registro automático optativo en frontend y preparación de evento para API existente, sin migraciones ni cambios backend. [Informe](../documentacion/seguridad/REGISTRO_AUTOMATICO_VIDEO.md).
+
+2026-11-04: se procesó un lote de una entrega FCM existente del guardia de prueba, sin cambios de código o configuración. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+2026-11-04: botón de preparación desde hallazgo y formulario manual con descripción del origen y efectos del envío; sin cambios de backend. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+2026-11-04: seguimiento en memoria y visualización de posibles vehículos detenidos en video; zona y resultados siguen temporales. [Informe](../documentacion/seguridad/PERMANENCIA_VIDEO.md).
+
+2026-11-04: se retiraron la guía y el enlace de muestra añadidos en el cambio anterior, conservando el editor de zona. [Detalle](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
+## 2026-11-04: editor temporal de zona
+
+Se añadieron componentes y validaciones de zona al frontend, sin cambios en backend o datos. [Informe](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
 ## 2026-11-02: limpieza del video fijo
 
 Eliminados componente, ruta, pruebas exclusivas y archivos públicos de muestra; el script general ahora exige una entrada explícita. [Informe](../documentacion/seguridad/RETIRO_VIDEO_DEMOSTRACION.md).

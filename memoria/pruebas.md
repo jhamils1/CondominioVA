@@ -1,5 +1,59 @@
 # Pruebas y verificación
 
+2026-11-05: PostgreSQL local escribió y leyó un JPEG ficticio en una transacción revertida; se comprobó que no quedaron registros ni se crearon avisos. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
+2026-11-05: migración aditiva probada en SQLite y aplicada en PostgreSQL local con respaldo verificado por listado. Cinco pruebas backend, tres reforzadas, Edge simulado, nueve pruebas Flutter, analizador, lint y build correctos. Descarga anónima real 401. Falta probar evidencia real en web/móvil; sin envío real en esta etapa. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
+
+2026-11-05: 10 pruebas Node y cuatro Django con SQLite en memoria pasaron; se verificaron dos guardias, exclusión residentes, UUID idempotente y FCM simulado. Edge simulado comprobó Imou con fallo/reintento y webcam existente. Build y lint correctos; procesador FCM observado activo. Sin envíos reales nuevos ni prueba real de Imou. [Informe](../documentacion/seguridad/REGISTRO_IMOU_LOCAL.md).
+
+2026-11-05: ocho pruebas existentes de zonas/permanencia correctas; build/lint correctos. Edge con imágenes ficticias comprobó dibujo, zona oculta, mostrar/ocultar, verde a rojo con umbral de 2 s, salida a verde, sin eventos y controles existentes. No se usó la cámara real en esta etapa. [Informe](../documentacion/seguridad/ZONA_IMOU_TEMPORAL.md).
+
+2026-11-05: build y lint del frontend correctos. Edge con datos ficticios comprobó imágenes Imou alineadas y del mismo ancho en 1440 px, apiladas en 600 px y controles de IA y cámara funcionales. No se abrió la cámara real en esta comprobación. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: build y lint frontend correctos; Edge con API y fotogramas ficticios comprobó recuadro sobre imagen correspondiente, inicio/detención y fallo de IA con vista activa, sin eventos. Un fotograma real Imou se analizó directamente por RF-DETR local: 0 detecciones, 0,3 s; sin guardar imágenes. No valida precisión ni rendimiento continuo. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: siete pruebas Django y dos del lector correctas; build/lint correctos, Edge simulado verificó vista Imou y detención/error. Puente real entregó tres JPEG y rechazó token ausente (403); Django rechazó sesión ausente (401). Cierre RTSP por inactividad observado. Pendiente sesión web del usuario. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: `probar_imou.py` terminó con código 0 fuera del entorno restringido y decodificó un fotograma real de 640 x 480 por Wi-Fi. Conexión cerrada, sin persistir imágenes ni enviar avisos; configuración privada ignorada por Git. No valida aún visualización web ni IA sobre cámara IP. [Resultado](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: lector Imou salió con código 1, sin imagen; diagnóstico DESCRIBE sin credenciales 401 y un intento Digest 401. Configuración tiene clave no vacía, sin comillas externas, usuario admin. Sin exponer valores secretos ni guardar imágenes. [Detalle](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: Word 16 generó y actualizó TOC; prueba temporal cambió «Introducción» y su página de 8 a 9, y ambos cambios aparecieron en el índice. Prueba descartada sin guardar. Verificados 193 títulos y enlaces; versión final de 23 páginas exportada con Word y revisada visualmente, incluido ajuste del primer sprint para evitar una página de solo título. El fallo anterior de automatización se resolvió ejecutando Word fuera del entorno restringido.
+
+2026-11-05: RTSP respondió 401 sin credenciales y TCP 80/554 accesibles fuera del entorno restringido. Sintaxis y tres comprobaciones locales de configuración correctas; archivo privado ignorado por Git. Lectura de imagen y Ethernet pendientes. Usuario confirmó recepción móvil tras subir video previo; no corresponde a la Imou. [Informe](../documentacion/seguridad/CONEXION_IMOU_LOCAL.md).
+
+2026-11-05: comprobada apertura estructural y presencia de párrafos editables en DOCX; renderizado no completado por ausencia de LibreOffice y exportación Word bloqueada. No se verificó visualmente su paginación.
+
+2026-11-05: PDF académico comprobado con pypdf (siete páginas, cinco capítulos, cuatro sprints y ausencia del título y autores del ejemplo) y renderizado con Poppler; inspección visual de las siete páginas sin recortes ni superposición. Índice de 193 entradas con números de referencia alineados a la derecha. Validación documental únicamente; sin pruebas de la aplicación. [Entrega](../output/pdf/caratula_indice_condominio.pdf).
+
+2026-11-05: el usuario confirmó recibir una notificación en el teléfono tras el procesamiento de tres entregas de prueba. No confirmó cuál ni cuántas recibió. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+2026-11-05: Firebase aceptó tres avisos existentes, el último evento figura ENVIADA y se comprobó arranque del procesador continuo. Falta recepción en el teléfono. [Informe](../documentacion/seguridad/REACTIVACION_FCM_VIDEO_2026_11_05.md).
+
+2026-11-05: Edge con video sintético de tres segundos y API simulada procesó seis muestras una vez y detuvo ambos reproductores al final. Primer intento de prueba tuvo selector ambiguo; corregido y segunda ejecución correcta. El archivo del usuario no se probó. [Informe](../documentacion/seguridad/VIDEO_ARCHIVO_DEMOSTRACION.md).
+
+2026-11-04: Edge headless con cámara y API simuladas comprobó zona, ocultación, fallo y reintento del registro con los mismos datos. Sin cámara física ni Firebase. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: diez pruebas Node de visión y contenido del evento, y build web correctos; no se ejecutaron cámara, interfaz, entrega o reintentos reales. [Informe](../documentacion/seguridad/REGISTRO_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: nueve pruebas Node de reglas y compilación web correctas; no se abrió la cámara ni se probó la interfaz de esta etapa. [Informe](../documentacion/seguridad/ZONA_CAMARA_DEMOSTRACION.md).
+
+2026-11-04: ocho pruebas Node, build web y 100 pruebas backend SQLite simuladas pasaron; la invocación inicial `manage.py test` falló por runner incompatible y se utilizó el ejecutor aislado propio. No se probó el flujo automático en interfaz ni se envió evento nuevo. [Informe](../documentacion/seguridad/REGISTRO_AUTOMATICO_VIDEO.md).
+
+2026-11-04: evento de video en estado pendiente y aviso interno del guardia comprobados; Firebase aceptó la entrega tras un intento fallido. Recepción en teléfono aún no confirmada. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+2026-11-04: build y siete pruebas Node existentes pasaron tras añadir la preparación de eventos. No se probó el nuevo recorrido interactivo ni la entrega; sin eventos ni envíos reales. [Informe](../documentacion/seguridad/VIDEO_PREPARAR_EVENTO.md).
+
+2026-11-04: siete pruebas Node de zona y permanencia y build web pasaron; muestras sintéticas, falta verificación en video del usuario. Aviso previo de tamaño de paquete. [Informe](../documentacion/seguridad/PERMANENCIA_VIDEO.md).
+
+2026-11-04: compilación web correcta después de retirar la guía; permanece el aviso previo de tamaño del paquete.
+
+2026-11-04: build web y dos pruebas geométricas de zonas pasaron después de añadir la guía. La descarga desde el entorno falló por conexión; falta probar la guía con el usuario. Vite mantiene aviso de tamaño de paquete. [Detalle](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
+## 2026-11-04: marcado de zona en video
+
+Dos pruebas de geometría, build y recorrido Edge con API simulada correctos; el video sintético temporal se retiró. Falta revisión manual. [Informe](../documentacion/seguridad/ZONA_VIDEO_PRIMERA_ETAPA.md).
+
 ## 2026-11-02: retiro del video fijo
 
 Build frontend, tres pruebas aisladas de la API de cámara y revisión de pantalla con sesión simulada correctos. Falta comprobación del usuario con sesión real. [Informe](../documentacion/seguridad/RETIRO_VIDEO_DEMOSTRACION.md).
