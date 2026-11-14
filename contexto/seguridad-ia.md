@@ -1,5 +1,11 @@
 # Seguridad inteligente
 
+2026-11-07: las cámaras de red adicionales admiten configuración de zona e historial propios; esa configuración aún no genera detecciones ni notificaciones. Imou conserva su zona y proceso anteriores. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
+
+2026-11-07: cámaras adicionales RTSP activas pueden seleccionarse para vista local mediante un puente separado; todavía no tienen zonas ni eventos propios. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
+
+2026-11-07: el monitor Imou admite una fuente vinculada al catálogo, con configuración cifrada y actualización de IP desde gestión; el archivo local permanece como respaldo antes de la vinculación. Activación y comprobación reales pendientes. [Detalle](../documentacion/seguridad/MONITOR_IMOU_CATALOGO.md).
+
 Actualización: 2026-10-31. La [auditoría del 29 de octubre](../documentacion/auditorias/Auditoria_tecnica_seguridad_IA_condominio.docx) propuso YOLO. La orientación posterior solicitada es **evaluar e integrar RF-DETR Nano**. Ninguno está integrado como procesador continuo en el código revisado. No instalar modelos o dependencias en una etapa meramente documental.
 
 ## Existente
@@ -95,3 +101,18 @@ flowchart LR
 La operación offline se refiere al trabajador futuro. Luxand, Plate Recognizer Cloud, FCM y otros proveedores actuales necesitan internet. Un backend en nube tampoco estará disponible durante una caída de conexión local.
 
 Antes de seleccionar ejecución CPU/GPU o exportación, medir hardware real, RAM/VRAM, FPS, latencia, consumo y número de cámaras. No se verificaron aquí el equipo objetivo, rendimiento, licencia de código/pesos, compatibilidad de exportadores ni costes de proveedores. Estas comprobaciones pertenecen a una etapa autorizada de evaluación, con fuentes oficiales vigentes.
+# Zona compartida de la Imou local (2026-11-05)
+
+El administrador configura la zona, el tiempo y el registro automático para la única fuente Imou local. Los guardias consultan la configuración sin modificarla. La zona persiste en Django; la vigilancia sigue requiriendo una sesión activa y los servicios locales. [Alcance y límites](../documentacion/seguridad/ZONA_IMOU_COMPARTIDA.md).
+
+La zona y sus opciones se guardan automáticamente tras completar el dibujo o la edición; eliminar requiere confirmación y desactiva el registro. Los fallos se informan y deben reintentarse. [Flujo vigente](../documentacion/seguridad/GUARDADO_AUTOMATICO_ZONA_IMOU.md).
+
+Desde 2026-11-05 existe un monitor local Imou separado del navegador, con inicio manual y dependencias de cámara, IA y base locales. Utiliza la zona compartida, registra eventos IA con evidencia y entrega a guardias mediante la cola existente. No se ha probado con cámara real en esta etapa ni tiene inicio automático o cola durable. [Alcance](../documentacion/seguridad/MONITOREO_IMOU_INDEPENDIENTE.md).
+
+Desde 2026-11-06 existe el catálogo administrativo `camaras`, independiente de la integración Imou actual. La integración multifuente y zonas/eventos por cámara siguen pendientes. Los avisos a residentes y la lectura automática de matrículas son propuestas posteriores. [Plan](../documentacion/seguridad/PLAN_CAMARAS_Y_AVISOS_RESIDENTES.md).
+
+El catálogo puede identificar la Imou existente por coincidencia única de dirección y puerto y solicitar una comprobación local al puente. No es aún una relación estable ni soporte genérico de cámaras. Prueba física pendiente por RTSP inaccesible. [Alcance](../documentacion/seguridad/VINCULO_IMOU_CATALOGO.md).
+
+La navegación web separa **Cámaras → Monitor en vivo** (administrador y guardia), **Cámaras → Gestión de cámaras** (administrador) y **Seguridad → Eventos e incidencias** (administrador). El guardia conserva revisión de eventos en el monitor y por la API. [Detalle](../documentacion/seguridad/MENU_MONITOR_CAMARAS.md).
+
+El catálogo de cámaras de red admite usuario, ruta RTSP y contraseña cifrada que no se devuelve en la API. La conexión RTSP genérica todavía no utiliza estos datos; la Imou conserva su configuración local anterior. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).

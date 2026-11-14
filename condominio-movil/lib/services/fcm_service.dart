@@ -7,6 +7,7 @@ import 'fcm_device_registration.dart';
 import 'fcm_startup.dart';
 import 'fcm_error_code.dart';
 import '../security/security_notification_navigation.dart';
+import '../security/resident_notification_navigation.dart';
 import '../config/app_environment.dart';
 import '../security/access_policy.dart';
 
@@ -116,6 +117,7 @@ class FCMService {
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         debugPrint('Notificación tocada.');
         SecurityNotificationNavigation.instance.recibirPayload(response.payload);
+        ResidentNotificationNavigation.instance.recibirPayload(response.payload);
       },
     );
 
@@ -123,6 +125,7 @@ class FCMService {
       final launch = await _localNotifications.getNotificationAppLaunchDetails();
       if (launch?.didNotificationLaunchApp == true) {
         SecurityNotificationNavigation.instance.recibirPayload(launch?.notificationResponse?.payload);
+        ResidentNotificationNavigation.instance.recibirPayload(launch?.notificationResponse?.payload);
       }
     } catch (_) {
       debugPrint('No se pudo comprobar el inicio desde una notificación local.');
@@ -164,13 +167,14 @@ class FCMService {
       message.notification?.title ?? 'Nueva notificación',
       message.notification?.body ?? '',
       notificationDetails,
-      payload: payloadAvisoSeguridad(message.data),
+      payload: payloadAvisoSeguridad(message.data) ?? payloadAvisoResidente(message.data),
     );
   }
 
   // Manejar la navegación según los datos de la notificación
   static void _handleNotificationNavigation(RemoteMessage message) {
     SecurityNotificationNavigation.instance.recibir(message.data);
+    ResidentNotificationNavigation.instance.recibir(message.data);
   }
 
   // Registrar el dispositivo en el backend

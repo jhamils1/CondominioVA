@@ -13,6 +13,7 @@ import {
   FaUserCircle,
   FaRobot,
   FaBuilding,
+  FaVideo,
 } from "react-icons/fa"; 
 import logo from "../assets/images/logo.jpg";
 
@@ -43,6 +44,10 @@ const Sidebar = ({ sidebarOpen }) => {
 
   const allMenuItems = [
     { title: "Dashboard", icon: <FaHome />, key: "dashboard", path: "/admin/dashboard" },
+    { title: "Cámaras", icon: <FaVideo />, key: "camaras", subItems: [
+      { name: "Monitor en vivo", path: "/admin/monitor-camaras" },
+      { name: "Gestión de cámaras", path: "/admin/camaras" },
+    ] },
     {
       title: "Autenticación",
       icon: <FaUserCog />,
@@ -127,7 +132,7 @@ const Sidebar = ({ sidebarOpen }) => {
       className={({ isActive }) =>
         `px-4 py-3 flex items-center space-x-4 rounded-xl transition-all duration-300 ${
           isActive
-            ? "text-white bg-gradient-to-r from-slate-600 to-slate-700 shadow-md"
+            ? "text-white bg-gradient-to-r from-sky-800 to-blue-900 shadow-md"
             : "text-gray-300 hover:text-white hover:bg-gray-700/50"
         }`
       }
@@ -145,15 +150,16 @@ const Sidebar = ({ sidebarOpen }) => {
           : "w-0 overflow-hidden"
       }`}
       style={{ 
-        background: 'linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%)',
+        background: 'linear-gradient(180deg, #06172e 0%, #020d1d 100%)',
         boxShadow: '4px 0 24px rgba(0, 0, 0, 0.4)'
       }}
     >
       <div className="h-16 flex items-center justify-center px-4 border-b border-gray-700/50">
-        <Link to="/" className="flex items-center">
-          <img src={logo} alt="logo" className={`h-12 w-auto transition-opacity duration-500 ease-in-out ${
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logo} alt="logo" className={`h-11 w-11 rounded-full object-cover transition-opacity duration-500 ease-in-out ${
             sidebarOpen ? "opacity-100 delay-100" : "opacity-0 delay-0"
           }`} />
+          <span className="text-white leading-tight"><strong className="block text-base">Condominio</strong><span className="block text-[9px] tracking-widest text-slate-400">SISTEMA DE SEGURIDAD</span></span>
         </Link>
       </div>
 
@@ -164,8 +170,11 @@ const Sidebar = ({ sidebarOpen }) => {
           <div key={menu.key}>
             {menu.subItems ? (
               <>
-                <div
-                  className="px-4 py-3 flex items-center justify-between space-x-4 rounded-xl text-gray-300 group cursor-pointer hover:bg-gray-700/50 hover:text-white transition-all duration-300"
+                <button
+                  type="button"
+                  aria-expanded={openMenu === menu.key}
+                  aria-controls={openMenu === menu.key ? `submenu-${menu.key}` : undefined}
+                  className="w-full text-left px-4 py-3 flex items-center justify-between space-x-4 rounded-xl text-gray-300 group cursor-pointer hover:bg-gray-700/50 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400 transition-all duration-300"
                   onClick={() => toggleMenu(menu.key)}
                 >
                   <div className="flex items-center space-x-4 min-w-0">
@@ -177,9 +186,9 @@ const Sidebar = ({ sidebarOpen }) => {
                   ) : (
                     <FaChevronRight className="text-xs flex-shrink-0 transition-transform duration-300" />
                   )}
-                </div>
+                </button>
                 {openMenu === menu.key && (
-                  <ul className="ml-6 mt-1.5 space-y-1 transition-all duration-300 ease-in-out border-l-2 border-gray-700/50 pl-4">
+                  <ul id={`submenu-${menu.key}`} className="ml-6 mt-1.5 space-y-1 transition-all duration-300 ease-in-out border-l-2 border-gray-700/50 pl-4">
                     {menu.subItems.map((sub, idx) => (
                       <li key={idx}>
                         <NavLink
@@ -187,7 +196,7 @@ const Sidebar = ({ sidebarOpen }) => {
                           className={({ isActive }) =>
                             `block px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                               isActive
-                                ? "text-blue-400 bg-gray-700/60 font-medium shadow-sm"
+                                ? "text-white bg-blue-900/80 font-medium shadow-sm"
                                 : "text-gray-400 hover:text-gray-200 hover:bg-gray-700/30"
                             }`
                           }

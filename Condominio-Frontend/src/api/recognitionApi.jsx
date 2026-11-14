@@ -35,7 +35,7 @@ export const fileToBase64 = (file) => {
 };
 
 // Enviar imagen para reconocimiento de placas
-export const scanPlate = async (imageFile, cameraId = '') => {
+export const scanPlate = async (imageFile, cameraId = '', signal) => {
   try {
     // Validar que sea un archivo de imagen
     if (!imageFile || !imageFile.type.startsWith('image/')) {
@@ -61,6 +61,8 @@ export const scanPlate = async (imageFile, cameraId = '') => {
 
     console.log('Enviando archivo como FormData...');
     const response = await apiClient.post('alpr/', form, {
+      signal,
+      timeout: 45000,
       headers: {
         'Content-Type': 'multipart/form-data',
       },

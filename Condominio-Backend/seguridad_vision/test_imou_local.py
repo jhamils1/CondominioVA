@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from imou_local import FuenteImou
+from imou_local import FuenteImou, url_fuente_catalogo
 
 
 class Jpeg(bytes):
@@ -37,6 +37,36 @@ def cv_falso(captura):
 
 
 class FuenteTests(unittest.TestCase):
+    def test_validacion_fuente_catalogo(self):
+        datos = {'ip': '192.168.1.108', 'puerto': 554, 'ruta': '/video', 'usuario': 'admin', 'clave': 'ficticia'}
+        self.assertTrue(url_fuente_catalogo(datos).endswith('@192.168.1.108:554/video'))
+        for cambios in ({'ip': '8.8.8.8'}, {'ruta': '//otro'}, {'ruta': '/video?token=x'}, {'puerto': 0}):
+            with self.assertRaises(ValueError):
+                url_fuente_catalogo({**datos, **cambios})
+
+    def test_cambio_de_fuente_retira_la_imagen_anterior(self):
+        primera, segunda = CapturaFalsa(), CapturaFalsa()
+        cv = cv_falso(primera)
+        llamadas = []
+        def abrir(url, *args):
+            llamadas.append(url)
+            return primera if url == 'rtsp://primera' else segunda
+        cv.VideoCapture = abrir
+        fuente = FuenteImou(cv, lambda: 'rtsp://primera')
+        try:
+            self.assertEqual(fuente.solicitar()[0], 202)
+            time.sleep(.08)
+            self.assertEqual(fuente.solicitar()[0], 200)
+            self.assertEqual(fuente.solicitar('rtsp://segunda')[0], 202)
+            self.assertTrue(primera.liberada.wait(2))
+            limite = time.monotonic() + 2
+            while time.monotonic() < limite and len(llamadas) < 2:
+                fuente.solicitar('rtsp://segunda')
+                time.sleep(.02)
+            self.assertEqual(llamadas, ['rtsp://primera', 'rtsp://segunda'])
+        finally:
+            fuente.cerrar()
+
     def test_no_abre_hasta_solicitud_y_libera_por_inactividad(self):
         captura = CapturaFalsa()
         fuente = FuenteImou(cv_falso(captura), lambda: 'rtsp://ficticio')

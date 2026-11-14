@@ -31,20 +31,33 @@ function solapamiento(a, b) {
   return inter / (area(a) + area(b) - inter || 1);
 }
 
-export function crearSeguimiento({ zona, ancho, alto, segundos }) {
+export function crearSeguimiento({ zona, ancho, alto, segundos, toleranciaPerdida = 0 }) {
   let pistas = [], siguienteId = 1;
+  let tiempoAnterior = null;
   return function procesar(detecciones, tiempo) {
+    if (tiempoAnterior !== null && tiempo <= tiempoAnterior) pistas = [];
+    else if (toleranciaPerdida > 0 && intervaloNoConfiable(tiempoAnterior, tiempo)) {
+      // La ausencia de muestras no confirma permanencia, pero tampoco implica
+      // que un vehículo ya notificado se haya retirado.
+      pistas = pistas.filter(p => p.avisado && tiempo - p.visto <= 10);
+      pistas.forEach(p => { p.interrumpida = true; });
+    }
+    tiempoAnterior = tiempo;
     const vehiculos = detecciones.map((d, indice) => ({ ...d, indice }))
       .filter(d => VEHICULOS.has(d.clase) && Array.isArray(d.caja) && d.caja.length === 4
         && d.caja.every(Number.isFinite) && d.caja[2] > d.caja[0] && d.caja[3] > d.caja[1]);
-    // Las asociaciones usan únicamente el fotograma anterior; una pérdida reinicia el contador.
+    // Por defecto una pérdida reinicia el contador. Imou puede conservar brevemente
+    // una pista, sin sumar tiempo ni dibujar detecciones durante la ausencia.
     const candidatos = [];
     for (const pista of pistas) for (const d of vehiculos) {
       if (pista.clase !== d.clase) continue;
       const actual = centro(d.caja, ancho, alto);
       const distancia = Math.hypot(actual.x - pista.ultimo.x, actual.y - pista.ultimo.y);
       const iou = solapamiento(pista.caja, d.caja);
-      if (distancia <= 0.08 && iou >= 0.15) candidatos.push({ pista, d, iou });
+      const recuperando = pista.interrumpida;
+      if (recuperando && tiempo - pista.visto > (pista.avisado ? 10 : toleranciaPerdida)) continue;
+      if (distancia <= (recuperando ? MAX_DESPLAZAMIENTO : 0.08)
+          && iou >= (recuperando ? 0.5 : 0.15)) candidatos.push({ pista, d, iou });
     }
     candidatos.sort((a, b) => b.iou - a.iou);
     const asignados = new Map(), usados = new Set();
@@ -56,21 +69,34 @@ export function crearSeguimiento({ zona, ancho, alto, segundos }) {
     const resultado = detecciones.map(d => ({ ...d })), nuevas = [], avisos = [];
     for (const d of vehiculos) {
       const punto = centro(d.caja, ancho, alto);
-      const pista = asignados.get(d.indice) || { id: siguienteId++, clase: d.clase, inicio: null, avisado: false };
+      const pista = asignados.get(d.indice) || { id: siguienteId++, clase: d.clase, inicio: null, acumulado: 0, avisado: false };
       const dentro = puntoEnZona(punto, zona);
-      if (!dentro) { pista.inicio = null; pista.ancla = null; pista.avisado = false; }
+      if (!dentro) { pista.inicio = null; pista.ancla = null; pista.acumulado = 0; pista.avisado = false; }
       else if (pista.inicio === null || Math.hypot(punto.x - pista.ancla.x, punto.y - pista.ancla.y) > MAX_DESPLAZAMIENTO) {
-        pista.inicio = tiempo; pista.ancla = punto; pista.avisado = false;
+        pista.inicio = tiempo; pista.ancla = punto; pista.acumulado = 0;
+        if (!toleranciaPerdida) pista.avisado = false;
+      } else if (!pista.interrumpida) {
+        pista.acumulado += Math.max(0, tiempo - pista.visto);
       }
-      const duracion = dentro ? Math.max(0, tiempo - pista.inicio) : 0;
+      const duracion = dentro ? pista.acumulado : 0;
       const superaUmbral = dentro && duracion >= segundos;
       if (superaUmbral && !pista.avisado) {
         avisos.push({ id: pista.id, clase: d.clase, tiempo, duracion });
         pista.avisado = true;
       }
       resultado[d.indice].permanencia = dentro ? { segundos: duracion, superaUmbral } : null;
-      pista.caja = d.caja; pista.ultimo = punto;
+      pista.caja = d.caja; pista.ultimo = punto; pista.visto = tiempo; pista.interrumpida = false;
       nuevas.push(pista);
+    }
+    if (toleranciaPerdida > 0) for (const pista of pistas) {
+      // Una detección nueva de la misma clase vuelve ambigua la identidad: no
+      // conservar una pista antigua que pueda confundirse con ese vehículo.
+      const identidadAmbigua = vehiculos.some(d => d.clase === pista.clase && !asignados.has(d.indice));
+      if (!usados.has(pista.id) && !identidadAmbigua && pista.inicio !== null
+          && tiempo - pista.visto <= (pista.avisado ? 10 : toleranciaPerdida)) {
+        pista.interrumpida = true;
+        nuevas.push(pista);
+      }
     }
     pistas = nuevas;
     return { detecciones: resultado, avisos };

@@ -1,5 +1,7 @@
 # Roles, actores y permisos
 
+2026-11-13: el usuario determin? que el monitor en vivo es exclusivo del administrador; el guardia conserva revisi?n de eventos e incidencias. Solicita un aviso m?vil al propietario o inquilino tras identificaci?n y confirmaci?n humana; implementaci?n y reglas de destinatario pendientes. Esta decisi?n actualiza las referencias anteriores al monitor para guardia.
+
 Revisión: 2026-10-31. Fuente de aplicación: [access.py](../Condominio-Backend/administracion/access.py), permisos y filtros en las vistas, [provision.py](../Condominio-Backend/administracion/provision.py) y [cuentas de empleados](../Condominio-Backend/ROLES_CUENTAS_EMPLEADOS.md).
 
 Los cuatro actores funcionales con cuenta son **administrador, guardia de seguridad, propietario e inquilino**. El superusuario técnico de Django es un actor de mantenimiento técnico separado. Familiares, visitantes y empleados sin cuenta son entidades del dominio; un visitante puede participar en un caso de uso físico de ingreso sin iniciar sesión. Firebase, Stripe y proveedores de reconocimiento son sistemas externos, no roles humanos.

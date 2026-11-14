@@ -10,6 +10,7 @@ const rutasPorRol = <String, Set<String>>{
   '/cambiar-password': rolesPredeterminados,
   '/dashboard': {'administrador'},
   '/alertas-seguridad': {'administrador', 'guardia'},
+  '/avisos-residente': {'propietario', 'inquilino'},
   '/reconocimiento-facial': {'administrador', 'guardia'},
   '/expensas': {'administrador', 'propietario'},
   '/objetos-perdidos': {'administrador', 'propietario', 'inquilino'},

@@ -1,5 +1,73 @@
 # Pruebas y verificación
 
+2026-11-07: zonas por cámara: 34 pruebas Django aisladas, ESLint, build, migraciones sin cambios y recorrido web simulado correctos; sin segunda cámara real. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
+
+2026-11-07: 28 pruebas Django temporales, puente adicional con fuentes simuladas, ESLint y build Vite correctos; sin prueba de segunda cámara real. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
+
+2026-11-07: 13 pruebas JavaScript y tres Django del seguimiento Imou aprobadas; ESLint y compilación Vite correctos. Sin prueba real de la corrección. [Detalle](../documentacion/seguridad/AVISOS_REPETIDOS_IMOU.md).
+
+2026-11-07: verificados puertos de cámara por Wi-Fi y Ethernet desde Windows; puente con acceso a red entregó fotograma a Django por catálogo e IP Wi-Fi. [Detalle](../documentacion/seguridad/MONITOR_IMOU_CATALOGO.md).
+
+2026-11-07: puente Imou actualizado responde y Django usa el catálogo vinculado; ocho consultas devolvieron estado conectando, sin imagen confirmada. [Detalle](../documentacion/seguridad/MONITOR_IMOU_CATALOGO.md).
+
+2026-11-07: 34 pruebas Django aisladas, cuatro del puente, comprobaci?n de migraciones, ESLint, compilaci?n y recorrido web simulado satisfactorios. No se ha validado el puente actualizado con c?mara real. [Detalle](../documentacion/seguridad/MONITOR_IMOU_CATALOGO.md).
+
+2026-11-07: PC enlazada en 192.168.1.107 obtuvo respuesta por Ethernet de 192.168.1.108 en 80/554; ONVIF y dos fotogramas RTSP exitosos, sin guardar imágenes. Wi-Fi permaneció activo y monitor no se validó con IP cableada.
+
+2026-11-07: inspección de Ethernet, ARP y rutas encontró candidata 192.168.1.108; no se verificó conexión ONVIF ni video por la diferencia de subred.
+
+2026-11-07: descubrimiento ONVIF restringido al adaptador Ethernet sin respuesta; observación DHCP/ARP temporal sin guardar tráfico ni alterar red. RTSP por cable sigue sin comprobar.
+
+2026-11-07: dos perfiles ONVIF de Imou real produjeron un fotograma cada uno; acción API devolvió 200 y dos perfiles con usuario simulado y sin contraseña en respuesta. Sin guardar video, alterar cámara o verificar sesión web.
+
+2026-11-07: Imou real respondió descubrimiento y puerto ONVIF 80; consulta autenticada obtuvo dos perfiles RTSP 554. Sin comprobación de fotograma de esas rutas. Sandbox de red denegó acceso y prueba se ejecutó autorizada fuera de él.
+
+2026-11-07: build, ESLint y recorrido Edge con perfiles simulados verificaron el nombre seleccionado y la opción manual; sin prueba física de cámara.
+
+2026-11-07: 19 pruebas Django y recorrido Edge simulado cubren puerto anunciado, ausencia, rutas/HTTPS incompatibles y valor por defecto; build y lint sin fallos. Sin cámara real.
+
+2026-11-07: 19 pruebas Django con SOAP, perfiles y red simulados; build Vite, ESLint y recorrido Edge simulado con selección ONVIF y bloqueo de ruta. Sin conexión a cámara real ni cambios de base persistente.
+
+2026-11-07: pruebas Django de descubrimiento con sockets simulados, ESLint, build y recorrido Edge simulado para respuestas coincidentes y ausencia de respuesta; no se consultó cámara física.
+
+2026-11-07: 16 pruebas Django con UDP y dispositivos simulados, build y ESLint y recorrido Edge con respuesta de descubrimiento simulada. Sin consultas a dispositivos reales.
+
+2026-11-07: build Vite, ESLint y recorrido Edge con API simulada verificaron selección del perfil, ruta protegida y retorno a ruta manual. No se usaron cámaras reales.
+
+2026-11-07: 13 pruebas Django de cámaras con configuración ficticia, build Vite y recorrido Edge simulado, incluido campo Imou en solo lectura; sin conexión a cámara real ni cambios de base persistente.
+
+2026-11-07: comprobación RTSP de catálogo con subprocess y OpenCV simulados, permisos, direcciones privadas y rechazo Imou; recorrido frontend Edge simulado y build Vite. Sin pruebas de cámara real ni entrega de avisos.
+
+2026-11-07: ocho pruebas Django de c?maras en SQLite temporal, build Vite y recorrido Edge simulado de alta, visibilidad, edici?n y permisos aprobados. No se consultaron credenciales ni c?maras reales en las pruebas; falta revisi?n visual real.
+
+2026-11-07: 14 pruebas Django aisladas, migraciones, ESLint, build y Edge con credenciales ficticias correctos; sin cámara real. Migración local con backup listado, sin restauración probada. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: cinco pruebas Node de roles, ESLint, build y Edge simulado con navegación por teclado, roles y revisión de evento correctos; sin pruebas de cámara real. [Detalle](../documentacion/seguridad/MENU_MONITOR_CAMARAS.md).
+
+2026-11-06: pruebas Node por rol, ESLint, build y cuatro recorridos Edge simulados verificaron menú, permisos web, revisión del guardia, Imou, webcam y video. Sin pruebas con cámara o Firebase reales. [Detalle](../documentacion/seguridad/MENU_MONITOR_CAMARAS.md).
+
+2026-11-06: puente Imou real recibió JPEG sin guardar ni crear evento; Edge simulado comprobó reintentos conectando→disponible, ESLint y build pasaron. Falta confirmación del botón real por el usuario. [Detalle](../documentacion/seguridad/VINCULO_IMOU_CATALOGO.md).
+
+2026-11-06: 13 pruebas Django, ESLint, build y Edge simulado pasaron para agregar/probar Imou. Puente real 503 y puerto RTSP inaccesible; sin evidencia guardada, alertas ni registros reales creados. [Detalle](../documentacion/seguridad/VINCULO_IMOU_CATALOGO.md).
+
+2026-11-06: 10 pruebas Django aisladas (catálogo, zona y monitor), ESLint, build y Edge con API simulada correctos; migración local aplicada tras backup cuyo listado se comprobó, sin prueba de restauración ni dispositivos reales. [Detalle](../documentacion/seguridad/PLAN_CAMARAS_Y_AVISOS_RESIDENTES.md).
+
+2026-11-05: 12 pruebas Django con SQLite aislado verificaron seguimiento, exclusión, API y monitor sin navegador con eventos/evidencia y dos guardias simulados. Build y recorrido Edge simulado correctos; sin cámara ni Firebase reales. [Detalle](../documentacion/seguridad/MONITOREO_IMOU_INDEPENDIENTE.md).
+
+2026-11-05: DHCP temporal por Npcap recibió solicitud de la IP ofrecida; ping y RTSP no respondieron. No se comprobó video por cable. [Detalle](../documentacion/seguridad/DIAGNOSTICO_IMOU_ETHERNET_DIRECTO.md).
+
+2026-11-05: build, ESLint, 13 pruebas Node y recorrido Edge/API simulada correctos para guardado automático de zona, fallo, reintento, cancelación, eliminación, evento y lectura del guardia. Sin prueba real de recepción en esta etapa. [Detalle](../documentacion/seguridad/GUARDADO_AUTOMATICO_ZONA_IMOU.md).
+
+2026-11-05: consulta local de solo lectura sin zona guardada y con 24 entregas enviadas; 13 pruebas Node, ESLint, build y Edge simulado correctos. Se verificó borrador sin envíos, fallo de guardado, activación tras guardar y reintento con evidencia. Falta recepción real de este flujo. [Detalle](../documentacion/seguridad/REGISTRO_IMOU_CONFIGURACION_PENDIENTE.md).
+
+2026-11-05: 13 pruebas Node y recorrido Edge simulado correctos para estabilidad Imou, salida, pérdida, recuperación, permisos y reintento. Build/ESLint correctos; sin cámara o Firebase reales. [Detalle](../documentacion/seguridad/ESTABILIDAD_SEGUIMIENTO_IMOU.md).
+
+2026-11-05: seis pruebas Django con SQLite aislado, migración sin cambios pendientes, ESLint, build y recorrido Imou simulado por roles correctos. Migración 0005 aplicada en PostgreSQL local tras verificar lectura de respaldo; no se probó restauración ni cámara real. [Detalle](../documentacion/seguridad/ZONA_IMOU_COMPARTIDA.md).
+
+2026-11-05: build, ESLint y recorrido de Imou simulada correctos tras reemplazar la comparación por una sola imagen también en configuración; incluye zona y tamaños de pantalla. [Detalle](../documentacion/seguridad/REDISENO_CENTRO_SEGURIDAD.md).
+
+2026-11-05: build y ESLint del frontend correctos; recorridos simulados de Imou, laptop y video correctos, incluyendo independencia cámara/IA y conservación de zona. Sin prueba real nueva. [Detalle](../documentacion/seguridad/REDISENO_CENTRO_SEGURIDAD.md).
+
 2026-11-05: PostgreSQL local escribió y leyó un JPEG ficticio en una transacción revertida; se comprobó que no quedaron registros ni se crearon avisos. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
 
 2026-11-05: migración aditiva probada en SQLite y aplicada en PostgreSQL local con respaldo verificado por listado. Cinco pruebas backend, tres reforzadas, Edge simulado, nueve pruebas Flutter, analizador, lint y build correctos. Descarga anónima real 401. Falta probar evidencia real en web/móvil; sin envío real en esta etapa. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
@@ -243,3 +311,49 @@ Resultado final: cuatro originales y once archivos de base-datos con SHA-256 id�
 | [Emulador aislado](../Condominio-Backend/RESULTADOS_EMULADOR_BANDEJA_AISLADA.md) | Login, detalle y lectura individual de dos cuentas ficticias | Variante Android aislada, backend/base temporales, sin Firebase; no demuestra recepción push |
 
 No ejecutar los comandos anteriores como parte de una mera lectura documental: algunos crean entornos, aplican migraciones temporales o requieren preparación. Revisar sus fuentes y autorización antes de repetir. Faltan E2E del alta completa, push real aislado, concurrencia integral de sesiones/cola, operaciones móviles de incidencias y rendimiento de visión.
+
+2026-11-12: puertos locales de IA, puente Imou y exclusi?n del monitor cambiados a 28765, 28766 y 28767 por reserva de Windows 18700?18799. Enlace exclusivo comprobado en los tres; cuatro pruebas del puente y compilaci?n Python correctas. La IA carg? el modelo y anunci? que el servicio estaba listo en una prueba temporal; no se prob? c?mara ni monitoreo real. Reiniciar Django y procesos locales para usar las nuevas direcciones.
+
+2026-11-12: el puente de c?maras adicionales tambi?n pas? del puerto reservado 18768 al 28768; enlace exclusivo disponible. Sin prueba de c?mara f?sica.
+
+2026-11-12: la prueba simulada del puente de c?maras adicionales fall? con WinError 10053 al recibir respuesta; queda pendiente repetir y diagnosticar.
+
+2026-11-13: el usuario indic? que el monitor es solo para administraci?n; guardia revisa eventos y confirma incidencias. Se cambi? acceso web y permisos API de im?genes Imou y cat?logo; pruebas web de roles y cinco pruebas API Imou pasaron, build correcto. Dos pruebas de permisos del cat?logo pasaron con SQLite en memoria; no se comprob? con c?maras reales. El aviso m?vil al propietario o inquilino identificado por placa fue solicitado, pero no est? implementado; requiere verificar identidad, destinatario y alcance.
+
+2026-11-13: preparada una tabla independiente y API administrativa para preferencias futuras de lectura de placas y zonas por c?mara, con valores desactivados. No son funciones operativas, no modifican Imou ni notifican. Migraci?n preparada, probada solo en SQLite temporal y no aplicada a la base local; siete pruebas aisladas y makemigrations --check correctos. Faltan interfaz, integraci?n de placa/incidencias y activaci?n segura.
+
+2026-11-13: preparada interfaz administrativa para consultar y guardar preferencias futuras por c?mara. No activa lectura ni alertas y conserva el monitor existente. Build y ESLint correctos; interfaz no validada visualmente. La migraci?n de la tabla de preferencias sigue sin aplicar en la base local, por lo que esta secci?n todav?a no est? disponible all?. Falta integraci?n funcional y prueba real.
+
+2026-11-13: aplicada migracion aditiva camaras.0004 a PostgreSQL local tras respaldo backups_locales/antes_funciones_camara_20261113_141521.dump, verificado con pg_restore --list; no se probo restauracion. Guardias pueden solicitar lectura manual de evidencia mediante la API existente, que envia imagen a Plate Recognizer solo al pulsar; no vincula resultado al evento ni envia avisos a residentes. Build y ESLint correctos; flujo visual y servicio real no probados.
+
+2026-11-13: lectura de placa deja de atribuir una persona si existen multiples vehiculos con la misma placa; informa coincidencia ambigua. La pantalla de reconocimiento ya no presenta una coincidencia como autorizacion de acceso. Tres pruebas con proveedor simulado pasaron; build y ESLint correctos. Sin proveedor ni camaras reales. Quedan pendientes vinculacion al evento, destinatario confirmado y aviso al residente.
+
+2026-11-13: guardia puede registrar una placa revisada en historial del evento, manualmente o tras lectura sugerida; guarda actor y fecha sin asociar automaticamente persona ni enviar aviso. API valida rol, formato y estado. Seis pruebas aisladas con SQLite y proveedor simulado, build y ESLint correctos. Sin migracion ni pruebas reales; pendientes destinatario y notificacion movil.
+
+2026-11-13: agregado flujo de consulta por ultima placa revisada y confirmacion humana del residente con cuenta activa; solo guardia, incidencia confirmada o en atencion. Identificadores quedan en historial, sin enviar avisos ni garantizar identidad del conductor. Sin coincidencia, duplicados o cuenta inactiva no permiten confirmacion. Siete pruebas simuladas iniciales y cuatro pruebas de placa con SQLite temporal pasaron; build y ESLint correctos. Sin proveedor ni telefonos reales. Antes de enviar, revalidar asociacion y cuenta, disenar persistencia e idempotencia y probar FCM.
+
+2026-11-13: preparada API separada de avisos propios para residentes activos, con detalle limitado, evidencia y marca de lectura solo del destinatario. No crea avisos ni envia FCM; Flutter aun no consume esta API. Seis pruebas aisladas SQLite correctas para acceso propio/ajeno y revision de placa; sin migraciones ni proveedor real. Pendientes creacion transaccional idempotente, revalidacion, cola FCM, app movil y pruebas integrales.
+
+2026-11-13: guardia puede preparar aviso interno tras confirmar residente; se revalidan placa, coincidencia unica, vehiculo, persona, cuenta y estado; repeticiones no duplican aviso. Disponible mediante API propia del residente, sin cola FCM ni push y sin integracion Flutter. Migracion de tipo preparada y probada en SQLite, no aplicada a PostgreSQL. Nueve pruebas aisladas, build y ESLint correctos; sin datos ni envios reales. Pendiente entrega movil y pruebas integrales.
+
+2026-11-13: creada bandeja Flutter Mis avisos para propietario e inquilino, consulta API propia, marca lectura y descarga evidencia protegida; no habilita la bandeja interna de seguridad. Tres pruebas Flutter simuladas pasaron (roles, servicio y apertura). No se instalo APK ni se probo telefono o push real. Sigue pendiente envio FCM y apertura desde notificacion, ademas de migracion de tipo no aplicada.
+
+2026-11-13: agregado encolado explicito por guardia para aviso residente; al encolar y procesar se revalida destinatario, placa y cuenta, el push contiene datos minimos y se cancela si la asociacion deja de ser valida. Apertura Flutter de tipo aviso_residente dirige solo a bandeja propia. 15 pruebas backend con proveedores simulados, 16 pruebas Flutter y analisis de seis archivos sin problemas; build y ESLint web correctos. No se enviaron avisos reales ni instalo APK. Migracion seguridad_IA.0007 sigue sin aplicar; faltan pruebas integrales y reales.
+
+2026-11-13: aplicada migracion seguridad_IA.0007 en PostgreSQL local tras respaldo backups_locales/antes_aviso_residente_20261113_183826.dump, listado legible; no se probo restauracion. Flujo integrado de aviso, cola FCM simulada, consulta propia y bloqueo de evidencia ajena paso junto con pruebas relacionadas (9, SQLite temporal). No se envio push real ni se instalo APK; no se probo integracion con camara real ni reconocimiento automatico en vivo.
+
+2026-11-13: incorporada consulta puntual de placa desde el ultimo fotograma de Imou o camara de catalogo, solo al pulsar y avisando del proveedor externo; sin lectura continua ni enlace automatico con evento. Build y ESLint correctos; recorrido Edge simulado comprob? que no se envia hasta pulsar y conserva flujo Imou y restriccion del guardia. Sin camaras ni proveedor real. Pendiente integracion automatica por camara y validacion real.
+
+2026-11-13: lectura solicitada por guardia desde evidencia puede registrarse como sugerencia en historial del evento; no se considera placa verificada ni identifica responsable. Accion autenticada valida rol, evidencia, lectura y estado e impide repetir la misma sugerencia. Nueve pruebas aisladas, build y ESLint correctos. No se enviaron imagenes reales; pendiente lectura automatica y prueba integral real.
+
+2026-11-13: lectura solicitada por guardia desde evento usa evidencia privada recuperada por backend, no lectura arbitraria del cliente; verifica rol y estado y vuelve a verificar evidencia antes de asociar sugerencia. Se reutiliza API de placas, sin confirmar automaticamente el resultado. Nueve pruebas simuladas, build y ESLint correctos; sin imagenes reales ni conexion al proveedor. Sigue pendiente lectura continua y validacion integral real.
+
+2026-11-13: prototipo optativo de lectura automatica para Imou web reutiliza IA local y envia un fotograma al proveedor externo ante deteccion unica de vehiculo; se limita por presencia y 30 segundos mientras permanece activo. Se detiene al parar IA o vista, no opera autonomamente, no vincula lectura a evento ni identifica conductor. Dos pruebas Node, recorrido Edge simulado, build y ESLint correctos; diez pruebas Django simuladas incluyen cambio de estado durante consulta. Sin proveedor ni camaras reales; falta prueba real, mayor robustez y soporte por camara.
+
+2026-11-13: lectura automatica optativa de placas extendida a vista web de camaras adicionales mediante IA existente; sin eventos automaticos de zona y se detiene al ocultar vista. Guardia puede consultar lecturas anteriores coincidentes durante 30 minutos como sugerencias no verificadas, sin atribucion automatica. Once pruebas Django, build, ESLint y Edge simulado correctos. Fuente Imou configurada no respondio a RTSP en dos comprobaciones, incluida red local; no se capturo imagen ni se contacto al proveedor real. Pendiente prueba fisica, evidencia de entrada y asociacion fiable.
+
+2026-11-13: el usuario cambio a IP Wi-Fi la Imou vinculada y mostro comprobacion de fotograma recibido por puente; vista de monitor sin confirmar tras el cambio. Gestion agrupa visualmente registros que coinciden en IP y puerto con la camara vinculada, permite mostrarlos y no elimina ni altera datos. Prueba de agrupacion, build y ESLint correctos; falta revision visual. El monitor puede seguir ofreciendo el registro adicional.
+
+2026-11-13: por solicitud del usuario se retiro un unico registro duplicado de camara (id 2) tras comprobar coincidencia IP/puerto y ausencia de referencias relacionales en modelos instalados. Se preservo registro vinculado id 1; respaldo backups_locales/antes_retirar_duplicado_20261113_220952.dump con listado legible, restauracion no probada. Confirmado un registro restante y puente entrego un fotograma real sin guardarlo. Vista navegador pendiente de confirmacion del usuario.
+
+2026-11-13: agregado README raiz breve para equipo con inicio Windows de backend, frontend, puentes e IA, requisitos y limites. Se comprobaron rutas de scripts y enlaces; no se reinstalaron dependencias ni se ejecutaron migraciones.

@@ -17,10 +17,6 @@ class AlprScanView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
-        token = settings.PLATE_TOKEN
-        if not token:
-            return Response({"error": "Configura PLATE_TOKEN"}, status=500)
-
         f = request.FILES.get("upload")
         if not f:
             return Response({"error": "Debes enviar el archivo en 'upload'."}, status=400)
@@ -29,6 +25,14 @@ class AlprScanView(APIView):
 
         camera_id = request.data.get("camera_id", "") or ""
         regions   = request.data.get("regions") or settings.PLATE_REGIONS
+        return self.procesar_imagen(f, camera_id, regions)
+
+    @staticmethod
+    def procesar_imagen(f, camera_id='', regions=None):
+        token = settings.PLATE_TOKEN
+        if not token:
+            return Response({"error": "Configura PLATE_TOKEN"}, status=500)
+        regions = regions or settings.PLATE_REGIONS
 
         headers = {"Authorization": f"Token {token}"}
         payload = {"regions": regions}
@@ -66,9 +70,11 @@ class AlprScanView(APIView):
         plate_raw = (best.get("plate") or "").upper()
         score     = float(best.get("score") or 0.0)
 
-        v_match = (Vehiculo.objects.filter(placa__iexact=plate_raw)   # BD ya normalizada
-                .select_related("persona")
-                .first())
+        # Una placa repetida no permite atribuir el vehículo a una sola persona.
+        coincidencias = list(Vehiculo.objects.filter(placa__iexact=plate_raw)
+                             .select_related("persona")[:2]) if plate_raw else []
+        ambiguo = len(coincidencias) > 1
+        v_match = coincidencias[0] if len(coincidencias) == 1 else None
 
         lectura = LecturaPlaca.objects.create(
             placa=plate_raw, score=score, camera_id=camera_id,
@@ -80,6 +86,7 @@ class AlprScanView(APIView):
             "status": "ok",
             "plate": plate_raw,
             "score": score,
+            "coincidencia_ambigua": ambiguo,
             "match": bool(v_match),
             "vehiculo": VehiculoSerializer(v_match).data if v_match else None,
             "lectura": LecturaPlacaSerializer(lectura).data

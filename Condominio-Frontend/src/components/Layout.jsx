@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { Outlet, useLocation } from 'react-router-dom';
+import { FaBars, FaTimes, FaShieldAlt, FaUserCircle } from 'react-icons/fa';
 import Sidebar from '../components/sidebar.jsx';
 import { useSession } from '../auth/sessionContext.js';
 import { roleLabel } from '../auth/access.js';
@@ -8,19 +8,21 @@ import { roleLabel } from '../auth/access.js';
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, notice, setNotice } = useSession();
+  const pantallaSeguridad = ['/admin/eventos-seguridad', '/admin/monitor-camaras'].includes(useLocation().pathname);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden" style={pantallaSeguridad ? { background: '#041225' } : undefined}>
       <Sidebar sidebarOpen={sidebarOpen} />
       <main className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out">
         {/* Header con botón toggle */}
-        <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(90deg, #1a1f2e 0%, #0f1419 100%)', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(90deg, #06182e 0%, #031126 100%)', boxShadow: '0 3px 12px rgba(0, 0, 0, 0.25)', borderBottom: '1px solid #174365' }}>
           <button
             onClick={toggleSidebar}
+            aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
             className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors duration-200"
           >
             {sidebarOpen ? (
@@ -30,9 +32,9 @@ const Layout = () => {
             )}
           </button>
           <h1 className="text-xl font-semibold text-white tracking-wide">
-            Panel de {user.rol_nombre || roleLabel[user.role]}
+            <FaShieldAlt className="inline mr-2 text-sky-400" aria-hidden="true" /> Panel de {user.rol_nombre || roleLabel[user.role]}
           </h1>
-          <div className="w-10"></div> {/* Spacer para centrar el título */}
+          <div className="hidden sm:flex items-center gap-2 text-white text-xs"><FaUserCircle className="text-2xl text-sky-400" /><span><strong className="block">{user.username}</strong><span className="text-slate-400">{user.rol_nombre || roleLabel[user.role]}</span></span></div>
         </div>
         
         {/* Contenido principal */}

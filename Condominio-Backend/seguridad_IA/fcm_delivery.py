@@ -11,6 +11,7 @@ from administracion.access import effective_role
 from finanzas.procedencia_fcm import (dispositivos_elegibles, elegible,
                                      proyecto_configurado, ValidacionFCMNoDisponible)
 from .models import EntregaFCMSeguridad, EventoSeguridad
+from .aviso_residente_validacion import aviso_residente_valido
 
 MAX_INTENTOS = 5
 RESERVA_SEGUNDOS = 300
@@ -74,17 +75,21 @@ def procesar_reserva(delivery_id, reservation_id):
             not delivery.reserva_hasta or delivery.reserva_hasta <= timezone.now()):
         return 'RESERVA_VENCIDA'
     notification, device = delivery.notificacion, delivery.dispositivo
-    role = 'guardia' if notification.tipo == 'REVISION' else 'administrador'
+    roles = {'REVISION': ('guardia',), 'CONFIRMADA': ('administrador',), 'AVISO_RESIDENTE': ('propietario', 'inquilino')}
+    roles_permitidos = roles.get(notification.tipo, ())
+    es_residente = notification.tipo == 'AVISO_RESIDENTE'
     obsolete = notification.tipo == 'REVISION' and notification.evento.estado != EventoSeguridad.PENDIENTE
     if (not device or not device.active or not elegible(device) or device.user_id != notification.destinatario_id or
-            effective_role(notification.destinatario) != role or obsolete or
+            effective_role(notification.destinatario) not in roles_permitidos or obsolete or
+            (es_residente and not aviso_residente_valido(notification)) or
             token_hash(device.registration_id) != delivery.token_hash):
         return finalizar(delivery_id, reservation_id, 'CANCELADA', 'DESTINATARIO_NO_VALIDO')
     message = messaging.Message(
         token=device.registration_id,
         notification=messaging.Notification(title='Seguridad del condominio',
-            body='Hay una alerta para revisar.' if role == 'guardia' else 'Hay una incidencia confirmada.'),
-        data={'tipo': 'seguridad', 'notificacion_id': str(notification.pk), 'evento_id': str(notification.evento_id)},
+            body='Tienes un aviso del condominio.' if es_residente else ('Hay una alerta para revisar.' if notification.tipo == 'REVISION' else 'Hay una incidencia confirmada.')),
+        data=({'tipo': 'aviso_residente', 'notificacion_id': str(notification.pk)} if es_residente else
+              {'tipo': 'seguridad', 'notificacion_id': str(notification.pk), 'evento_id': str(notification.evento_id)}),
         android=messaging.AndroidConfig(notification=messaging.AndroidNotification(tag=str(notification.pk))),
     )
     try:

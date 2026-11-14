@@ -27,7 +27,7 @@ def solicitar_local(ruta, imagen=None):
         clave = token_file.read_text(encoding="ascii")
         if not re.fullmatch(r"[A-Za-z0-9_-]{43}", clave):
             return None
-        conn = http.client.HTTPConnection("127.0.0.1", 18765, timeout=15)
+        conn = http.client.HTTPConnection("127.0.0.1", 28765, timeout=15)
         try:
             conn.request("POST" if imagen is not None else "GET", ruta, body=imagen,
                          headers={"Authorization": "Bearer " + clave,

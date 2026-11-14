@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
 import '../widgets/custom_text_field.dart';
 import '../security/security_notification_navigation.dart';
+import '../security/resident_notification_navigation.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -63,6 +64,7 @@ class _LoginPageState extends State<LoginPage> {
         // Navegar al perfil si el login es exitoso
         Navigator.pushReplacementNamed(context, "/perfil");
         SecurityNotificationNavigation.instance.procesar();
+        ResidentNotificationNavigation.instance.procesar();
       } else {
         // Mostrar error si el login falla
         ScaffoldMessenger.of(context).showSnackBar(

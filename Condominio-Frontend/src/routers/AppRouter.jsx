@@ -6,6 +6,7 @@ import ConsultaPage from '../pages/ConsultaPage.jsx';
 import IncidentesGuardia from '../pages/IncidentesGuardia.jsx';
 import NotificacionesPage from '../pages/NotificacionesPage.jsx';
 import EventosSeguridadPage from '../pages/EventosSeguridadPage.jsx';
+import CamarasPage from '../pages/CamarasPage.jsx';
 import HomePage from "../pages/HomePage.jsx";
 import LoginPage from "../pages/login/LoginPage.jsx";
 import Layout from "../components/Layout.jsx";
@@ -78,7 +79,9 @@ const AppRouter = () => {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="perfil" element={<RolePage path="perfil" />} />
           <Route path="notificaciones" element={<RolePage path="notificaciones"><NotificacionesPage /></RolePage>} />
-          <Route path="eventos-seguridad" element={<RolePage path="eventos-seguridad"><EventosSeguridadPage /></RolePage>} />
+          <Route path="eventos-seguridad" element={<RolePage path="eventos-seguridad"><EventosSeguridadPage modo="eventos" /></RolePage>} />
+          <Route path="monitor-camaras" element={<RolePage path="monitor-camaras"><EventosSeguridadPage modo="monitor" /></RolePage>} />
+          <Route path="camaras" element={<RolePage path="camaras"><CamarasPage /></RolePage>} />
           <Route path="dashboard" element={<RolePage path="dashboard"><Dashboard /></RolePage>} />
           <Route path="usuarios" element={<RolePage path="usuarios"><Usuarios /></RolePage>} />
           <Route path="roles" element={<RolePage path="roles"><Roles /></RolePage>} />

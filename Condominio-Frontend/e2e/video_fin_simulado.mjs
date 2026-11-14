@@ -42,7 +42,8 @@ try {
     else if (url.pathname.endsWith('/eventos-seguridad/')) datos = [];
     await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(datos) });
   });
-  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/eventos-seguridad`);
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras`);
+  await pagina.getByRole('button', { name: 'Configuración de análisis' }).click();
   await pagina.locator('input[type=file]').setInputFiles(archivo);
   await pagina.getByRole('button', { name: 'Analizar video', exact: true }).click();
   await pagina.getByText('Análisis terminado.', { exact: false }).waitFor({ timeout: 30000 });

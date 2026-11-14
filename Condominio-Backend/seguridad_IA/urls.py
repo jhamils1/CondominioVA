@@ -2,15 +2,22 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 from .api_notificaciones import EventoViewSet, NotificacionViewSet
+from .api_aviso_residente import AvisoResidenteViewSet
 from .api_camara_demo import CamaraAnalizarDemo, CamaraEstadoDemo
-from .api_imou_local import ImouFotogramaLocal
+from .api_imou_local import ImouFotogramaLocal, EstadoMonitoreoImou
+from .api_zona_imou import ConfiguracionZonaImou
+from .api_zona_camara import ConfiguracionZonaCamara
 from .views import AlprScanView, ReconocimientoGlobalView, EnrolarPersonaView, VerificarEnrolamientoView, VerificarLuxandAPIView, ProbarLuxandView
 
 router = SimpleRouter()
 router.register('eventos-seguridad', EventoViewSet, basename='eventos-seguridad')
 router.register('notificaciones-seguridad', NotificacionViewSet, basename='notificaciones-seguridad')
+router.register('avisos-residente', AvisoResidenteViewSet, basename='avisos-residente')
 
 urlpatterns = [
+    path('vision-camaras/<int:pk>/zona/', ConfiguracionZonaCamara.as_view(), name='vision-camara-zona'),
+    path('vision-imou/zona/', ConfiguracionZonaImou.as_view(), name='vision-imou-zona'),
+    path('vision-imou/monitoreo/', EstadoMonitoreoImou.as_view(), name='vision-imou-monitoreo'),
     path('vision-imou/fotograma/', ImouFotogramaLocal.as_view(), name='vision-imou-fotograma'),
     path('vision-camara/estado/', CamaraEstadoDemo.as_view(), name='vision-camara-estado'),
     path('vision-camara/analizar/', CamaraAnalizarDemo.as_view(), name='vision-camara-analizar'),

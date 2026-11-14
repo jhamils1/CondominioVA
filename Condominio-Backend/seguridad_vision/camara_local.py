@@ -22,7 +22,7 @@ import torch
 from PIL import Image
 from rfdetr import RFDETRNano
 
-PUERTO = 18765
+PUERTO = 28765
 MAX_BYTES = 1024 * 1024
 CLAVE = secrets.token_urlsafe(32)
 ARCHIVO_CLAVE = RECURSOS / "camara_local.token"

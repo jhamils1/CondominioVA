@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'finanzas',
     'residencial',
     'seguridad_IA',
+    'camaras',
     'fcm_django',
 ]
 
@@ -159,6 +160,7 @@ ROLES_PERSONALIZADOS_ACTIVOS = config('ROLES_PERSONALIZADOS_ACTIVOS', default=Fa
 
 # Se habilita únicamente después de crear y aplicar el esquema aprobado.
 NOTIFICACIONES_SEGURIDAD_ACTIVAS = config('NOTIFICACIONES_SEGURIDAD_ACTIVAS', default=False, cast=bool)
+CAMARAS_CLAVE_CIFRADO = config('CAMARAS_CLAVE_CIFRADO', default='')
 COLA_FCM_SEGURIDAD_ACTIVA = config('COLA_FCM_SEGURIDAD_ACTIVA', default=False, cast=bool)
 ENVIO_FCM_SEGURIDAD_ACTIVO = config('ENVIO_FCM_SEGURIDAD_ACTIVO', default=False, cast=bool)
 # Permite pausar de forma explícita los avisos antiguos durante una migración FCM.

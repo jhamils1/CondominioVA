@@ -9,11 +9,13 @@ import './VideoArchivoDemostracion.css';
 const nombres = { person: 'persona', car: 'automóvil', motorcycle: 'motocicleta',
   bus: 'autobús', truck: 'camión', cat: 'gato', dog: 'perro' };
 
-export default function CamaraDemostracion({ onRegistrarEvento }) {
+export default function CamaraDemostracion({ onRegistrarEvento, configuracion = false }) {
   const video = useRef(null);
   const canvas = useRef(null);
   const flujo = useRef(null);
   const actual = useRef(0);
+  const versionIA = useRef(0);
+  const iaHabilitada = useRef(false);
   const solicitud = useRef(null);
   const temporizador = useRef(null);
   const seguimiento = useRef(null);
@@ -22,6 +24,8 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
   const automaticoRef = useRef(false);
   const pistasEnviadas = useRef(new Set());
   const [estado, setEstado] = useState('inicial');
+  const [iaActiva, setIaActiva] = useState(false);
+  const [iaIniciando, setIaIniciando] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [zona, setZona] = useState([]);
   const [borrador, setBorrador] = useState([]);
@@ -62,6 +66,8 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
 
   function liberar() {
     actual.current += 1;
+    versionIA.current += 1;
+    iaHabilitada.current = false;
     clearTimeout(temporizador.current);
     solicitud.current?.abort();
     flujo.current?.getTracks().forEach(track => track.stop());
@@ -73,8 +79,8 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
 
   useEffect(() => () => liberar(), []);
 
-  async function analizar(id) {
-    if (actual.current !== id || !video.current || !canvas.current) return;
+  async function analizar(id, version) {
+    if (actual.current !== id || versionIA.current !== version || !iaHabilitada.current || !video.current || !canvas.current) return;
     try {
       const fuente = video.current;
       if (!fuente.videoWidth || !fuente.videoHeight) throw new Error('La cámara no entrega imágenes.');
@@ -87,10 +93,10 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
       contexto.drawImage(fuente, 0, 0, ancho, alto);
       const tiempoCaptura = performance.now() / 1000;
       const blob = await new Promise(resolve => lienzo.toBlob(resolve, 'image/jpeg', 0.75));
-      if (!blob || actual.current !== id) return;
+      if (!blob || actual.current !== id || versionIA.current !== version) return;
       solicitud.current = new AbortController();
       const resultado = await analizarFotograma(blob, solicitud.current.signal);
-      if (actual.current !== id) return;
+      if (actual.current !== id || versionIA.current !== version || !iaHabilitada.current) return;
       const config = ajustes.current;
       let detecciones = resultado.detecciones || [];
       if (config.zona.length) {
@@ -123,14 +129,50 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
         contexto.fillText(texto, x1 + 4, y - 4);
       }
       setEstado('activa');
-      temporizador.current = setTimeout(() => analizar(id), 200);
+      temporizador.current = setTimeout(() => analizar(id, version), 200);
     } catch (error) {
-      if (actual.current !== id) return;
-      liberar();
-      setEstado('error');
+      if (actual.current !== id || versionIA.current !== version) return;
+      iaHabilitada.current = false;
+      setIaActiva(false);
+      desactivarRegistro();
       setMensaje(error.message === 'La cámara no entrega imágenes.' ? error.message
-        : 'No se pudo analizar la imagen. Comprueba que el procesador local siga iniciado.');
+        : 'No se pudo analizar la imagen. La cámara sigue activa; comprueba el procesador local.');
     }
+  }
+
+  async function activarIA(id = actual.current) {
+    if (!flujo.current || iaHabilitada.current) return;
+    const version = ++versionIA.current;
+    setIaIniciando(true);
+    setMensaje('');
+    try {
+      solicitud.current = new AbortController();
+      await estadoCamaraDemo(solicitud.current.signal);
+      if (actual.current !== id || versionIA.current !== version || !flujo.current) return;
+      configurarSeguimiento(zona, Number(segundos));
+      iaHabilitada.current = true;
+      setIaActiva(true);
+      void analizar(id, version);
+    } catch {
+      if (actual.current === id && versionIA.current === version) {
+        setMensaje('No se pudo activar la IA. La cámara sigue activa; comprueba el procesador local.');
+      }
+    } finally {
+      if (versionIA.current === version) setIaIniciando(false);
+    }
+  }
+
+  function detenerIA() {
+    versionIA.current += 1;
+    iaHabilitada.current = false;
+    clearTimeout(temporizador.current);
+    solicitud.current?.abort();
+    setIaActiva(false);
+    setIaIniciando(false);
+    desactivarRegistro();
+    setDibujando(false);
+    configurarSeguimiento(zona, Number(segundos));
+    setMensaje('IA detenida. La cámara continúa en directo.');
   }
 
   async function iniciar() {
@@ -138,13 +180,11 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
     desactivarRegistro(); setAvisoRegistro('');
     setZona([]); setBorrador([]); setDibujando(false); setMostrarZona(false); setErrorZona('');
     configurarSeguimiento([], Number(segundos));
+    setIaActiva(false); setIaIniciando(false);
     const id = actual.current;
     setEstado('iniciando');
     setMensaje('');
     try {
-      solicitud.current = new AbortController();
-      await estadoCamaraDemo(solicitud.current.signal);
-      if (actual.current !== id) return;
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('La cámara no está disponible en este navegador.');
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       if (actual.current !== id) { stream.getTracks().forEach(track => track.stop()); return; }
@@ -152,12 +192,13 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
       stream.getVideoTracks()[0].onended = () => {
         if (actual.current !== id) return;
         liberar();
+        setIaActiva(false); setIaIniciando(false);
         setEstado('error');
         setMensaje('La cámara dejó de estar disponible.');
       };
       video.current.srcObject = stream;
       await video.current.play();
-      if (actual.current === id) analizar(id);
+      if (actual.current === id) { setEstado('activa'); void activarIA(id); }
     } catch (error) {
       if (actual.current !== id) return;
       liberar();
@@ -171,6 +212,7 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
 
   function detener() {
     liberar();
+    setIaActiva(false); setIaIniciando(false);
     desactivarRegistro();
     setZona([]); setBorrador([]); setDibujando(false); setMostrarZona(false);
     configurarSeguimiento([], Number(segundos));
@@ -180,21 +222,24 @@ export default function CamaraDemostracion({ onRegistrarEvento }) {
 
   return <section className="border rounded p-4 mb-5">
     <h3 className="font-semibold">Probar cámara con visión artificial</h3>
-    <p className="my-2 text-sm">Prueba para navegador y servidor en esta computadora. Las imágenes se analizan localmente; el registro de eventos debe activarse y no se guardan grabaciones.</p>
+    {configuracion && <p className="my-2 text-sm">Prueba para navegador y servidor en esta computadora. Las imágenes se analizan localmente; el registro de eventos debe activarse y no se guardan grabaciones.</p>}
     <button type="button" onClick={iniciar} disabled={['iniciando', 'activa'].includes(estado)}
       className="bg-indigo-600 text-white rounded px-3 py-2 mr-3 disabled:opacity-50">
       {estado === 'iniciando' ? 'Iniciando…' : 'Iniciar cámara'}
     </button>
     <button type="button" onClick={detener} disabled={!['iniciando', 'activa'].includes(estado)}
       className="border rounded px-3 py-2 disabled:opacity-50">Detener cámara</button>
+    {estado === 'activa' && (iaActiva
+      ? <button type="button" onClick={detenerIA} className="border rounded px-3 py-2 ml-2">Detener IA de laptop</button>
+      : <button type="button" onClick={() => activarIA()} disabled={iaIniciando} className="border rounded px-3 py-2 ml-2">{iaIniciando ? 'Iniciando IA…' : 'Activar IA de laptop'}</button>)}
     {mensaje && <p role="alert" className="text-red-700 mt-2">{mensaje}</p>}
-    <video ref={video} muted playsInline className="hidden" />
     <div className={`camara-zona-marco mt-3 ${estado === 'activa' ? '' : 'hidden'}`}>
-      <canvas ref={canvas} className="camara-zona-imagen" aria-label="Cámara con detecciones" />
-      <ZonaVideo puntos={dibujando ? borrador : mostrarZona ? zona : []} activa={dibujando}
-        onAgregar={punto => setBorrador(actual => actual.length < 30 ? [...actual, punto] : actual)} />
+      <video ref={video} muted playsInline className={`camara-zona-imagen ${iaActiva ? 'hidden' : ''}`} aria-label="Cámara de laptop en directo" />
+      <canvas ref={canvas} className={`camara-zona-imagen ${iaActiva ? '' : 'hidden'}`} aria-label="Cámara con detecciones" />
+      {iaActiva && configuracion && <ZonaVideo puntos={dibujando ? borrador : mostrarZona ? zona : []} activa={dibujando}
+        onAgregar={punto => setBorrador(actual => actual.length < 30 ? [...actual, punto] : actual)} />}
     </div>
-    {estado === 'activa' && <div className="mt-3">
+    {estado === 'activa' && iaActiva && <div className="mt-3" hidden={!configuracion}>
       <h4 className="font-medium">Zona temporal de la cámara</h4>
       <p className="text-sm mt-1">Dibuja la zona sobre la imagen. Se oculta durante la vigilancia y se elimina al detener la cámara.</p>
       {!dibujando ? <div className="flex flex-wrap gap-2 mt-2">

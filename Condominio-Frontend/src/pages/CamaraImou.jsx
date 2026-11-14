@@ -1,21 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { fotogramaImou } from '../api/visionDemoApi.js';
+import { fotogramaImou, estadoMonitoreoImou } from '../api/visionDemoApi.js';
 import AnalisisImou from './AnalisisImou.jsx';
+import ConsultaPlacaFotograma from '../components/ConsultaPlacaFotograma.jsx';
+import LecturaAutomaticaImou from '../components/LecturaAutomaticaImou.jsx';
 import { crearEventoImou } from '../vision/eventoImou.js';
+import { FaCamera, FaCog, FaExpand, FaChevronRight, FaPowerOff } from 'react-icons/fa';
 import './CamaraImou.css';
 
-export default function CamaraImou({ onRegistrarEvento }) {
+export default function CamaraImou({ onRegistrarEvento, configuracion = false, onAbrirConfiguracion }) {
   const [activa, setActiva] = useState(false);
   const [imagen, setImagen] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [automatico, setAutomatico] = useState(false);
   const [pendientes, setPendientes] = useState([]);
   const [avisoRegistro, setAvisoRegistro] = useState('');
+  const [iaActiva, setIaActiva] = useState(false);
+  const [visorAnalizado, setVisorAnalizado] = useState(null);
+  const [monitorIndependiente, setMonitorIndependiente] = useState(null);
   const visor = useRef(null);
   const ultimoFotograma = useRef(null);
+  const muestraAnalizada = useRef(null);
   const automaticoRef = useRef(false);
   const pendientesRef = useRef(new Map());
   const enviandoRef = useRef(new Set());
+  const monitorRef = useRef(null);
+
+  useEffect(() => {
+    let vigente = true, timer;
+    const controller = new AbortController();
+    async function consultar() {
+      try {
+        const datos = await estadoMonitoreoImou(controller.signal);
+        if (typeof datos.ocupado !== 'boolean') throw new Error('Estado inválido');
+        if (vigente) { monitorRef.current = datos.ocupado; setMonitorIndependiente(datos.ocupado); }
+      } catch {
+        if (vigente) { monitorRef.current = null; setMonitorIndependiente(null); }
+      } finally { if (vigente) timer = setTimeout(consultar, 3000); }
+    }
+    consultar();
+    return () => { vigente = false; controller.abort(); clearTimeout(timer); };
+  }, []);
 
   const cambiarAutomatico = useCallback(valor => {
     automaticoRef.current = valor;
@@ -46,7 +70,7 @@ export default function CamaraImou({ onRegistrarEvento }) {
     }
   }, [onRegistrarEvento, desactivarRegistro, actualizarPendientes]);
   const registrarHallazgo = useCallback((hallazgo, imagen) => {
-    if (!automaticoRef.current) return;
+    if (!automaticoRef.current || monitorRef.current !== false) return;
     try {
       if (!(imagen instanceof Blob) || imagen.type !== 'image/jpeg' || imagen.size <= 0 || imagen.size > 1024 * 1024) throw new Error('Fotograma inválido');
       const datos = { ...crearEventoImou(hallazgo, crypto.randomUUID(), new Date().toISOString()), evidencia: imagen };
@@ -84,6 +108,7 @@ export default function CamaraImou({ onRegistrarEvento }) {
       } catch (error) {
         if (!vigente) return;
         desactivarRegistro();
+        setIaActiva(false);
         setActiva(false);
         setImagen('');
         setMensaje([401, 403].includes(error.response?.status)
@@ -94,6 +119,7 @@ export default function CamaraImou({ onRegistrarEvento }) {
     function alOcultar() {
       if (document.hidden) {
         desactivarRegistro();
+        setIaActiva(false);
         setActiva(false);
         setImagen('');
         setMensaje('Vista detenida al salir de esta pestaña.');
@@ -116,32 +142,54 @@ export default function CamaraImou({ onRegistrarEvento }) {
     catch { setMensaje('El navegador no permitió ampliar la vista.'); }
   }
 
-  return <section className="border rounded p-4 mb-5" aria-label="Cámara Imou por red">
-    <h3 className="font-semibold mb-2">Cámara Imou por red</h3>
-    <p className="text-sm mb-3">Vista en directo con análisis local opcional. No se guardan grabaciones.</p>
-    <div className="flex flex-wrap gap-3 mb-3">
-      <button type="button" disabled={activa} className="bg-indigo-600 text-white rounded px-3 py-2 disabled:opacity-50"
-        onClick={() => { setMensaje('Conectando con la cámara…'); setActiva(true); }}>Ver cámara Imou</button>
-      <button type="button" disabled={!activa} className="border rounded px-3 py-2 disabled:opacity-50"
-        onClick={() => { desactivarRegistro(); setActiva(false); setImagen(''); setMensaje('Vista detenida.'); }}>Detener vista Imou</button>
-      {imagen && <button type="button" onClick={ampliar} className="border rounded px-3 py-2">Ampliar cámara Imou</button>}
-    </div>
-    {mensaje && <p role="status" className="mb-2">{mensaje}</p>}
-    {activa && imagen && <div className="imou-comparacion">
-      <h4 className="font-medium imou-titulo-directo">Cámara en directo</h4>
-      <div ref={visor} className="imou-vista-directo bg-black flex items-center justify-center">
-        <img src={imagen} alt="Vista en directo de la cámara Imou" />
+  return <section className="imou-monitor" aria-label="Cámara Imou por red">
+    <div className="imou-monitor-layout">
+      <div className="imou-camera-card">
+        <div className="imou-card-heading">
+          <div className="imou-card-title"><span className="imou-icon"><FaCamera /></span><div><h3>Cámara Imou</h3><p>Monitoreo de seguridad</p></div></div>
+          <span className={`imou-live-badge ${activa && imagen ? 'is-live' : ''}`}><span />{activa && imagen ? 'En vivo' : activa ? 'Conectando' : 'Desconectada'}</span>
+        </div>
+        <div ref={visor} className="imou-stage">
+          <div className="imou-vista-directo" hidden={iaActiva}>
+            {activa && imagen ? <><img src={imagen} alt="Vista en directo de la cámara Imou" />{configuracion && <span className="imou-view-label">Cámara en directo</span>}</>
+              : <div className="imou-placeholder"><FaCamera aria-hidden="true" /><strong>Cámara lista para conectar</strong><span>Inicia la cámara para ver la imagen en vivo.</span></div>}
+          </div>
+          <div ref={setVisorAnalizado} className="imou-analysis-slot" hidden={!iaActiva} />
+          {activa && imagen && <><span className="imou-camera-caption">Cámara Imou · Red local</span>
+            <button type="button" onClick={ampliar} className="imou-expand" title="Ampliar cámara Imou" aria-label="Ampliar cámara Imou"><FaExpand /></button></>}
+        </div>
+        {mensaje && <p role="status" className="imou-camera-message">{mensaje}</p>}
       </div>
-      <AnalisisImou ultimoFotograma={ultimoFotograma} automatico={automatico}
-        cambiarAutomatico={cambiarAutomatico} desactivarRegistro={desactivarRegistro}
-        registrarHallazgo={registrarHallazgo} hayPendientes={pendientes.length > 0} />
-    </div>}
-    {avisoRegistro && <p role="status" className="mt-3">{avisoRegistro}</p>}
-    {pendientes.length > 0 && <div role="alert" className="mt-3 border rounded p-3">
-      <p>Hay {pendientes.length} evento(s) por confirmar. Si cierras o recargas la página se perderán los reintentos pendientes.</p>
-      {pendientes.map(({ datos, enviando }) => <button key={datos.id} type="button" disabled={enviando}
-        className="border rounded px-3 py-1 mt-2 mr-2 disabled:opacity-50"
-        onClick={() => enviar(datos)}>{enviando ? 'Enviando evento…' : 'Reintentar evento Imou'}</button>)}
-    </div>}
+      <aside className="imou-side-card">
+        <div className="imou-side-heading"><span className="imou-icon"><FaCamera /></span><div><h3>Control de cámara</h3><p>Imou · red local</p></div></div>
+        <div className="imou-side-buttons">
+          <button type="button" disabled={activa} className="imou-primary"
+            onClick={() => { setMensaje('Conectando con la cámara…'); setActiva(true); }}><FaPowerOff /> Ver cámara Imou</button>
+          <button type="button" disabled={!activa} className="imou-secondary"
+            onClick={() => { desactivarRegistro(); setIaActiva(false); setActiva(false); setImagen(''); setMensaje('Vista detenida.'); }}>Detener vista Imou</button>
+        </div>
+        {activa && imagen && <AnalisisImou ultimoFotograma={ultimoFotograma} muestraAnalizada={muestraAnalizada} automatico={automatico}
+          cambiarAutomatico={cambiarAutomatico} desactivarRegistro={desactivarRegistro}
+          registrarHallazgo={registrarHallazgo} hayPendientes={pendientes.length > 0}
+          activo={iaActiva} setActivo={setIaActiva} configuracion={configuracion} visorAnalizado={visorAnalizado}
+          monitorIndependiente={monitorIndependiente} />}
+        {activa && imagen && iaActiva && <LecturaAutomaticaImou muestraAnalizada={muestraAnalizada} />}
+        {activa && imagen && <ConsultaPlacaFotograma obtenerFotograma={() => ultimoFotograma.current} />}
+        <p role="status" className="imou-notice">{monitorIndependiente === null
+          ? 'No se puede comprobar el monitor independiente; el registro desde esta vista está pausado.'
+          : monitorIndependiente
+            ? 'Registro desde esta vista pausado: el monitor independiente está iniciado o su puerto está ocupado. Revisa la consola del monitor. Detener la cámara o la IA aquí no detiene ese proceso.'
+            : 'Proceso independiente detenido. El monitoreo desde esta vista requiere mantener la página abierta.'}</p>
+        <button type="button" className="imou-config-link" onClick={onAbrirConfiguracion}>
+          <FaCog /> <span>{configuracion ? 'Volver al monitoreo' : 'Configuración de análisis'}</span> <FaChevronRight />
+        </button>
+        {avisoRegistro && <p role="status" className="imou-notice">{avisoRegistro}</p>}
+        {pendientes.length > 0 && <div role="alert" className="imou-pending">
+          <p>Hay {pendientes.length} evento(s) por confirmar. Si cierras o recargas la página se perderán los reintentos pendientes.</p>
+          {pendientes.map(({ datos, enviando }) => <button key={datos.id} type="button" disabled={enviando}
+            onClick={() => enviar(datos)}>{enviando ? 'Enviando evento…' : 'Reintentar evento Imou'}</button>)}
+        </div>}
+      </aside>
+    </div>
   </section>;
 }

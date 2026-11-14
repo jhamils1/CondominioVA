@@ -8,6 +8,13 @@ export async function listarNotificaciones() { return (await client.get('notific
 export async function leerNotificacion(id) { return (await client.post(`notificaciones-seguridad/${id}/leer/`)).data; }
 export async function obtenerEvento(id) { return (await client.get(`eventos-seguridad/${id}/`)).data; }
 export async function revisarEvento(id, accion, motivo) { return (await client.post(`eventos-seguridad/${id}/${accion}/`, { motivo })).data; }
+export async function registrarPlacaEvento(id, placa) { return (await client.post(`eventos-seguridad/${id}/registrar-placa/`, { placa })).data; }
+export async function reconocerPlacaEvidencia(id) { return (await client.post(`eventos-seguridad/${id}/reconocer-placa-evidencia/`, {}, { timeout: 45000 })).data; }
+export async function posiblesLecturasEntrada(id) { return (await client.get(`eventos-seguridad/${id}/posibles-lecturas-entrada/`)).data; }
+export async function consultarDestinatarioPlaca(id) { return (await client.get(`eventos-seguridad/${id}/destinatario-placa/`)).data; }
+export async function confirmarDestinatarioPlaca(id, vehiculoId) { return (await client.post(`eventos-seguridad/${id}/destinatario-placa/`, { vehiculo_id: vehiculoId })).data; }
+export async function prepararAvisoResidente(id) { return (await client.post(`eventos-seguridad/${id}/preparar-aviso-residente/`, {})).data; }
+export async function encolarAvisoResidente(id) { return (await client.post(`eventos-seguridad/${id}/encolar-aviso-residente/`, {})).data; }
 export async function atenderEvento(id, accion, observacion) { return (await client.post(`eventos-seguridad/${id}/${accion}/`, { observacion })).data; }
 export async function listarEventos() { return (await client.get('eventos-seguridad/')).data; }
 export async function crearEvento(datos, configuracion) {

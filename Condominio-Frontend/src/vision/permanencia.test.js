@@ -50,3 +50,75 @@ test('lleva por separado dos vehículos simultáneos', () => {
   assert.equal(avisos.length, 2);
   assert.notEqual(avisos[0].id, avisos[1].id);
 });
+
+const imou = (segundos = 3) => crearSeguimiento({ zona, ancho: 100, alto: 100, segundos, toleranciaPerdida: 2 });
+
+test('Imou conserva el tiempo ante una pérdida breve sin contar ni dibujar la ausencia', () => {
+  const procesar = imou();
+  procesar([coche()], 0); procesar([coche()], 1); procesar([coche()], 2);
+  assert.deepEqual(procesar([], 2.5), { detecciones: [], avisos: [] });
+  const recuperado = procesar([coche()], 3);
+  assert.equal(recuperado.detecciones[0].permanencia.segundos, 2);
+  assert.equal(recuperado.avisos.length, 0);
+  assert.equal(procesar([coche()], 4).avisos.length, 1);
+});
+
+test('Imou recupera el rojo sin repetir el aviso después de una ausencia breve', () => {
+  const procesar = imou(2);
+  procesar([coche()], 0); procesar([coche()], 1);
+  assert.equal(procesar([coche()], 2).avisos.length, 1);
+  procesar([], 2.5);
+  const resultado = procesar([coche()], 3);
+  assert.equal(resultado.detecciones[0].permanencia.superaUmbral, true);
+  assert.equal(resultado.avisos.length, 0);
+});
+
+test('Imou conserva el aviso durante una interrupción de análisis sin sumar tiempo', () => {
+  const procesar = imou(2);
+  procesar([coche()], 0); procesar([coche()], 1);
+  assert.equal(procesar([coche()], 2).avisos.length, 1);
+  assert.equal(procesar([coche()], 6).avisos.length, 0);
+  assert.equal(procesar([coche()], 7).avisos.length, 0);
+});
+
+test('Imou permite otro aviso tras salir y otro vehículo dentro de la zona', () => {
+  const procesar = imou(2);
+  procesar([coche(20)], 0); procesar([coche(20)], 1);
+  assert.equal(procesar([coche(20)], 2).avisos.length, 1);
+  procesar([coche(20), coche(60)], 3);
+  procesar([coche(20), coche(60)], 4);
+  assert.equal(procesar([coche(20), coche(60)], 5).avisos.length, 1);
+  procesar([coche(85)], 6);
+  procesar([coche(85)], 7);
+  procesar([coche(20)], 18); procesar([coche(20)], 19);
+  assert.equal(procesar([coche(20)], 20).avisos.length, 1);
+});
+
+test('Imou vuelve a avisar si observa que el vehículo sale y regresa', () => {
+  const procesar = imou(2);
+  procesar([coche(78)], 0); procesar([coche(78)], 1);
+  assert.equal(procesar([coche(78)], 2).avisos.length, 1);
+  procesar([coche(81)], 3);
+  procesar([coche(78)], 4); procesar([coche(78)], 5);
+  assert.equal(procesar([coche(78)], 6).avisos.length, 1);
+});
+
+test('Imou no conserva una pista perdida demasiado tiempo o reemplazada por otro vehículo', () => {
+  for (const [tiempo, x] of [[4.1, 30], [2.5, 60]]) {
+    const procesar = imou();
+    procesar([coche()], 0); procesar([coche()], 1); procesar([], 1.5);
+    const resultado = procesar([coche(x)], tiempo);
+    assert.equal(resultado.detecciones[0].permanencia.segundos, 0);
+    assert.equal(resultado.avisos.length, 0);
+  }
+});
+
+test('Imou reinicia por salida, movimiento o salto atrás del reloj aun con tolerancia', () => {
+  const procesar = imou(2);
+  procesar([coche()], 0); procesar([coche()], 1); procesar([coche()], 2);
+  assert.equal(procesar([coche(85)], 2.5).detecciones[0].permanencia, null);
+  assert.equal(procesar([coche()], 3).detecciones[0].permanencia.segundos, 0);
+  procesar([coche()], 4);
+  assert.equal(procesar([coche(34)], 4.5).detecciones[0].permanencia.segundos, 0);
+  assert.equal(procesar([coche(34)], 1).detecciones[0].permanencia.segundos, 0);
+});

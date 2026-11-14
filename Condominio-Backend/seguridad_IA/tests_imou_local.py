@@ -11,7 +11,7 @@ from .api_imou_local import ImouFotogramaLocal, obtener_fotograma
 class ImouLocalTests(SimpleTestCase):
     def test_roles_y_conexion_local(self):
         for role, ip, expected in [
-            ('administrador', '127.0.0.1', 200), ('guardia', '::1', 200),
+            ('administrador', '127.0.0.1', 200), ('guardia', '::1', 403),
             ('propietario', '127.0.0.1', 403), ('inquilino', '127.0.0.1', 403),
             (None, '127.0.0.1', 403), ('administrador', '192.0.2.4', 403),
         ]:
@@ -40,6 +40,7 @@ class ImouLocalTests(SimpleTestCase):
                                        (200, b'\xff\xd8\xff' + b'x' * 1024 * 1024, 503)]:
             with self.subTest(status=status, size=len(data)), \
                  patch.object(Path, 'read_text', return_value='x' * 43), \
+                 patch('seguridad_IA.api_imou_local.fuente_monitor', return_value=None), \
                  patch('seguridad_IA.api_imou_local.http.client.HTTPConnection') as connect:
                 conn = connect.return_value
                 conn.getresponse.return_value = SimpleNamespace(status=status, read=MagicMock(return_value=data))
@@ -52,3 +53,13 @@ class ImouLocalTests(SimpleTestCase):
     def test_sin_servicio_no_filtra_errores(self):
         with patch.object(Path, 'read_text', side_effect=OSError('dato privado')):
             self.assertEqual(obtener_fotograma(), (503, b''))
+
+    def test_fuente_catalogo_exige_puente_nuevo_y_no_filtra_clave(self):
+        datos = {'ip': '192.168.10.9', 'puerto': 554, 'ruta': '/video', 'usuario': 'usuario', 'clave': 'clave-ficticia'}
+        with (patch.object(Path, 'read_text', return_value='x' * 43),
+              patch('seguridad_IA.api_imou_local.fuente_monitor', return_value=datos),
+              patch('seguridad_IA.api_imou_local.http.client.HTTPConnection') as connect):
+            conn = connect.return_value
+            conn.getresponse.return_value = SimpleNamespace(status=404, read=MagicMock(return_value=b''))
+            self.assertEqual(obtener_fotograma(), (503, b''))
+            self.assertEqual(conn.request.call_args.args[1], '/fotograma-catalogo')

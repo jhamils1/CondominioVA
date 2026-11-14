@@ -22,6 +22,7 @@ try {
   navegador = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const pagina = await navegador.newPage();
   const envios = [];
+  let analisis = 0;
   await pagina.addInitScript(() => {
     localStorage.setItem('access', 'token-ficticio');
     const fuente = document.createElement('canvas'); fuente.width = 640; fuente.height = 480;
@@ -35,7 +36,7 @@ try {
     let status = 200;
     if (url.pathname.endsWith('/me/')) body = { username: 'guardia-ficticio', role: 'guardia', capacidades: [] };
     else if (url.pathname.endsWith('/vision-camara/estado/')) body = { disponible: true };
-    else if (url.pathname.endsWith('/vision-camara/analizar/')) body = { detecciones: [{ clase: 'car', confianza: 0.9, caja: [200, 150, 300, 300] }] };
+    else if (url.pathname.endsWith('/vision-camara/analizar/')) { analisis++; body = { detecciones: [{ clase: 'car', confianza: 0.9, caja: [200, 150, 300, 300] }] }; }
     else if (url.pathname.endsWith('/eventos-seguridad/') && route.request().method() === 'POST') {
       envios.push(route.request().postDataJSON());
       if (envios.length === 1) { status = 503; body = { detail: 'fallo simulado' }; }
@@ -44,8 +45,19 @@ try {
     await route.fulfill({ status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(body) });
   });
   const base = `http://127.0.0.1:${servidor.address().port}`;
-  await pagina.goto(base + '/admin/eventos-seguridad');
+  await pagina.goto(base + '/admin/monitor-camaras');
+  await pagina.getByRole('button', { name: 'Cámara de laptop' }).click();
+  await pagina.getByRole('button', { name: 'Configuración de análisis' }).click();
   await pagina.getByRole('button', { name: 'Iniciar cámara' }).click();
+  await pagina.getByRole('button', { name: 'Dibujar zona' }).waitFor({ timeout: 15000 });
+  await pagina.getByRole('button', { name: 'Detener IA de laptop' }).click();
+  const videoVivo = pagina.getByLabel('Cámara de laptop en directo');
+  await videoVivo.waitFor();
+  const analisisDetenido = analisis;
+  await pagina.waitForTimeout(800);
+  assert.equal(analisis, analisisDetenido);
+  assert.equal(await videoVivo.evaluate(v => v.srcObject.getVideoTracks()[0].readyState), 'live');
+  await pagina.getByRole('button', { name: 'Activar IA de laptop' }).click();
   await pagina.getByRole('button', { name: 'Dibujar zona' }).waitFor({ timeout: 15000 });
   await pagina.getByRole('button', { name: 'Dibujar zona' }).click();
   const dibujo = pagina.getByLabel('Dibuja la zona con clics, o usa las flechas y Enter para añadir puntos');

@@ -1,0 +1,9 @@
+# Zonas de cámaras del catálogo
+
+La cámara Imou vinculada conserva íntegramente la configuración y el historial de `ZonaImou`; sus vistas, proceso y alertas no se migraron. Las cámaras de red adicionales activas disponen de una zona persistente por cámara y un tiempo de permanencia. El administrador local dibuja, reemplaza o elimina el polígono y cambia el tiempo desde el monitor; el guardia local puede consultar la configuración pero no modificarla. Los polígonos se validan en el backend y cada cambio se registra con actor y fecha. Una versión de configuración evita sobreescribir cambios realizados en otra sesión.
+
+Esta etapa guarda la configuración; **no activa IA, crea eventos ni envía notificaciones para cámaras adicionales**. El usuario debe seleccionar una cámara adicional y abrir la configuración de análisis. Para dibujar necesita primero iniciar la vista de esa cámara. La IA y los eventos por cámara requieren una etapa posterior; la zona Imou sigue funcionando por su vía anterior.
+
+Se aplicó la migración aditiva `seguridad_IA.0006_zonas_por_camara` a PostgreSQL local `condominio`. Antes se creó `Condominio-Backend/backups_locales/antes_zonas_camara_20261107_210513.dump`, 2.485.934 bytes; el listado `pg_restore --list` se verificó, sin restauración de prueba. La zona y el vínculo Imou continúan presentes. No se crearon zonas de cámaras adicionales reales.
+
+Pruebas: 34 pruebas Django en SQLite temporal para cámaras, zonas Imou, zonas nuevas y monitor; permisos, historial, validación y conflictos incluidos. Migraciones sin cambios pendientes, ESLint y compilación Vite correctos. Un navegador con API e imágenes simuladas verificó dibujado, guardado, separación entre cámaras y restricción visual del guardia. Falta validación con una segunda cámara física y la prueba de restauración del respaldo.

@@ -1,0 +1,28 @@
+.cam-catalogo { color: #e7f1ff; background: #06172e; min-height: 100%; padding: 28px; }
+.cam-catalogo header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.cam-catalogo h1 { font-size: 1.8rem; font-weight: 700; }
+.cam-catalogo h2 { font-size: 1.1rem; font-weight: 700; }
+.cam-catalogo p { color: #b9cbe0; }
+.cam-catalogo button { border: 1px solid #2584b4; border-radius: 7px; background: #0e476e; color: #fff; padding: 10px 16px; }
+.cam-catalogo button:disabled { opacity: .5; }
+.cam-ayuda, .cam-error, .cam-aviso { margin: 18px 0; }
+.cam-error { color: #ffb1b1 !important; }.cam-aviso { color: #9ce6b2 !important; }
+.cam-lista { display: grid; gap: 12px; margin-top: 20px; }
+.cam-funciones { margin-top: 12px; }
+.cam-funciones form { display: grid; gap: 10px; margin-top: 10px; }
+.cam-funciones label { display: flex; align-items: center; gap: 8px; }
+.cam-lista article, .cam-formulario form { border: 1px solid #245075; background: #0b203b; border-radius: 10px; padding: 18px; }
+.cam-lista article { display: flex; justify-content: space-between; gap: 16px; }.cam-lista article div:last-child { display: flex; align-items: center; gap: 14px; }
+.cam-formulario { position: fixed; inset: 0; z-index: 50; overflow: auto; background: #0009; display: grid; place-items: center; padding: 20px; }
+.cam-formulario form { width: min(720px, 100%); }.cam-formulario form > p { margin: 8px 0 18px; }
+.cam-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cam-campos label { display: flex; flex-direction: column; gap: 5px; }.cam-campos input:not([type=checkbox]), .cam-campos select { background: #06172e; color: #fff; border: 1px solid #456582; border-radius: 6px; padding: 9px; }
+.cam-campos .cam-check { flex-direction: row; align-items: center; }.cam-botones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.cam-clave { display: flex; position: relative; }
+.cam-clave input { width: 100%; padding-right: 52px !important; }
+.cam-catalogo .cam-clave button { position: absolute; right: 2px; top: 2px; bottom: 2px; padding: 0 12px; border: 0; background: transparent; display: flex; align-items: center; }
+.cam-busqueda { margin: 12px 0 20px; padding: 12px; border: 1px solid #245075; border-radius: 8px; }
+.cam-busqueda p { margin: 8px 0; }.cam-busqueda button + button { margin-left: 8px; }
+.cam-campos input[name="ruta_rtsp"]:read-only { background: #263849; border-color: #617080; color: #c5cdd5; cursor: not-allowed; }
+.cam-busqueda input { background: #06172e; color: #fff; border: 1px solid #456582; border-radius: 6px; padding: 7px; margin-left: 8px; width: 100px; }
+@media (max-width: 650px) { .cam-campos { grid-template-columns: 1fr; }.cam-lista article { flex-direction: column; }.cam-catalogo { padding: 16px; } }

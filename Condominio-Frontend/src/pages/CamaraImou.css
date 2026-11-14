@@ -1,41 +1,54 @@
-.imou-comparacion {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas:
-    'controles'
-    'titulo-directo'
-    'vista-directo'
-    'titulo-ia'
-    'vista-ia';
-  gap: 0.5rem 1rem;
-  align-items: start;
-}
-
-.imou-controles-ia { grid-area: controles; min-width: 0; }
-.imou-titulo-directo { grid-area: titulo-directo; }
-.imou-titulo-ia { grid-area: titulo-ia; }
-.imou-vista-directo { grid-area: vista-directo; min-width: 0; }
-.imou-vista-ia { grid-area: vista-ia; position: relative; width: 100%; min-width: 0; }
-.imou-vista-ia canvas { display: block; width: 100%; height: auto; }
-
-.imou-vista-directo img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-
-.imou-vista-directo:fullscreen img {
-  width: 100%;
-  height: 100%;
-}
-
-@media (min-width: 1024px) {
-  .imou-comparacion {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      'controles controles'
-      'titulo-directo titulo-ia'
-      'vista-directo vista-ia';
-  }
+.imou-monitor { margin-bottom: 1.25rem; }
+.imou-monitor-layout { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(250px, 1fr); gap: 12px; }
+.imou-camera-card, .imou-side-card { min-width: 0; background: #07182e; border: 1px solid #21446a; border-radius: 10px; }
+.imou-camera-card { padding: 14px; }
+.imou-card-heading, .imou-card-title, .imou-side-heading { display: flex; align-items: center; gap: 11px; }
+.imou-card-heading { justify-content: space-between; margin-bottom: 12px; }
+.imou-card-title h3, .imou-side-heading h3 { margin: 0; font-size: 15px; font-weight: 700; color: #f4f8ff; }
+.imou-card-title p, .imou-side-heading p { margin: 2px 0 0; color: #92a7c1; font-size: 12px; }
+.imou-icon { display: grid; place-items: center; color: #26b8ff; width: 34px; height: 34px; flex: 0 0 34px; background: #0b345b; border-radius: 9px; }
+.imou-live-badge { display: inline-flex; align-items: center; gap: 6px; color: #aab8ca; background: #182d43; border-radius: 50px; padding: 5px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.imou-live-badge span { width: 7px; height: 7px; background: #7d92a9; border-radius: 50%; }
+.imou-live-badge.is-live { color: #80f0ad; background: #093d2f; }
+.imou-live-badge.is-live span { background: #2cea76; }
+.imou-stage { position: relative; overflow: hidden; background: #020b19; border-radius: 7px; min-height: 240px; }
+.imou-vista-directo, .imou-analysis-slot, .imou-vista-ia { position: relative; min-width: 0; width: 100%; }
+.imou-vista-directo img, .imou-vista-ia canvas { display: block; width: 100%; height: auto; }
+.imou-stage:fullscreen { display: flex; align-items: center; justify-content: center; background: #000; }
+.imou-stage:fullscreen .imou-vista-directo, .imou-stage:fullscreen .imou-analysis-slot { width: min(100%, 133vh); }
+.imou-stage:fullscreen img, .imou-stage:fullscreen canvas { max-height: 100vh; object-fit: contain; }
+.imou-placeholder { min-height: 290px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 25px; gap: 9px; color: #7d94b0; }
+.imou-placeholder svg { font-size: 32px; color: #426b91; margin-bottom: 5px; }
+.imou-placeholder strong { color: #d1deed; font-size: 14px; }
+.imou-placeholder span { font-size: 12px; }
+.imou-view-label, .imou-camera-caption { position: absolute; z-index: 2; background: rgb(0 8 18 / 78%); color: #f2f6fb; font-size: 11px; padding: 5px 8px; border-radius: 4px; }
+.imou-view-label { top: 8px; left: 8px; pointer-events: none; }
+.imou-camera-caption { bottom: 9px; left: 9px; pointer-events: none; }
+.imou-expand { position: absolute; z-index: 3; right: 9px; bottom: 9px; color: white; background: rgb(0 8 18 / 80%); border: 0; border-radius: 5px; padding: 8px; }
+.imou-camera-message { color: #a9bed5; font-size: 12px; margin: 9px 0 0; }
+.imou-side-card { padding: 16px; display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
+.imou-side-heading { padding-bottom: 15px; border-bottom: 1px solid #1d3b5c; }
+.imou-side-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.imou-primary, .imou-secondary, .imou-toggle, .imou-config-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 39px; border-radius: 6px; font-size: 12px; font-weight: 700; transition: background .15s, border-color .15s; }
+.imou-primary { color: #eaf8ff; border: 1px solid #00a9f3; background: #0767a2; }
+.imou-primary:hover:not(:disabled) { background: #087ab9; }
+.imou-secondary { color: #c9d9ea; border: 1px solid #456582; background: #102842; }
+.imou-primary:disabled, .imou-secondary:disabled { opacity: .5; cursor: not-allowed; }
+.imou-ia-switch { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 13px 0; border-top: 1px solid #1d3b5c; }
+.imou-ia-switch > span { font-size: 13px; font-weight: 700; color: #e1ecf9; }
+.imou-toggle { border: 1px solid #3b6689; padding: 0 12px; color: #d9ecfa; background: #102d47; }
+.imou-toggle.is-active { color: #8cf1b0; border-color: #186c46; background: #0b3c31; }
+.imou-controles-ia p { color: #b5c5d6; }
+.imou-registration-status { margin: 12px 0; padding: 12px; border: 1px solid #456582; border-radius: 6px; background: #102842; font-size: 13px; }
+.imou-registration-status button { width: 100%; margin-top: 10px; padding: 8px 12px; }
+.imou-config-link { justify-content: flex-start; width: 100%; padding: 11px; color: #dbeaff; background: #112c47; border: 1px solid transparent; }
+.imou-config-link:hover { background: #173d61; border-color: #28628d; }
+.imou-config-link svg:first-child { color: #83b9dc; }
+.imou-config-link svg:last-child { margin-left: auto; }
+.imou-notice, .imou-pending { color: #bbd4e7; font-size: 12px; line-height: 1.5; }
+.imou-pending { padding: 10px; border: 1px solid #916d31; border-radius: 6px; }
+.imou-pending button { margin-top: 8px; color: #8bd7ff; }
+.imou-zone-settings { padding-top: 12px; border-top: 1px solid #1d3b5c; }
+@media (max-width: 850px) {
+  .imou-monitor-layout { grid-template-columns: minmax(0, 1fr); }
 }

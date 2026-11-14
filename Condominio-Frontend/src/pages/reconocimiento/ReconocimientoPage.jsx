@@ -253,7 +253,7 @@ const ReconocimientoPage = () => {
               <h4 className={`text-lg font-semibold mb-2 ${
                 result.match ? 'text-green-800' : 'text-red-800'
               }`}>
-                {result.match ? '✅ ACCESO PERMITIDO' : '❌ ACCESO DENEGADO'}
+                {result.coincidencia_ambigua ? 'Coincidencia ambigua: requiere revisión' : result.match ? 'Vehículo registrado: requiere verificación' : 'Sin coincidencia verificada'}
               </h4>
               
               <div className="space-y-2 text-sm">

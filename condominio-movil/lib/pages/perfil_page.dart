@@ -147,6 +147,14 @@ class _PerfilPageState extends State<PerfilPage> {
                 Navigator.pushNamed(context, '/alertas-seguridad');
               },
             ),
+            if (puedeAcceder(role, '/avisos-residente')) ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('Mis avisos'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/avisos-residente');
+              },
+            ),
             if (puedeAcceder(role, '/expensas')) ListTile(
               leading: const Icon(Icons.receipt_long),
               title: const Text("Mis Expensas"),

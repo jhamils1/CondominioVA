@@ -5,6 +5,40 @@ from django.conf import settings
 import uuid
 
 
+class ZonaImou(models.Model):
+    # Una sola fuente Imou local, no representa todavía un inventario de cámaras.
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    puntos = models.JSONField(default=list)
+    segundos = models.PositiveSmallIntegerField(default=5)
+    automatico = models.BooleanField(default=False)
+    actualizado = models.DateTimeField(default=timezone.now)
+    actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
+class HistorialZonaImou(models.Model):
+    puntos = models.JSONField()
+    segundos = models.PositiveSmallIntegerField()
+    automatico = models.BooleanField(default=False)
+    fecha = models.DateTimeField(default=timezone.now)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
+class ZonaCamara(models.Model):
+    camara = models.OneToOneField('camaras.Camara', on_delete=models.PROTECT, related_name='zona_seguridad')
+    puntos = models.JSONField(default=list)
+    segundos = models.PositiveSmallIntegerField(default=5)
+    actualizado = models.DateTimeField(default=timezone.now)
+    actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
+class HistorialZonaCamara(models.Model):
+    camara = models.ForeignKey('camaras.Camara', on_delete=models.PROTECT)
+    puntos = models.JSONField()
+    segundos = models.PositiveSmallIntegerField()
+    fecha = models.DateTimeField(default=timezone.now)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
 class EventoSeguridad(models.Model):
     PENDIENTE = 'PENDIENTE_REVISION'
     CONFIRMADO = 'CONFIRMADA'
@@ -44,7 +78,7 @@ class NotificacionSeguridad(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     evento = models.ForeignKey(EventoSeguridad, on_delete=models.PROTECT, related_name='notificaciones')
     destinatario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='notificaciones_seguridad')
-    tipo = models.CharField(max_length=30, choices=[('REVISION', 'Revisión'), ('CONFIRMADA', 'Confirmada')])
+    tipo = models.CharField(max_length=30, choices=[('REVISION', 'Revisión'), ('CONFIRMADA', 'Confirmada'), ('AVISO_RESIDENTE', 'Aviso a residente')])
     creada = models.DateTimeField(default=timezone.now)
     leida_en = models.DateTimeField(null=True, blank=True)
 

@@ -1,5 +1,73 @@
 # Pendientes
 
+2026-11-07: validar zona en segunda cámara física y después diseñar procesamiento y eventos asociados a cámara; las zonas nuevas aún no activan IA ni alertas. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
+
+2026-11-07: probar selección y video de una segunda cámara RTSP real autorizada; zonas, eventos y permisos individuales por cámara siguen pendientes. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
+
+2026-11-07: probar con cámara real permanencia prolongada, salida y regreso y dos vehículos; verificar push y reiniciar el monitor independiente si se utiliza. [Detalle](../documentacion/seguridad/AVISOS_REPETIDOS_IMOU.md).
+
+2026-11-07: confirmar imagen del catálogo en navegador y probar monitor por Ethernet y sin Wi-Fi. [Detalle](../documentacion/seguridad/MONITOR_IMOU_CATALOGO.md).
+
+2026-11-07: comprobar por qué el puente del catálogo permanece conectando y verificar fotograma, antes de la prueba Ethernet. [Detalle](../documentacion/seguridad/MONITOR_IMOU_CATALOGO.md).
+
+2026-11-07: reiniciar el puente actualizado, vincular Imou al catálogo y comprobar imagen real; después probar IP Ethernet y operación sin Wi-Fi. Falta soporte de monitor y zonas para múltiples cámaras. [Detalle](../documentacion/seguridad/MONITOR_IMOU_CATALOGO.md).
+
+2026-11-07: integrar y verificar en el monitor la dirección Ethernet 192.168.1.108 sin perder la configuración Wi-Fi ni desasociar el catálogo; probar persistencia y cámara sin Wi-Fi. Conexión RTSP directa por Ethernet ya entrega fotogramas en prueba aislada. [Detalle](../documentacion/seguridad/DIAGNOSTICO_IMOU_ETHERNET_DIRECTO.md).
+
+2026-11-07: comprobar candidata Ethernet 192.168.1.108 con PC en subred compatible, identificar cámara y verificar RTSP; el usuario recibió instrucciones, pendiente su confirmación. [Detalle](../documentacion/seguridad/DIAGNOSTICO_IMOU_ETHERNET_DIRECTO.md).
+
+2026-11-07: resolver DHCP o IP fija para enlace directo Imou–PC, confirmar identidad del dispositivo y probar RTSP por Ethernet. Proceso actual no es administrador; Wi-Fi permanece conectado. [Diagnóstico](../documentacion/seguridad/DIAGNOSTICO_IMOU_ETHERNET_DIRECTO.md).
+
+2026-11-07: verificar formulario web ONVIF con sesión del usuario y su Imou sin guardar cámara duplicada; ya se comprobó fotograma en cada uno de sus dos perfiles y la acción API con autenticación simulada. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: comprobar lectura de video con perfiles ONVIF devueltos y recorrido completo del formulario sin crear registros duplicados; diagnóstico de intermitencia y cámaras de otras marcas sigue pendiente. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: evaluar si es necesario guardar el nombre y la identidad del perfil ONVIF para mostrarlo en edición; actualmente se conservan ruta y puerto, no el nombre. Probar con cámara real.
+
+2026-11-07: probar con cámara física la obtención de puerto anunciado y consulta de perfiles ONVIF; evaluar servicios HTTPS y rutas ONVIF diferentes, sin asumir compatibilidad. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: verificar consulta ONVIF con cámara autorizada y puerto/credenciales correctos; evaluar HTTPS, Media 2, rutas no compatibles y control de concurrencia. Después integrar monitor de cámaras genéricas. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: usuario comprobará reintento ONVIF e indicación de cámaras registradas en su red. Si persiste intermitencia, diagnosticar interfaz, multicast, firewall y comportamiento del dispositivo sin suponer causa.
+
+2026-11-07: probar descubrimiento ONVIF en red y cámara autorizadas, revisar interfaces múltiples y firewall; evaluar obtención autenticada de ruta RTSP. Seguir con monitor genérico y eventos por cámara. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: diseñar y probar descubrimiento compatible de cámaras, con selección explícita y alternativa manual; verificar en dispositivo real autorizado. Seguir con monitor de cámaras genéricas y eventos por cámara. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: usuario revisará la ruta local mostrada al editar Imou. La edición unificada de la configuración real de Imou sigue pendiente; el campo mostrado es de solo lectura.
+
+2026-11-07: probar conexión RTSP genérica con un dispositivo compatible autorizado y ruta de fabricante; implementar visualización por cámara, controles de red y concurrencia adecuados al despliegue, y posteriormente análisis y eventos por cámara. La comprobación puntual ya está implementada con proveedor simulado. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: verificar visualmente los controles de credenciales y el usuario de Imou en el entorno real. La conexi?n RTSP gen?rica y el uso de credenciales para nuevas c?maras siguen pendientes; el cat?logo a?n no conecta dispositivos gen?ricos.
+
+2026-11-07: implementar y probar conexión RTSP genérica segura por cámara, uso de credenciales cifradas, control de red, permisos y selección en monitor. Conservar y respaldar clave privada de cifrado; no generar otra si se pierde. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-07: verificar con el usuario el menú reorganizado; no se agregó tercer submenú porque no se indicó su nombre. Continúan pendientes conexión genérica, credenciales protegidas, control real y autorización por cámara. [Detalle](../documentacion/seguridad/MENU_MONITOR_CAMARAS.md).
+
+2026-11-06: usuario revisará menú y vistas reales; aclarar tercer submenú mencionado sin nombre. Sigue pendiente autorización por cámara y filtro por cámara. [Detalle](../documentacion/seguridad/MENU_MONITOR_CAMARAS.md).
+
+2026-11-06: usuario verificará botón «Probar conexión» con Imou real; diseñar control efectivo de cámara y monitor (habilitación del catálogo no lo detiene). [Detalle](../documentacion/seguridad/VINCULO_IMOU_CATALOGO.md).
+
+2026-11-06: conectar y encender Imou, agregarla al catálogo y probar puente real; la prueba del puerto RTSP no respondió. Catálogo aún sin relación estable, soporte genérico ni control efectivo del monitor. [Detalle](../documentacion/seguridad/VINCULO_IMOU_CATALOGO.md).
+
+2026-11-06: usuario revisará catálogo; esperar aprobación para vincular Imou de manera segura. Varias cámaras, permisos individuales, zonas/eventos por cámara, matrícula y avisos a residentes son etapas futuras. [Plan](../documentacion/seguridad/PLAN_CAMARAS_Y_AVISOS_RESIDENTES.md).
+
+2026-11-05: probar monitor Imou independiente con cámara y teléfono reales cerrando la web; falta arranque automático, cola durable local y deduplicación entre reinicios. [Detalle](../documentacion/seguridad/MONITOREO_IMOU_INDEPENDIENTE.md).
+
+2026-11-05: resolver conectividad y verificar video Imou por Ethernet directo sin internet; la IP temporal solicitada no respondió a RTSP. [Detalle](../documentacion/seguridad/DIAGNOSTICO_IMOU_ETHERNET_DIRECTO.md).
+
+2026-11-05: comprobar con cámara y teléfono reales el guardado automático, reemplazo/eliminación de zona y envío a guardia; no se modificó la zona real durante las pruebas. [Detalle](../documentacion/seguridad/GUARDADO_AUTOMATICO_ZONA_IMOU.md).
+
+2026-11-05: administrador debe guardar zona Imou con registro automático habilitado y comprobar nuevo evento/aviso; no había configuración persistida durante el diagnóstico. No se activó desde herramientas. [Detalle](../documentacion/seguridad/REGISTRO_IMOU_CONFIGURACION_PENDIENTE.md).
+
+2026-11-05: verificar con la maqueta el seguimiento Imou ante pérdidas breves, punto de contacto y ritmo de muestras. La precisión real del detector no se midió en esta etapa. [Detalle](../documentacion/seguridad/ESTABILIDAD_SEGUIMIENTO_IMOU.md).
+
+2026-11-05: comprobar con la cámara real la configuración compartida del administrador y su uso por el guardia. Siguen pendientes detección autónoma, deduplicación y cámaras múltiples. [Detalle](../documentacion/seguridad/ZONA_IMOU_COMPARTIDA.md).
+
+2026-11-05: verificar con la Imou real la vista única de configuración, la zona y los controles de IA. [Detalle](../documentacion/seguridad/REDISENO_CENTRO_SEGURIDAD.md).
+
+2026-11-05: comprobar con el usuario la nueva vista de monitoreo, las cámaras reales, controles de IA, zona, evidencia y entrega de avisos; los recorridos de esta etapa fueron simulados. [Detalle](../documentacion/seguridad/REDISENO_CENTRO_SEGURIDAD.md).
+
 2026-11-05: recargar la sesión Flutter y validar un nuevo evento real Imou con evidencia en web y móvil. Pendientes política de retención, cuotas, restauración de respaldo, asignación por cámara, deduplicación y operación sin navegador. [Informe](../documentacion/seguridad/EVIDENCIA_IMOU.md).
 
 2026-11-05: usuario probará después zona, permanencia y entrega real desde Imou a móvil. Pendientes evidencia, deduplicación robusta, reintentos persistentes, identificación de cámara y operación sin navegador; inicio automático de procesos no implementado. [Informe](../documentacion/seguridad/REGISTRO_IMOU_LOCAL.md).
@@ -163,3 +231,49 @@ Una consulta oficial de solo lectura confirmó que ese proyecto sí existe y que
 **Pendiente:** prueba de registro/desregistro FCM de roles predeterminados; identificar/crear proyecto Firebase separado y variante push para verificar entrega; ampliar capacidades y definir ciclo de dispositivos existentes. Revisar seis avisos moderados npm de minimatch/ESLint y carga anticipada de Stripe en etapa acotada. No se comprobó entrega push. No repetir migraciones como si estuvieran pendientes en esta base local; otros entornos requieren su propio respaldo y autorización. Esperar aprobación explícita antes de la siguiente etapa funcional.
 
 **Aclaración completada — 2026-10-31:** requisitos del ingeniero resumidos y enlazados en `contexto/estado-proyecto.md`. Queda pendiente concretar el escenario y los criterios de demostración de seguridad con video real o maqueta; depende de una etapa de planificación, no de la organización documental.
+
+2026-11-12: puertos locales de IA, puente Imou y exclusi?n del monitor cambiados a 28765, 28766 y 28767 por reserva de Windows 18700?18799. Enlace exclusivo comprobado en los tres; cuatro pruebas del puente y compilaci?n Python correctas. La IA carg? el modelo y anunci? que el servicio estaba listo en una prueba temporal; no se prob? c?mara ni monitoreo real. Reiniciar Django y procesos locales para usar las nuevas direcciones.
+
+2026-11-12: el puente de c?maras adicionales tambi?n pas? del puerto reservado 18768 al 28768; enlace exclusivo disponible. Sin prueba de c?mara f?sica.
+
+2026-11-12: la prueba simulada del puente de c?maras adicionales fall? con WinError 10053 al recibir respuesta; queda pendiente repetir y diagnosticar.
+
+2026-11-13: el usuario indic? que el monitor es solo para administraci?n; guardia revisa eventos y confirma incidencias. Se cambi? acceso web y permisos API de im?genes Imou y cat?logo; pruebas web de roles y cinco pruebas API Imou pasaron, build correcto. Dos pruebas de permisos del cat?logo pasaron con SQLite en memoria; no se comprob? con c?maras reales. El aviso m?vil al propietario o inquilino identificado por placa fue solicitado, pero no est? implementado; requiere verificar identidad, destinatario y alcance.
+
+2026-11-13: preparada una tabla independiente y API administrativa para preferencias futuras de lectura de placas y zonas por c?mara, con valores desactivados. No son funciones operativas, no modifican Imou ni notifican. Migraci?n preparada, probada solo en SQLite temporal y no aplicada a la base local; siete pruebas aisladas y makemigrations --check correctos. Faltan interfaz, integraci?n de placa/incidencias y activaci?n segura.
+
+2026-11-13: preparada interfaz administrativa para consultar y guardar preferencias futuras por c?mara. No activa lectura ni alertas y conserva el monitor existente. Build y ESLint correctos; interfaz no validada visualmente. La migraci?n de la tabla de preferencias sigue sin aplicar en la base local, por lo que esta secci?n todav?a no est? disponible all?. Falta integraci?n funcional y prueba real.
+
+2026-11-13: aplicada migracion aditiva camaras.0004 a PostgreSQL local tras respaldo backups_locales/antes_funciones_camara_20261113_141521.dump, verificado con pg_restore --list; no se probo restauracion. Guardias pueden solicitar lectura manual de evidencia mediante la API existente, que envia imagen a Plate Recognizer solo al pulsar; no vincula resultado al evento ni envia avisos a residentes. Build y ESLint correctos; flujo visual y servicio real no probados.
+
+2026-11-13: lectura de placa deja de atribuir una persona si existen multiples vehiculos con la misma placa; informa coincidencia ambigua. La pantalla de reconocimiento ya no presenta una coincidencia como autorizacion de acceso. Tres pruebas con proveedor simulado pasaron; build y ESLint correctos. Sin proveedor ni camaras reales. Quedan pendientes vinculacion al evento, destinatario confirmado y aviso al residente.
+
+2026-11-13: guardia puede registrar una placa revisada en historial del evento, manualmente o tras lectura sugerida; guarda actor y fecha sin asociar automaticamente persona ni enviar aviso. API valida rol, formato y estado. Seis pruebas aisladas con SQLite y proveedor simulado, build y ESLint correctos. Sin migracion ni pruebas reales; pendientes destinatario y notificacion movil.
+
+2026-11-13: agregado flujo de consulta por ultima placa revisada y confirmacion humana del residente con cuenta activa; solo guardia, incidencia confirmada o en atencion. Identificadores quedan en historial, sin enviar avisos ni garantizar identidad del conductor. Sin coincidencia, duplicados o cuenta inactiva no permiten confirmacion. Siete pruebas simuladas iniciales y cuatro pruebas de placa con SQLite temporal pasaron; build y ESLint correctos. Sin proveedor ni telefonos reales. Antes de enviar, revalidar asociacion y cuenta, disenar persistencia e idempotencia y probar FCM.
+
+2026-11-13: preparada API separada de avisos propios para residentes activos, con detalle limitado, evidencia y marca de lectura solo del destinatario. No crea avisos ni envia FCM; Flutter aun no consume esta API. Seis pruebas aisladas SQLite correctas para acceso propio/ajeno y revision de placa; sin migraciones ni proveedor real. Pendientes creacion transaccional idempotente, revalidacion, cola FCM, app movil y pruebas integrales.
+
+2026-11-13: guardia puede preparar aviso interno tras confirmar residente; se revalidan placa, coincidencia unica, vehiculo, persona, cuenta y estado; repeticiones no duplican aviso. Disponible mediante API propia del residente, sin cola FCM ni push y sin integracion Flutter. Migracion de tipo preparada y probada en SQLite, no aplicada a PostgreSQL. Nueve pruebas aisladas, build y ESLint correctos; sin datos ni envios reales. Pendiente entrega movil y pruebas integrales.
+
+2026-11-13: creada bandeja Flutter Mis avisos para propietario e inquilino, consulta API propia, marca lectura y descarga evidencia protegida; no habilita la bandeja interna de seguridad. Tres pruebas Flutter simuladas pasaron (roles, servicio y apertura). No se instalo APK ni se probo telefono o push real. Sigue pendiente envio FCM y apertura desde notificacion, ademas de migracion de tipo no aplicada.
+
+2026-11-13: agregado encolado explicito por guardia para aviso residente; al encolar y procesar se revalida destinatario, placa y cuenta, el push contiene datos minimos y se cancela si la asociacion deja de ser valida. Apertura Flutter de tipo aviso_residente dirige solo a bandeja propia. 15 pruebas backend con proveedores simulados, 16 pruebas Flutter y analisis de seis archivos sin problemas; build y ESLint web correctos. No se enviaron avisos reales ni instalo APK. Migracion seguridad_IA.0007 sigue sin aplicar; faltan pruebas integrales y reales.
+
+2026-11-13: aplicada migracion seguridad_IA.0007 en PostgreSQL local tras respaldo backups_locales/antes_aviso_residente_20261113_183826.dump, listado legible; no se probo restauracion. Flujo integrado de aviso, cola FCM simulada, consulta propia y bloqueo de evidencia ajena paso junto con pruebas relacionadas (9, SQLite temporal). No se envio push real ni se instalo APK; no se probo integracion con camara real ni reconocimiento automatico en vivo.
+
+2026-11-13: incorporada consulta puntual de placa desde el ultimo fotograma de Imou o camara de catalogo, solo al pulsar y avisando del proveedor externo; sin lectura continua ni enlace automatico con evento. Build y ESLint correctos; recorrido Edge simulado comprob? que no se envia hasta pulsar y conserva flujo Imou y restriccion del guardia. Sin camaras ni proveedor real. Pendiente integracion automatica por camara y validacion real.
+
+2026-11-13: lectura solicitada por guardia desde evidencia puede registrarse como sugerencia en historial del evento; no se considera placa verificada ni identifica responsable. Accion autenticada valida rol, evidencia, lectura y estado e impide repetir la misma sugerencia. Nueve pruebas aisladas, build y ESLint correctos. No se enviaron imagenes reales; pendiente lectura automatica y prueba integral real.
+
+2026-11-13: lectura solicitada por guardia desde evento usa evidencia privada recuperada por backend, no lectura arbitraria del cliente; verifica rol y estado y vuelve a verificar evidencia antes de asociar sugerencia. Se reutiliza API de placas, sin confirmar automaticamente el resultado. Nueve pruebas simuladas, build y ESLint correctos; sin imagenes reales ni conexion al proveedor. Sigue pendiente lectura continua y validacion integral real.
+
+2026-11-13: prototipo optativo de lectura automatica para Imou web reutiliza IA local y envia un fotograma al proveedor externo ante deteccion unica de vehiculo; se limita por presencia y 30 segundos mientras permanece activo. Se detiene al parar IA o vista, no opera autonomamente, no vincula lectura a evento ni identifica conductor. Dos pruebas Node, recorrido Edge simulado, build y ESLint correctos; diez pruebas Django simuladas incluyen cambio de estado durante consulta. Sin proveedor ni camaras reales; falta prueba real, mayor robustez y soporte por camara.
+
+2026-11-13: lectura automatica optativa de placas extendida a vista web de camaras adicionales mediante IA existente; sin eventos automaticos de zona y se detiene al ocultar vista. Guardia puede consultar lecturas anteriores coincidentes durante 30 minutos como sugerencias no verificadas, sin atribucion automatica. Once pruebas Django, build, ESLint y Edge simulado correctos. Fuente Imou configurada no respondio a RTSP en dos comprobaciones, incluida red local; no se capturo imagen ni se contacto al proveedor real. Pendiente prueba fisica, evidencia de entrada y asociacion fiable.
+
+2026-11-13: el usuario cambio a IP Wi-Fi la Imou vinculada y mostro comprobacion de fotograma recibido por puente; vista de monitor sin confirmar tras el cambio. Gestion agrupa visualmente registros que coinciden en IP y puerto con la camara vinculada, permite mostrarlos y no elimina ni altera datos. Prueba de agrupacion, build y ESLint correctos; falta revision visual. El monitor puede seguir ofreciendo el registro adicional.
+
+2026-11-13: por solicitud del usuario se retiro un unico registro duplicado de camara (id 2) tras comprobar coincidencia IP/puerto y ausencia de referencias relacionales en modelos instalados. Se preservo registro vinculado id 1; respaldo backups_locales/antes_retirar_duplicado_20261113_220952.dump con listado legible, restauracion no probada. Confirmado un registro restante y puente entrego un fotograma real sin guardarlo. Vista navegador pendiente de confirmacion del usuario.
+
+2026-11-13: agregado README raiz breve para equipo con inicio Windows de backend, frontend, puentes e IA, requisitos y limites. Se comprobaron rutas de scripts y enlaces; no se reinstalaron dependencias ni se ejecutaron migraciones.
