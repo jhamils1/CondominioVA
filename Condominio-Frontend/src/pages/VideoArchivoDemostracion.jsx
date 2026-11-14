@@ -2,25 +2,34 @@ import React, { useEffect, useRef, useState } from 'react';
 import { analizarFotograma, estadoCamaraDemo } from '../api/visionDemoApi.js';
 import { zonaValida } from '../vision/zonas.js';
 import { crearSeguimiento } from '../vision/permanencia.js';
+import { colorDeteccion } from '../vision/coloresDeteccion.js';
 import { crearEventoVideo } from '../vision/eventoVideo.js';
 import ZonaVideo from './ZonaVideo.jsx';
 import './VideoArchivoDemostracion.css';
 
 const nombres = { person: 'persona', car: 'automóvil', motorcycle: 'motocicleta',
   bus: 'autobús', truck: 'camión', cat: 'gato', dog: 'perro' };
+const vehiculos = new Set(['car', 'motorcycle', 'bus', 'truck']);
 const MAX_BYTES = 250 * 1024 * 1024;
 const MAX_SEGUNDOS = 300;
 const INTERVALO = 0.5;
 
-function dibujarCajas(contexto, detecciones) {
+function dibujarCajas(contexto, detecciones, segundos, tieneZona) {
   contexto.font = '16px sans-serif';
   contexto.lineWidth = 2;
   for (const deteccion of detecciones) {
+    if (!Array.isArray(deteccion.caja) || deteccion.caja.length !== 4 ||
+        !deteccion.caja.every(Number.isFinite) || !Number.isFinite(deteccion.confianza)) continue;
     const [x1, y1, x2, y2] = deteccion.caja;
-    contexto.strokeStyle = deteccion.permanencia?.superaUmbral ? '#ff3030' : '#00ff40';
+    const color = colorDeteccion(deteccion);
+    contexto.strokeStyle = color;
     contexto.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    if (tieneZona && vehiculos.has(deteccion.clase)) {
+      contexto.beginPath(); contexto.arc((x1 + x2) / 2, y2, 4, 0, Math.PI * 2);
+      contexto.fillStyle = color; contexto.fill(); contexto.strokeStyle = '#fff'; contexto.stroke();
+    }
     const permanencia = deteccion.permanencia;
-    const texto = `${nombres[deteccion.clase] || deteccion.clase} ${Math.round(deteccion.confianza * 100)}%${permanencia ? ` · ${Math.floor(permanencia.segundos)} s${permanencia.superaUmbral ? ' · revisar' : ''}` : ''}`;
+    const texto = `${nombres[deteccion.clase] || deteccion.clase} ${Math.round(deteccion.confianza * 100)}%${permanencia ? permanencia.superaUmbral ? ' · revisar' : ` · ${permanencia.segundos.toFixed(1)}/${segundos} s en zona` : ''}`;
     const y = Math.max(19, y1);
     contexto.fillStyle = '#111';
     contexto.fillRect(x1, y - 19, contexto.measureText(texto).width + 8, 20);
@@ -83,6 +92,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
   const [pendientes, setPendientes] = useState([]);
   const [reintentando, setReintentando] = useState(false);
   const [registrados, setRegistrados] = useState(0);
+  const [sinGuardias, setSinGuardias] = useState(0);
   const umbralValido = Number.isInteger(Number(umbral)) && Number(umbral) >= 2 && Number(umbral) <= 120;
 
   useEffect(() => () => {
@@ -108,7 +118,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     const archivo = event.target.files?.[0];
     event.target.value = '';
     setDuracion(0);
-    setRegistroAutomatico(false);
+    setRegistroAutomatico(true);
     setZona([]); setBorradorZona([]); setMarcandoZona(false); setErrorZona('');
     setProgreso(''); setMensaje(''); setEstado('inicial');
     setHallazgos([]);
@@ -175,6 +185,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     resultados.current = [];
     setHallazgos([]);
     setRegistrados(0);
+    setSinGuardias(0);
     cancelAnimationFrame(animacion.current);
     videoAnalizado.current?.pause();
     controlActual.current = 'original';
@@ -191,8 +202,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       const lienzo = canvas.current;
       lienzo.width = ancho; lienzo.height = alto;
       const contexto = lienzo.getContext('2d');
-      const seguimiento = zona.length ? crearSeguimiento({ zona, ancho, alto, segundos: Number(umbral) }) : null;
-      const pistasRegistradas = new Set();
+      const seguimiento = zona.length ? crearSeguimiento({ zona, ancho, alto, segundos: Number(umbral), toleranciaPerdida: 2 }) : null;
       const total = Math.ceil(duracion / INTERVALO);
       for (let indice = 0; indice < total; indice += 1) {
         const tiempo = Math.min(indice * INTERVALO + 0.001, Math.max(0, duracion - 0.01));
@@ -208,12 +218,11 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
         if (analisis?.avisos.length) {
           setHallazgos(actual => [...actual, ...analisis.avisos]);
           if (registroAutomatico) for (const aviso of analisis.avisos) {
-            if (pistasRegistradas.has(aviso.id)) continue;
-            pistasRegistradas.add(aviso.id);
-            const datos = crearEventoVideo(aviso, crypto.randomUUID(), new Date().toISOString());
+            const datos = { ...crearEventoVideo(aviso, crypto.randomUUID(), new Date().toISOString()), evidencia: imagen };
             try {
-              await onRegistrarEvento(datos);
+              const creado = await onRegistrarEvento(datos);
               setRegistrados(actual => actual + 1);
+              if (creado.sin_guardias) setSinGuardias(actual => actual + 1);
             } catch {
               setPendientes(actual => [...actual, datos]);
             }
@@ -221,7 +230,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
           }
         }
         resultados.current.push(detecciones);
-        dibujarCajas(contexto, detecciones);
+        dibujarCajas(contexto, detecciones, umbral, zona.length > 0);
         setProgreso(`${indice + 1} de ${total} imágenes analizadas`);
       }
       reproducible.current = true;
@@ -247,9 +256,10 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     if (reintentando) return;
     setReintentando(true);
     try {
-      await onRegistrarEvento(datos);
+      const creado = await onRegistrarEvento(datos);
       setPendientes(actual => actual.filter(item => item.id !== datos.id));
       setRegistrados(actual => actual + 1);
+      if (creado.sin_guardias) setSinGuardias(actual => actual + 1);
     } catch {
       setMensaje('No se pudo confirmar el registro. Puedes reintentar con el mismo identificador.');
     } finally { setReintentando(false); }
@@ -262,7 +272,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     const contexto = lienzo.getContext('2d');
     contexto.clearRect(0, 0, lienzo.width, lienzo.height);
     const indice = Math.min(Math.floor(fuente.currentTime / INTERVALO), resultados.current.length - 1);
-    dibujarCajas(contexto, resultados.current[Math.max(0, indice)] || []);
+    dibujarCajas(contexto, resultados.current[Math.max(0, indice)] || [], umbral, zona.length > 0);
   }
 
   function otros(lado) {
@@ -367,7 +377,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
           onSeeked={() => posicionCambiada('original')}
           onError={() => { setDuracion(0); setMensaje('El navegador no puede abrir este video.'); }}
           className="zona-original-video" />
-        <ZonaVideo puntos={marcandoZona ? borradorZona : zona} activa={marcandoZona}
+        <ZonaVideo puntos={marcandoZona ? borradorZona : []} activa={marcandoZona}
           onAgregar={agregarPuntoZona} />
         </div>
       </div>
@@ -388,7 +398,6 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
               onSeeked={() => posicionCambiada('analizado')} />}
             <canvas ref={canvas} className={estado === 'terminado' ? 'capa-detecciones' : 'imagen-analisis'}
               aria-label="Detecciones del video" />
-            <ZonaVideo puntos={zona} />
             {estado === 'terminado' && <button type="button" className="boton-pantalla-analizada"
               onClick={alternarPantallaCompleta} title={pantallaCompleta ? 'Salir de pantalla completa' : 'Pantalla completa'}
               aria-label={pantallaCompleta ? 'Salir de pantalla completa del video analizado' : 'Pantalla completa del video analizado'}>⛶</button>}
@@ -428,7 +437,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
             onChange={event => setRegistroAutomatico(event.target.checked)} />{' '}
           Registrar automáticamente los hallazgos de este video y avisar a los guardias.
         </label>
-        <p className="text-sm mt-1">El video puede ser antiguo: los avisos corresponden a una grabación, no necesariamente a un hecho actual. La fecha y ubicación no se verifican; no se adjunta evidencia. Repetir el análisis puede crear eventos duplicados.</p>
+        <p className="text-sm mt-1">El registro está activado por defecto y enviará avisos de revisión a los guardias al analizar. Los eventos se identifican como video grabado y adjuntan el fotograma del hallazgo; la fecha y ubicación originales no se verifican. Repetir el análisis puede crear eventos duplicados.</p>
       </div>}
     </div>}
     <div className="mt-3">
@@ -441,6 +450,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     </div>
     {progreso && <p role="status" className="text-sm mt-2">{progreso}</p>}
     {registroAutomatico && <p className="text-sm mt-2">Eventos registrados en este análisis: {registrados}. Los avisos push dependen del procesador y Firebase.</p>}
+    {sinGuardias > 0 && <p role="alert" className="text-sm mt-2">{sinGuardias} evento(s) se registraron sin guardias activos para recibir el aviso. El administrador puede reintentar la distribución.</p>}
     {pendientes.length > 0 && <div role="alert" className="mt-3 border rounded p-3 text-red-700">
       <p>No se pudo confirmar el registro de {pendientes.length} evento(s). Si ya se guardó, reintentar usa el mismo identificador. No recargues ni cierres la página antes de resolverlo.</p>
       {pendientes.map(datos => <button key={datos.id} type="button" disabled={reintentando || estado === 'procesando'}
@@ -459,7 +469,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
             clase: nombres[h.clase] || h.clase, tiempo: h.tiempo, duracion: h.duracion,
           })}>Preparar evento manual</button>
         </li>)}</ul>}
-      <p className="text-sm mt-2">Una pérdida de detección reinicia el conteo. La lista puede contener repeticiones y no confirma una infracción.</p>
+      <p className="text-sm mt-2">Una pérdida breve de detección pausa el conteo. La lista puede contener repeticiones y no confirma una infracción.</p>
     </div>}
     {mensaje && <p role={estado === 'error' ? 'alert' : 'status'} className="mt-2">{mensaje}</p>}
   </section>;

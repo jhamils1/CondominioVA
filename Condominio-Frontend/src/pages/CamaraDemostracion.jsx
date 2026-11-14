@@ -248,7 +248,7 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
         }}>{zona.length ? 'Cambiar zona' : 'Dibujar zona'}</button>
         {zona.length > 0 && <>
           <button type="button" className="border rounded px-3 py-2" onClick={() => setMostrarZona(actual => !actual)}>{mostrarZona ? 'Ocultar zona' : 'Mostrar zona'}</button>
-          <button type="button" className="border rounded px-3 py-2" onClick={() => { desactivarRegistro(); setZona([]); setMostrarZona(false); configurarSeguimiento([], Number(segundos)); }}>Borrar zona</button>
+          <button type="button" className="action-danger border rounded px-3 py-2" onClick={() => { desactivarRegistro(); setZona([]); setMostrarZona(false); configurarSeguimiento([], Number(segundos)); }}>Borrar zona</button>
         </>}
       </div> : <div className="mt-2">
         <p className="text-sm">Marca al menos 3 puntos sobre la imagen. Puntos: {borrador.length} de 30.</p>

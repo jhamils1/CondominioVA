@@ -21,6 +21,7 @@ const DonutChart = ({ titulo, labels, datasets, montos, porcentajes }) => {
       legend: {
         position: 'bottom',
         labels: {
+          color: '#c5d8e9',
           padding: 15,
           font: {
             size: 12,

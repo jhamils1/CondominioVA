@@ -48,3 +48,5 @@ La última decisión del usuario mantiene **Finalizar sin cuenta**: limpieza u o
 Para residentes vinculados a empleados se exige identidad coincidente y perfil activo; para inquilinos, su registro adicional. Las operaciones de cuenta/vínculo se hacen en una transacción, pero no incluyen el alta previa del empleado. Desactivar el empleado no debe suponerse equivalente a desactivar una cuenta administrativa o residencial: ese ciclo sigue pendiente.
 
 Aplicar permisos en backend y limitar datos por relación; ocultar un menú no protege una API. Propietarios e inquilinos no acceden a incidencias internas, cámaras ni grabaciones. El guardia no gestiona usuarios, roles, contratos o finanzas ni elimina evidencia/historial.
+
+2026-11-14: el administrador puede eliminar un rol personalizado sin cuentas asignadas, con confirmacion en web y auditoria en backend. La API bloquea la eliminacion si existe cualquier asignacion; las capacidades del rol eliminado se retiran en la misma transaccion. Los cuatro roles predeterminados siguen protegidos.

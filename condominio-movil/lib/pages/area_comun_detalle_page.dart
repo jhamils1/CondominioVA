@@ -54,8 +54,8 @@ class _AreaComunDetallePageState extends State<AreaComunDetallePage> {
           end: Alignment.bottomRight,
           colors: widget.area.estaActivo
               ? [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
+                  const Color(0xFF145C88),
+                  const Color(0xFF103B60),
                 ]
               : [Colors.grey.shade600, Colors.grey.shade400],
         ),
@@ -236,7 +236,7 @@ class _AreaComunDetallePageState extends State<AreaComunDetallePage> {
               child: Text(
                 'Las reservas que cruzan medianoche son válidas (ej: 22:00 a 02:00)',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
               ),
@@ -261,7 +261,7 @@ class _AreaComunDetallePageState extends State<AreaComunDetallePage> {
                     : 'Confirmar Reserva'),
                 onPressed: _isCreatingReserva ? null : _confirmarReserva,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: const Color(0xFF145C88),
                   foregroundColor: Colors.white,
                 ),
               ),

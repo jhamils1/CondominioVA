@@ -14,6 +14,7 @@ const Button = ({ type = "button", variant = "guardar", onClick, disabled = fals
       }
       break;
     case "cancelar":
+    case "peligro":
       classes = "px-6 py-3 font-sans text-xs font-bold text-center text-gray-900 uppercase align-middle transition-all rounded-full select-none disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none hover:bg-gray-900/10 active:bg-gray-900/20";
       buttonType = "button";
       break;
@@ -25,7 +26,7 @@ const Button = ({ type = "button", variant = "guardar", onClick, disabled = fals
   }
 
   return (
-    <button type={buttonType} onClick={onClick} className={`${classes} ${className}`} disabled={disabled}>
+    <button type={buttonType} onClick={onClick} className={`admin-button admin-button--${variant} ${classes} ${className}`} disabled={disabled}>
       {children}
     </button>
   );

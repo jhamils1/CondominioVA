@@ -166,16 +166,13 @@ try {
   await pagina.reload();
   await pagina.getByText('No tienes permiso para acceder a esta página.').waitFor();
   await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/eventos-seguridad`);
-  await pagina.getByText('No tienes permiso para acceder a esta página.').waitFor();
-  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras`);
-  await pagina.getByRole('heading', { name: 'Monitor en vivo' }).waitFor();
-  await pagina.locator('nav').getByText('Cámaras', { exact: true }).click();
-  assert.equal(await pagina.getByRole('link', { name: 'Monitor en vivo' }).count(), 1);
-  assert.equal(await pagina.getByRole('link', { name: 'Gestión de cámaras' }).count(), 0);
+  await pagina.getByRole('heading', { name: 'Eventos e incidencias de seguridad' }).waitFor();
   await pagina.getByRole('button', { name: /Alerta ficticia/ }).click();
   await pagina.getByRole('button', { name: 'Confirmar', exact: true }).click();
   await pagina.getByText(/Estado: CONFIRMADA/).waitFor();
-  assert.equal(evento.estado, 'CONFIRMADA', 'El guardia conserva la revisión desde el monitor');
+  assert.equal(evento.estado, 'CONFIRMADA', 'El guardia conserva la revisión de incidencias');
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras`);
+  await pagina.getByText('No tienes permiso para acceder a esta página.').waitFor();
   console.log('Catálogo simulado: alta, edición, desactivación y restricción del guardia correctas.');
 } finally {
   await navegador?.close();

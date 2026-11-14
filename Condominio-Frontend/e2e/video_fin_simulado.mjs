@@ -32,32 +32,67 @@ try {
   await new Promise(ok => servidor.listen(0, '127.0.0.1', ok));
   navegador = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const pagina = await navegador.newPage();
-  let peticiones = 0;
+  let peticiones = 0, eventos = 0, adjunto = false;
   await pagina.addInitScript(() => localStorage.setItem('access', 'token-ficticio'));
   await pagina.route('**/api/**', async route => {
     const url = new URL(route.request().url());
     let datos = {};
-    if (url.pathname.endsWith('/me/')) datos = { username: 'guardia-ficticio', role: 'guardia', capacidades: [] };
-    else if (url.pathname.endsWith('/vision-camara/analizar/')) { peticiones++; datos = { detecciones: [] }; }
-    else if (url.pathname.endsWith('/eventos-seguridad/')) datos = [];
+    if (url.pathname.endsWith('/me/')) datos = { username: 'admin-ficticio', role: 'administrador', capacidades: [] };
+    else if (url.pathname.endsWith('/vision-camara/analizar/')) { peticiones++; datos = { detecciones: [{ clase: 'car', caja: [160, 100, 360, 300], confianza: .9 }] }; }
+    else if (url.pathname.endsWith('/eventos-seguridad/') && route.request().method() === 'POST') {
+      eventos++;
+      const contenido = route.request().postDataBuffer();
+      adjunto = contenido.includes(Buffer.from('name="evidencia"; filename="evidencia.jpg"')) && contenido.includes(Buffer.from([0xff, 0xd8, 0xff]));
+      datos = { id: 'evento-ficticio', categoria: 'Video grabado', estado: 'PENDIENTE_REVISION' };
+    }
+    else if (url.pathname.endsWith('/eventos-seguridad/') || url.pathname.endsWith('/camaras/disponibles-monitor/')) datos = [];
     await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(datos) });
   });
   await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras`);
   await pagina.getByRole('button', { name: 'Configuración de análisis' }).click();
   await pagina.locator('input[type=file]').setInputFiles(archivo);
+  await pagina.getByRole('button', { name: 'Dibujar zona' }).click();
+  const zona = pagina.getByRole('application', { name: /Dibuja la zona/ });
+  const area = await zona.boundingBox();
+  for (const [x, y] of [[.1, .1], [.9, .1], [.9, .9], [.1, .9]]) {
+    await zona.click({ position: { x: area.width * x, y: area.height * y } });
+  }
+  await pagina.getByRole('button', { name: 'Completar zona' }).click();
+  assert.equal(await pagina.getByLabel('Zona prohibida marcada').count(), 0);
+  await pagina.getByLabel('Tiempo mínimo detenido', { exact: false }).fill('2');
+  assert.equal(await pagina.getByLabel('Registrar automáticamente los hallazgos', { exact: false }).isChecked(), true);
   await pagina.getByRole('button', { name: 'Analizar video', exact: true }).click();
   await pagina.getByText('Análisis terminado.', { exact: false }).waitFor({ timeout: 30000 });
   const muestras = peticiones;
   assert.equal(muestras, 6);
+  assert.equal(eventos, 1, 'Un vehículo continuo debe generar un solo evento.');
+  assert.equal(adjunto, true, 'El evento debe adjuntar un fotograma JPEG.');
+  assert.equal(await pagina.getByLabel('Zona prohibida marcada').count(), 0);
   const original = pagina.locator('video.zona-original-video');
   const analizado = pagina.getByLabel('Video analizado', { exact: true });
+  const canvas = pagina.getByLabel('Detecciones del video');
+  async function colorEn(tiempo) {
+    await analizado.evaluate((v, t) => { v.currentTime = t; }, tiempo);
+    await pagina.waitForFunction(t => Math.abs(document.querySelector('video[aria-label="Video analizado"]').currentTime - t) < .1 && !document.querySelector('video[aria-label="Video analizado"]').seeking, tiempo);
+    return canvas.evaluate(c => Array.from(c.getContext('2d').getImageData(160, 150, 1, 1).data));
+  }
+  const amarillo = await colorEn(.5);
+  const rojo = await colorEn(2.5);
+  assert.ok(amarillo[0] > 220 && amarillo[1] > 140 && amarillo[2] < 120, `Se esperaba amarillo: ${amarillo}`);
+  assert.ok(rojo[0] > 220 && rojo[1] < 100 && rojo[2] < 100, `Se esperaba rojo: ${rojo}`);
+  await original.evaluate(v => { v.currentTime = 0; });
   await original.evaluate(v => v.play());
   await pagina.waitForTimeout(5000);
   const estado = await original.evaluate(v => ({ paused: v.paused, ended: v.ended, time: v.currentTime, duration: v.duration }));
   const otro = await analizado.evaluate(v => ({ paused: v.paused, ended: v.ended, time: v.currentTime, duration: v.duration }));
   console.log('Reproductores al terminar:', JSON.stringify({ original: estado, analizado: otro, muestras, peticiones }));
   assert.equal(peticiones, muestras, 'Reproducir no debe volver a solicitar análisis.');
+  assert.equal(eventos, 1, 'Reproducir no debe volver a registrar el evento.');
   assert.ok(estado.paused && otro.paused && estado.time >= estado.duration - 0.1 && otro.time >= otro.duration - 0.1, 'Ambos deben quedar detenidos al final.');
+  await pagina.getByLabel('Registrar automáticamente los hallazgos', { exact: false }).uncheck();
+  await pagina.getByRole('button', { name: 'Analizar video', exact: true }).click();
+  await pagina.getByText('Análisis terminado.', { exact: false }).waitFor({ timeout: 30000 });
+  assert.equal(eventos, 1, 'Desactivar el registro impide nuevos avisos.');
   console.log('Fin de video correcto; no se repitió el análisis.');
 } finally {
   await navegador?.close();

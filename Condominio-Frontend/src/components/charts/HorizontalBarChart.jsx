@@ -33,6 +33,7 @@ const HorizontalBarChart = ({ titulo, labels, datasets, detalles, estadisticas }
     plugins: {
       legend: {
         position: 'top',
+        labels: { color: '#c5d8e9' },
       },
       tooltip: {
         callbacks: {
@@ -47,12 +48,15 @@ const HorizontalBarChart = ({ titulo, labels, datasets, detalles, estadisticas }
     scales: {
       x: {
         beginAtZero: true,
+        grid: { color: '#24445f' },
         ticks: {
+          color: '#b9cbe0',
           callback: function(value) {
             return 'Bs. ' + value.toLocaleString();
           },
         },
       },
+      y: { ticks: { color: '#b9cbe0' }, grid: { color: '#24445f' } },
     },
   };
 

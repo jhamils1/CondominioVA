@@ -4,7 +4,7 @@ import Button from "./button"; // tu componente de botones
 
 const CustomTable = ({ columns = [], data = [], onEdit, onDelete, onAddPhoto, customActions, canEdit }) => {
   return (
-    <div className="overflow-x-auto">
+    <div className="admin-table overflow-x-auto">
       <table className="min-w-full table-auto border-collapse">
         <thead>
           <tr className="bg-gray-800">
@@ -49,7 +49,7 @@ const CustomTable = ({ columns = [], data = [], onEdit, onDelete, onAddPhoto, cu
                     </Button>
                   )}
                   {onDelete && <Button
-                    variant="cancelar" 
+                    variant="peligro"
                     onClick={() => onDelete(row.id)}
                     className="text-xs px-2 py-1 min-w-fit"
                   >

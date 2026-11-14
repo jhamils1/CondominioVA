@@ -54,7 +54,7 @@ const UserList = ({ users, onEdit, onDeactivate, onAddNew, currentUserId }) => {
         columns={columns}
         data={tableData}
         onEdit={(user) => onEdit(user)}
-        customActions={(row) => row.is_active && row.id !== currentUserId && <Button variant="cancelar" onClick={() => onDeactivate(row.id)}>Desactivar</Button>}
+        customActions={(row) => row.is_active && row.id !== currentUserId && <Button variant="peligro" onClick={() => onDeactivate(row.id)}>Desactivar</Button>}
       />
     </div>
   );

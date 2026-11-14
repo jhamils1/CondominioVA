@@ -1,5 +1,13 @@
 # Pruebas y verificación
 
+2026-11-14: 15 pruebas Node de seguimiento, eventos y colores; build y ESLint correctos. Edge con video generado y API simulada verificó zona oculta, amarillo/rojo, un evento con JPEG, reproducción sin registros nuevos y registro desactivado. Recorrido Imou simulado pasó. No se verificó el video del usuario ni envío o recepción real de avisos.
+
+2026-11-14: tras separar eventos descartados del historial de incidencias confirmadas, build, ESLint del componente y recorrido Edge simulado correctos; se verificó que los descartados aparezcan solo en su vista.
+
+2026-11-14: build Vite y ESLint de archivos web cambiados correctos. Recorrido Edge con API ficticia verificó evidencia, traslado al historial, verificación de destinatario, preparación y cola; cubrió falta de coincidencia y reintento tras fallo de entrega. La prueba simulada de catálogo se actualizó a la política vigente (guardia accede a incidencias, no al monitor) y pasó. No se probaron envíos reales ni recepción móvil en este cambio.
+
+2026-11-14: suite Flutter: 100 pruebas aprobadas y 2 omitidas; cubre roles, panel derecho, listas por estado, detalle y revocación de acceso con datos ficticios. Análisis estático de los archivos modificados sin incidencias. APK de depuración actualizado en el Xiaomi conectado; el hash coincide y se conserva la conexión USB. Falta confirmación visual en teléfono.
+
 2026-11-07: zonas por cámara: 34 pruebas Django aisladas, ESLint, build, migraciones sin cambios y recorrido web simulado correctos; sin segunda cámara real. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
 
 2026-11-07: 28 pruebas Django temporales, puente adicional con fuentes simuladas, ESLint y build Vite correctos; sin prueba de segunda cámara real. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
@@ -373,3 +381,31 @@ No ejecutar los comandos anteriores como parte de una mera lectura documental: a
 2026-11-14: Flutter drive en Android real: registro FCM, app en segundo plano, envio a dispositivo unico, toque confirmado por usuario y apertura del listado y detalle ficticio: correctos. No se verifico app cerrada.
 
 2026-11-14: Prueba Android y backend PostgreSQL local: cuenta ficticia con un dispositivo elegible, app de prueba cerrada mediante am kill sin forzar detencion, envio FCM ENVIADA a una unica entrega y usuario confirmo recepcion y apertura de Mis avisos. No se verifico personalmente el detalle tras el toque ni se uso camara.
+
+2026-11-14: Frontend: npm.cmd run build correcto; ESLint sobre archivos cambiados sin errores (dos advertencias existentes de hooks en dashboard). Edge con respuestas ficticias: inicio, acceso, dashboard, tabla y formulario de bloques, menu movil y exclusion del tema en camaras comprobados. camaras_catalogo.mjs agoto espera en expectativa de permiso de guardia; camara_simulada.mjs agoto espera de boton Camara de laptop. No se probo camara real ni todas las paginas.
+
+2026-11-14: Frontend: compilacion y ESLint selectivo correctos; Edge con usuarios y bloques ficticios verifico colores de nuevo, editar, desactivar, cancelar y eliminar, y apertura/cierre del formulario. No se ejecuto ninguna operacion destructiva.
+
+2026-11-14: 105 pruebas de acceso SQLite aislado correctas, build y lint selectivo correctos, recorrido React/Django aislado correcto (confirmar, cancelar y bloquear por asignaciones), prueba especifica de concurrencia asignacion/eliminacion correcta en PostgreSQL temporal. La suite PostgreSQL completa tuvo cuatro fallos en otras pruebas de registro de dispositivos/FCM; se reprodujeron. Sin migraciones ni cambios en bases existentes.
+
+2026-11-14: Base local: vista Django sincronizar dispositivo ficticio con sesion creada dentro de transaccion revertida y validacion FCM real devolvio HTTP 204. Se reenvio por FCM directamente el aviso existente, sin pasar por la cola y sin crear incidencia; Android registra notificacion, apertura pendiente. PostgreSQL temporal: 9 pruebas correctas en dos ejecuciones; validacion del proveedor simulada en pruebas de concurrencia.
+
+2026-11-14: Android autorizado: se constato en pantalla Mis avisos y el texto de la incidencia ficticia tras iniciar la cuenta de prueba. Confirmacion de apertura de detalle pendiente.
+
+2026-11-14: El usuario confirmo recepcion y apertura del detalle del aviso ficticio en Android; antes se habia comprobado pantalla Mis avisos. Tras la prueba se verifico la app habitual instalada y se desinstalo la variante de prueba.
+
+2026-11-14: Flutter test: 95 pruebas correctas y 2 omitidas por configuracion. Analisis selectivo sin errores con 42 avisos informativos existentes; APK debug compilado. Vistas previas de widgets ficticios para acceso, perfil y avisos; no se instalo ni ejecuto la nueva version en el telefono.
+
+2026-11-14: Flutter: 95 pruebas correctas y 2 omitidas; analisis selectivo sin errores (avisos informativos existentes); build debug correcto. Comparados identificador y firma del APK; instalacion de reemplazo exitosa, hash del APK instalado coincide y enlace USB activo. Revision visual real pendiente.
+
+2026-11-14: Revision visual real: el usuario abrio la app actualizada en su telefono y confirmo que el nuevo diseno se ve bien; no se afirmo una prueba integral de todos los flujos.
+
+2026-11-14: En segundo telefono Android, adb install exitoso; SHA-256 del APK instalado coincide con build local; ADB reverse 8001 a 8000 confirmado. Puerto local 8000 en escucha; no se verifico la respuesta autenticada ni notificaciones.
+
+2026-11-14: Flutter test: 100 pruebas correctas y 2 omitidas; analisis selectivo sin incidencias. Pruebas cubren rol residente, guardia y personalizado, filtros, detalles, consulta a 30 segundos, cancelacion al cambiar pantalla y revocacion de acceso. APK debug con direccion USB instalado sin borrar datos; hash y enlace USB verificados. Vista previa local con datos ficticios; revision real pendiente.
+
+2026-11-14: Se contrastaron cadenas y clases de la barra en el kernel del APK, se comprobo instalacion con hash coincidente y enlace USB 8001 a 8000. El usuario aun no ha confirmado la barra en pantalla.
+
+2026-11-14: Verificacion en pantalla Android: Inicio, Incidencias, Historial y Ajustes visibles tras instalar el APK recompilado. No se probaron operaciones con datos reales.
+
+2026-11-14: Confirmacion del usuario en segundo Xiaomi: la barra inferior ya aparece tras reinstalar la version corregida.

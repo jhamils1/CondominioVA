@@ -173,7 +173,7 @@ const Dashboard = () => {
       {resumen && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Monto Total Recaudado */}
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+          <div className="dashboard-money dashboard-money--success bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-2 opacity-90">Monto Total Recaudado</p>
@@ -184,7 +184,7 @@ const Dashboard = () => {
           </div>
 
           {/* Monto Pendiente */}
-          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
+          <div className="dashboard-money dashboard-money--pending bg-gradient-to-r from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-2 opacity-90">Monto Pendiente de Cobro</p>

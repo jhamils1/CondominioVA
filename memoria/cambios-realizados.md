@@ -332,3 +332,45 @@ Fecha exacta pendiente de reconstrucción desde historial: `administracion/provi
 2026-11-14: Agregada prueba de integracion para aviso en segundo plano y apertura desde Android, con cuenta ficticia y backend aislado. Se retiraron servidor, enlace USB, app de prueba y base temporal con registro del telefono; app habitual conservada.
 
 2026-11-14: En la base local se crearon registros marcados PRUEBA de propietario, guardia, cargo, vehiculo e incidencia con evidencia ficticia y trazabilidad. Se envio una unica entrega a la cuenta ficticia; no se alteraron cuentas existentes. App habitual conservada.
+
+2026-11-14: Agregado tema visual compartido para panel y paginas publicas, contrastes de graficos y comportamiento responsive del menu; se conservaron los flujos existentes y el estilo propio de camaras y eventos de seguridad.
+
+2026-11-14: Nueva variante visual de peligro para acciones destructivas compartidas y botones especificos; colores de editar y cancelar ajustados con estados de hover, sin alterar operaciones.
+
+2026-11-14: Nueva eliminacion transaccional de roles personalizados sin asignaciones: registra auditoria y retira capacidades propias. La UI bloquea la accion mientras haya cuentas, maneja fallos y protege la cancelacion; la API de roles principales no cambia.
+
+2026-11-14: Pruebas PostgreSQL de dispositivos usan validacion FCM simulada, sesiones validas y rechazo del alta heredada; los escenarios de carrera conservan las comprobaciones de pertenencia. No se cambio la logica de produccion.
+
+2026-11-14: Restablecida credencial de la cuenta ficticia y abierta su sesion en variante movil de prueba. No se guardo la contrasena ni se cambio codigo de produccion en esta etapa.
+
+2026-11-14: Limpieza de prueba local: dos cuentas y perfiles ficticios desactivados, dispositivo ficticio desactivado, sesiones ficticias revocadas; variante movil de prueba desinstalada y servidor temporal detenido. No se borraron historiales.
+
+2026-11-14: Nuevo tema Flutter oscuro/claro azul, acceso desplazable, perfil y bandejas renovadas, y contraste en dashboard y otras pantallas. APK debug compilado; no instalado ni se altero la aplicacion habitual.
+
+2026-11-14: Actualizada aplicacion Android habitual mediante instalacion de reemplazo sin borrar datos, con APK debug de la nueva apariencia y configuracion USB existente. No se cambiaron permisos ni logica de proveedor.
+
+2026-11-14: Actualizacion de interfaz Android instalada y apariencia confirmada por el usuario en su telefono.
+
+2026-11-14: Instalada la aplicacion debug habitual en segundo Android y configurada conexion USB al backend local. No se modificaron cuentas ni se desinstalo otra aplicacion.
+
+2026-11-14: Barra inferior Flutter por rol; hoja de ajustes con tema, perfil y cierre de sesion; filtros de notificaciones nuevas y leidas y consulta periodica condicionada a pantalla visible. Detalle de alertas muestra campos opcionales ya autorizados. Backend sin cambios en esta etapa.
+
+2026-11-14: Recompilado e instalado el APK debug con barra de navegacion y conexion USB en el segundo telefono. No hubo cambios adicionales de backend ni de cuentas.
+
+2026-11-14: Barra movil corregida instalada y sus cuatro opciones observadas en la cuenta de guardia del telefono conectado.
+
+2026-11-14: La barra inferior instalada fue confirmada por el usuario en el segundo Xiaomi.
+# 2026-11-14 — Navegación móvil y estados de incidencias
+
+Panel de ajustes derecho con cierre de sesión visible, separación de eventos por estado y consulta del detalle y evidencia mediante las API autorizadas existentes. La apertura de notificaciones conserva su bandeja y no altera el estado del evento; los avisos de residentes mantienen su separación por lectura.
+
+# 2026-11-14 — Revisión web de incidencias
+
+Ante la aclaración del usuario, el historial contiene únicamente incidencias confirmadas (incluidas en atención y resueltas); los falsos positivos se conservan en una vista separada.
+
+Separación de pendientes e historial revisado; el detalle conserva evidencia y acciones de atención. El guardia verifica placa y destinatario, y confirma explícitamente el aviso antes de usar las API existentes para prepararlo y encolarlo. Se informa de fallos parciales y la ausencia de confirmación de recepción.
+
+# 2026-11-14 — Video grabado y seguimiento
+
+Video e Imou comparten colores y seguimiento con tolerancia de pérdida; el polígono solo aparece durante la edición. Con zona definida el registro automático de eventos está activado inicialmente y se puede desactivar; se adjunta fotograma, se identifica la fuente grabada y se advierte sobre guardias ausentes y repeticiones.
+

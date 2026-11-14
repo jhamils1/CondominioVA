@@ -41,6 +41,7 @@ const LineChart = ({ titulo, labels, datasets }) => {
     plugins: {
       legend: {
         position: 'top',
+        labels: { color: '#c5d8e9' },
       },
       tooltip: {
         mode: 'index',
@@ -55,9 +56,12 @@ const LineChart = ({ titulo, labels, datasets }) => {
       },
     },
     scales: {
+      x: { ticks: { color: '#b9cbe0' }, grid: { color: '#24445f' } },
       y: {
         beginAtZero: true,
+        grid: { color: '#24445f' },
         ticks: {
+          color: '#b9cbe0',
           callback: function(value) {
             return 'Bs. ' + value.toLocaleString();
           },

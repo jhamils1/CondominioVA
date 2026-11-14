@@ -328,3 +328,45 @@ Decisiones vigentes: seguridad como objetivo central; cuenta opcional para emple
 2026-11-14: Con Android autorizado se instalo variante aislada y se probo envio FCM en segundo plano. El usuario confirmo toque de la notificacion y el recorrido automatizado abrio aviso ficticio y pantalla de evidencia.
 
 2026-11-14: Por solicitud del usuario se creo cuenta ficticia en la base local y se probo aviso FCM desde el sistema local con app de prueba cerrada. Usuario confirmo recepcion y apertura de Mis avisos. Se reservo especificamente la unica entrega ficticia sin procesar la cola ajena.
+
+2026-11-14: Actualizacion visual del frontend solicitada por el usuario con referencia a camaras; no se modifico backend. Se revisaron pantallas representativas mediante datos simulados y se actualizaron selectores de acceso en pruebas web.
+
+2026-11-14: A solicitud del usuario se diferenciaron visualmente los botones del frontend y se verificaron crear, editar, desactivar, cancelar y eliminar con datos ficticios.
+
+2026-11-14: El usuario autorizo eliminar roles nuevos salvo los cuatro principales. Se agrego DELETE administrativo de roles personalizados sin cuentas asignadas y accion web con confirmacion; se mantuvieron controles y trazabilidad.
+
+2026-11-14: A solicitud del usuario se reviso la cuenta ficticia local y se ejecuto validacion real FCM sin entregar datos del residente ni persistir cambios. Se reenvio el aviso de prueba existente al unico telefono autorizado; no se creo otra incidencia. Las pruebas de concurrencia se alinearon al contrato vigente y pasaron dos veces.
+
+2026-11-14: Se recupero el acceso de la cuenta ficticia en Android tras solicitud del usuario, sin tocar cuentas reales. La pantalla mostro Mis avisos y el evento de prueba.
+
+2026-11-14: Tras confirmacion del usuario se cerro la prueba real local. Solo se desactivaron cuentas y dispositivo ficticios identificados, y se retiro variante movil y enlace temporal. Historial y evidencia de la incidencia de prueba conservados.
+
+2026-11-14: Por solicitud se ajusto la apariencia movil a la web sin alterar permisos ni servicios. Se revisaron vistas previas ficticias de acceso, perfil y avisos, y se agregaron pruebas de pantalla pequena y acceso por rol.
+
+2026-11-14: Usuario confirmo que usa USB. Se verificaron identificador y firma del APK, se compilo la app con la direccion documentada y se actualizo la app habitual sin desinstalarla; enlace USB restaurado.
+
+2026-11-14: El usuario reviso en su telefono la actualizacion movil e indico que el diseno se ve bien.
+
+2026-11-14: Usuario conecto y autorizo segundo telefono; la instalacion fue rechazada hasta habilitar instalar mediante USB. Luego se instalo el APK de desarrollo, se configuro ADB reverse y se retiro una copia temporal de Descargas.
+
+2026-11-14: Por solicitud se incorporo navegacion inferior movil, ajustes y distincion de avisos nuevos e historial leido usando APIs existentes. Se agregaron pruebas de actualizacion, roles, detalles y revocacion. App habitual actualizada en el telefono conectado sin desinstalar.
+
+2026-11-14: Corregida la instalacion movil tras informar el usuario que la barra no aparecia: el APK previo no incluia la nueva navegacion. Una recompilacion y comparacion del contenido precedieron la actualizacion en el Xiaomi.
+
+2026-11-14: Se observo en el Xiaomi la barra de cuatro opciones tras la recompilacion corregida, sin consultar datos personales.
+
+2026-11-14: El usuario confirmo la aparicion de la barra inferior corregida en el segundo telefono.
+# 2026-11-14
+
+Se ajustó la navegación móvil a petición del usuario, conservando accesos por rol y la ruta de notificaciones push. Se implementó la separación por estados existente en seguridad sin modificar Django ni sus datos.
+
+# 2026-11-14 — Incidencias web
+
+El usuario aclaró que solo al confirmarse pasa una incidencia al historial; se separaron los eventos descartados para mantener trazabilidad.
+
+Se adaptó la revisión web solicitada a las transiciones y permisos existentes. La clasificación web tras confirmar difiere de la móvil previa, sin modificar estados ni el cliente móvil.
+
+# 2026-11-14 — Análisis de archivo
+
+Por solicitud del usuario se equiparó la visualización y regla de permanencia del video con Imou, sin iniciar cámaras ni modificar backend. Se usaron únicamente video y respuestas ficticias durante las pruebas.
+

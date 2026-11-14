@@ -6,7 +6,7 @@ export function crearEventoVideo(hallazgo, id, fecha) {
   return {
     id,
     categoria: 'Posible estacionamiento en zona prohibida',
-    descripcion: `Registro automático desde análisis de video grabado: ${nombres[hallazgo.clase] || 'vehículo'}, aproximadamente ${Math.floor(hallazgo.duracion)} segundos detenido en la zona marcada, en el minuto ${minuto} del video. La fecha y ubicación de grabación no están verificadas. Requiere revisión. No se adjunta el video.`,
+    descripcion: `Registro automático desde análisis de video grabado: ${nombres[hallazgo.clase] || 'vehículo'}, aproximadamente ${Math.floor(hallazgo.duracion)} segundos detenido en la zona marcada, en el minuto ${minuto} del video. La fecha y ubicación de grabación no están verificadas. Requiere revisión. Se adjunta el fotograma del hallazgo, no el video completo.`,
     fecha_evento: fecha,
   };
 }

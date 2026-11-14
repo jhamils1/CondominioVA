@@ -190,7 +190,7 @@ class _ExpensaDetallePageState extends State<ExpensaDetallePage> {
                   const SizedBox(height: 4),
                   Text(
                     'Pago seguro encriptado',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),

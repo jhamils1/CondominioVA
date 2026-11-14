@@ -5,7 +5,7 @@ import logo from '../assets/images/logo.jpg';
 
 const HomePage = () => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="public-home admin-legacy min-h-screen bg-white">
       {/* Header */}
       <header className="bg-white shadow-lg border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -87,7 +87,7 @@ export default function CamaraCatalogo({ camara, configuracion, onConfigurar }) 
       {zona && esAdmin && <>
         {!dibujando ? <>
           <button type="button" disabled={!imagen || guardando} onClick={() => { setBorrador([]); setDibujando(true); }}>Dibujar o cambiar zona</button>
-          <button type="button" disabled={!zona.puntos.length || guardando} onClick={() => guardar([], zona.segundos)}>Eliminar zona</button>
+          <button type="button" className="action-danger" disabled={!zona.puntos.length || guardando} onClick={() => guardar([], zona.segundos)}>Eliminar zona</button>
         </> : <>
           <p>Marca al menos tres puntos sobre la imagen: {borrador.length} de 30.</p>
           <button type="button" disabled={guardando} onClick={() => { if (zonaValida(borrador)) guardar(borrador, zona.segundos); else setErrorZona('Dibuja una zona válida sin cruces.'); }}>Guardar zona</button>

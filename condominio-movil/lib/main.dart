@@ -14,8 +14,6 @@ import 'pages/objetos_perdidos_page.dart';
 import 'pages/areas_comunes_page.dart';
 import 'pages/mis_reservas_page.dart';
 import 'pages/dashboard_page.dart';
-import 'pages/alertas_seguridad_page.dart';
-import 'pages/avisos_residente_page.dart';
 import 'pages/visitas_operativas_page.dart';
 import 'services/fcm_service.dart';
 import 'config/stripe_config.dart';
@@ -24,6 +22,7 @@ import 'config/firebase_push_test_options.dart';
 import 'security/protected_route.dart';
 import 'security/security_notification_navigation.dart';
 import 'security/resident_notification_navigation.dart';
+import 'theme/app_theme.dart';
 
 // Handler para mensajes en segundo plano
 @pragma('vm:entry-point')
@@ -79,7 +78,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isDark = false;
+  bool _isDark = true;
   final _navigator = GlobalKey<NavigatorState>();
   bool _alertsOpen = false;
   bool _residentAlertsOpen = false;
@@ -125,7 +124,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigator,
-      title: 'Login Demo',
+      title: 'Condominio',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -137,18 +136,8 @@ class _MyAppState extends State<MyApp> {
         Locale('en', 'US'),
       ],
       locale: const Locale('es', 'ES'),
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        brightness: Brightness.light,
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.build(Brightness.light),
+      darkTheme: AppTheme.build(Brightness.dark),
       themeMode: _isDark ? ThemeMode.dark : ThemeMode.light,
       initialRoute: "/",
       routes: {
@@ -167,8 +156,8 @@ class _MyAppState extends State<MyApp> {
         "/areas-comunes": (context) => const ProtectedRoute(route: '/areas-comunes', child: AreasComunesPage()),
         "/mis-reservas": (context) => const ProtectedRoute(route: '/mis-reservas', child: MisReservasPage()),
         "/dashboard": (context) => const ProtectedRoute(route: '/dashboard', child: DashboardPage()),
-        "/alertas-seguridad": (context) => const ProtectedRoute(route: '/alertas-seguridad', child: AlertasSeguridadPage()),
-        "/avisos-residente": (context) => const ProtectedRoute(route: '/avisos-residente', child: AvisosResidentePage()),
+        "/alertas-seguridad": (context) => ProtectedRoute(route: '/alertas-seguridad', child: PerfilPage(onToggleTheme: _toggleTheme, isDark: _isDark, initialTab: 'notificaciones')),
+        "/avisos-residente": (context) => ProtectedRoute(route: '/avisos-residente', child: PerfilPage(onToggleTheme: _toggleTheme, isDark: _isDark, initialTab: 'nuevos')),
         "/visitas-operativas": (context) => const ProtectedRoute(route: '/visitas-operativas', child: VisitasOperativasPage()),
       },
     );

@@ -1,0 +1,114 @@
+/* Shared administration surfaces, using the camera pages' navy and sky palette. */
+.admin-shell {
+  background: #041225;
+  color: #e7f1ff;
+}
+
+.admin-main { background: #06172e; }
+.admin-header { min-height: 70px; gap: 16px; }
+.admin-content { min-height: calc(100% - 70px); }
+.admin-legacy { color: #e7f1ff; }
+
+.admin-legacy .bg-white {
+  background-color: #0b203b;
+  border: 1px solid #245075;
+  box-shadow: 0 12px 32px rgb(0 7 19 / 18%);
+}
+
+.admin-legacy .bg-gray-50,
+.admin-legacy .bg-gray-100 { background-color: #081a31; }
+.admin-legacy .bg-gray-800 { background-color: #102d4c; }
+.admin-legacy :is(.text-gray-900, .text-gray-800, .text-gray-700) { color: #e7f1ff; }
+.admin-legacy :is(.text-gray-600, .text-gray-500, .text-gray-400) { color: #b9cbe0; }
+.admin-legacy :is(.border-gray-100, .border-gray-200, .border-gray-300) { border-color: #315575; }
+.admin-legacy :is(.divide-gray-200, .divide-gray-100) > :not(:last-child) { border-color: #24445f; }
+
+/* Pale statistic cards retain their color cues without becoming bright islands. */
+.admin-legacy :is(.bg-blue-50, .bg-indigo-50) { background-color: #123554; }
+.admin-legacy .bg-green-50 { background-color: #123b37; }
+.admin-legacy .bg-red-50 { background-color: #482932; }
+.admin-legacy .bg-orange-50 { background-color: #45301f; }
+.admin-legacy .bg-yellow-50 { background-color: #423819; }
+.admin-legacy .bg-purple-50 { background-color: #302a49; }
+.admin-legacy :is(.bg-blue-50, .bg-indigo-50) :is(.text-blue-600, .text-blue-700, .text-indigo-600) { color: #83ccff; }
+.admin-legacy .bg-green-50 :is(.text-green-600, .text-green-700) { color: #86e2bb; }
+.admin-legacy .bg-red-50 :is(.text-red-600, .text-red-700) { color: #ffb4b4; }
+.admin-legacy .bg-orange-50 :is(.text-orange-600, .text-orange-700) { color: #ffc791; }
+.admin-legacy .bg-yellow-50 :is(.text-yellow-600, .text-yellow-700) { color: #f3d278; }
+.admin-legacy .bg-purple-50 :is(.text-purple-600, .text-purple-700) { color: #d7b8ff; }
+
+.admin-legacy :is(input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea) {
+  background-color: #06172e;
+  color: #eff7ff;
+  border: 1px solid #456582;
+  border-radius: 7px;
+}
+.admin-legacy :is(input, textarea)::placeholder { color: #91a7bc; opacity: 1; }
+.admin-legacy :is(input, select, textarea):focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+.admin-legacy :is(input, select, textarea):disabled { opacity: .65; }
+.admin-legacy :is(input[type='checkbox'], input[type='radio']) { accent-color: #38bdf8; }
+
+.admin-legacy .admin-search {
+  background: #06172e;
+  border: 1px solid #456582;
+  box-shadow: none;
+}
+.admin-legacy .admin-search input { border: 0 !important; background: transparent !important; outline: none; }
+.admin-legacy .admin-search:focus-within { outline: 2px solid #38bdf8; outline-offset: 2px; }
+
+.admin-legacy .admin-button {
+  border: 1px solid #2584b4;
+  border-radius: 7px;
+  background: #0e476e;
+  color: #f2f8ff;
+  box-shadow: none;
+  text-transform: none;
+  letter-spacing: .01em;
+}
+.admin-legacy .admin-button:hover:not(:disabled) { background: #145d8a; }
+.admin-legacy .admin-button--editar { background: #165c86; border-color: #318ec2; color: #fff; }
+.admin-legacy .admin-button--editar:hover:not(:disabled) { background: #1d76a9; }
+.admin-legacy .admin-button--cancelar { background: #334d65; border-color: #70889d; color: #fff; }
+.admin-legacy .admin-button--cancelar:hover:not(:disabled) { background: #49657e; }
+.admin-legacy .admin-button--peligro { background: #922f3e; border-color: #d76270; color: #fff; }
+.admin-legacy .admin-button--peligro:hover:not(:disabled) { background: #b43d4e; }
+.admin-shell button.action-danger { background: #922f3e; border-color: #d76270; color: #fff; }
+.admin-shell button.action-danger:hover:not(:disabled) { background: #b43d4e; }
+.admin-legacy .admin-button:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 3px; }
+
+.admin-legacy .admin-table { border: 1px solid #315575; border-radius: 9px; }
+.admin-legacy .admin-table thead { background: #102d4c; }
+.admin-legacy .admin-table th { color: #b9d4eb; }
+.admin-legacy .admin-table tbody { background: #0b203b; border: 0; box-shadow: none; }
+.admin-legacy .admin-table td { color: #e7f1ff; border-color: #24445f; }
+.admin-legacy .admin-table tbody tr:hover { background: #12314f; }
+.admin-legacy .admin-form { border-radius: 10px; }
+.admin-legacy .admin-form h2 { color: #f2f8ff; }
+.admin-legacy .admin-form .border-t { border-color: #315575; }
+.admin-legacy button.text-indigo-700 { color: #9edcff; }
+.admin-legacy button.text-red-700 { color: #ffb4b4; }
+.admin-legacy .dashboard-money--success { background: linear-gradient(115deg, #103d3c, #0b2d36); border: 1px solid #2c7969; }
+.admin-legacy .dashboard-money--pending { background: linear-gradient(115deg, #492633, #2e2238); border: 1px solid #8b4a59; }
+
+.admin-login { background: radial-gradient(circle at top, #123759 0, #06172e 45%, #020d1d 100%); }
+.admin-login > .bg-white { padding: 36px; }
+.login-brand { margin-bottom: 28px; text-align: center; }
+.login-brand span { color: #7dd3fc; font-size: .75rem; font-weight: 700; letter-spacing: .2em; }
+.login-brand p { color: #b9cbe0; font-size: .85rem; margin-top: 6px; }
+.admin-login a { color: #8ed4ff; }
+.admin-login button[type='submit'] { background: #0e5c88; border: 1px solid #2584b4; }
+.admin-login button[type='submit']:hover:not(:disabled) { background: #1474a7; }
+.public-home { background: #06172e; }
+.public-home .bg-gradient-to-br { background: linear-gradient(135deg, #06172e, #10365a); }
+.public-home :is(.text-blue-600, .text-blue-700) { color: #8bd5ff; }
+
+@media (max-width: 767px) {
+  .admin-shell > aside { position: fixed; top: 70px; left: 0; z-index: 40; height: calc(100vh - 70px); }
+  .admin-header { padding: 12px 16px; }
+  .admin-header h1 { font-size: 1rem; line-height: 1.3; }
+  .admin-content { padding: 16px; }
+  .admin-legacy .admin-form { padding: 20px; }
+}

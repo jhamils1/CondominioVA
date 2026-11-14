@@ -14,7 +14,7 @@ void main() {
     )));
     await tester.pumpAndSettle();
     expect(find.text('Bienvenido usuario_prueba 🎉'), findsOneWidget);
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.text('Ajustes'));
     await tester.pumpAndSettle();
   }
 
@@ -39,6 +39,8 @@ void main() {
     expect(find.text('Mis Expensas'), findsNothing);
     expect(find.text('Reconocimiento Facial'), findsNothing);
     expect(find.text('Alertas de seguridad'), findsNothing);
+    await tester.drag(find.descendant(of: find.byType(Drawer), matching: find.byType(ListView)), const Offset(0, -250));
+    await tester.pumpAndSettle();
     expect(find.text('Áreas Comunes'), findsOneWidget);
   });
 
@@ -51,7 +53,7 @@ void main() {
       isDark: false, onToggleTheme: () {}, cargarPerfil: custom,
     )));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.text('Ajustes'));
     await tester.pumpAndSettle();
     expect(find.text('Visitas pendientes y activas'), findsOneWidget);
     expect(find.text('Alertas de seguridad'), findsNothing);
@@ -61,9 +63,22 @@ void main() {
 
   testWidgets('administrador ve el dashboard financiero', (tester) async {
     await showMenu(tester, 'administrador');
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.drag(find.descendant(of: find.byType(Drawer), matching: find.byType(ListView)), const Offset(0, -500));
     await tester.pumpAndSettle();
     expect(find.text('Dashboard Financiero'), findsOneWidget);
+  });
+
+  testWidgets('los accesos rápidos respetan el rol y abren la ruta autorizada', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: PerfilPage(isDark: true, onToggleTheme: () {}, cargarPerfil: () => profile('propietario')),
+      routes: {'/avisos-residente': (_) => const Scaffold(body: Text('Bandeja de prueba'))},
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Revisar avisos'), findsOneWidget);
+    expect(find.text('Revisar alertas'), findsNothing);
+    await tester.tap(find.text('Revisar avisos'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bandeja de prueba'), findsOneWidget);
   });
 
   testWidgets('un error del perfil oculta las opciones restringidas', (tester) async {
@@ -73,8 +88,7 @@ void main() {
     )));
     await tester.pumpAndSettle();
     expect(find.text('Error: Sin conexión'), findsOneWidget);
-    await tester.tap(find.byTooltip('Open navigation menu'));
-    await tester.pumpAndSettle();
+    expect(find.text('Ajustes'), findsNothing);
     expect(find.text('Mis Expensas'), findsNothing);
     expect(find.text('Dashboard Financiero'), findsNothing);
     expect(find.text('Reconocimiento Facial'), findsNothing);
@@ -90,7 +104,7 @@ void main() {
       isDark: false, onToggleTheme: () {}, cargarPerfil: load,
     )));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.text('Ajustes'));
     await tester.pumpAndSettle();
     expect(find.text('Mis Expensas'), findsNothing);
     expect(find.text('Reconocimiento Facial'), findsOneWidget);

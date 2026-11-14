@@ -61,7 +61,7 @@ export default function NotificacionesPage() {
       {user.role === 'guardia' && event.estado === 'PENDIENTE_REVISION' && <div className="mt-3 space-y-2">
         <button className="bg-indigo-600 text-white rounded px-3 py-2" onClick={() => review('confirmar')}>Confirmar incidencia</button>
         <label className="block">Motivo del descarte <input className="border rounded p-1" value={motivo} onChange={e => setMotivo(e.target.value)} /></label>
-        <button className="text-red-700" onClick={() => review('descartar')}>Descartar como falso positivo</button>
+        <button className="admin-button admin-button--peligro px-3 py-2" onClick={() => review('descartar')}>Descartar como falso positivo</button>
       </div>}
       {user.role === 'guardia' && ['CONFIRMADA', 'EN_ATENCION'].includes(event.estado) && <div className="mt-3 space-y-2">
         <label className="block">Observación <input className="border rounded p-1" value={motivo} onChange={e => setMotivo(e.target.value)} /></label>

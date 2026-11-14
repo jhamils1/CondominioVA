@@ -87,4 +87,5 @@ export const fetchAllPermissions = async () => {
 export const fetchCustomRoles = async () => (await apiClient.get('roles-personalizados/')).data;
 export const createCustomRole = async nombre => (await apiClient.post('roles-personalizados/', { nombre })).data;
 export const updateCustomRole = async (id, data) => (await apiClient.patch(`roles-personalizados/${id}/`, data)).data;
+export const deleteCustomRole = async id => apiClient.delete(`roles-personalizados/${id}/`);
 export const assignCustomRole = async (id, usuarioId) => (await apiClient.post(`roles-personalizados/${id}/asignar/`, { usuario_id: Number(usuarioId) })).data;

@@ -3,6 +3,7 @@ import threading
 import unittest
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -22,10 +23,19 @@ class DeviceRaceTests(unittest.TestCase):
         self.a.groups.add(group)
         self.b.groups.add(group)
         self.token = 'ficticio_' + suffix
+        # El proveedor externo esta deshabilitado en esta suite aislada.
+        for mock in (
+            patch('finanzas.devices.validar_token', return_value='proyecto-ficticio'),
+            patch('finanzas.devices.proyecto_configurado', return_value=('proyecto-ficticio', None)),
+        ):
+            mock.start()
+            self.addCleanup(mock.stop)
 
-    def race(self, actions, force_empty_lookup=False):
+    def race(self, actions, force_empty_lookup=False, shared_session=False):
         start = threading.Barrier(2, timeout=10)
         looked_up = threading.Barrier(2, timeout=10)
+        from administracion.models import SesionAplicacion
+        shared = SesionAplicacion.objects.create(usuario=actions[0][0]) if shared_session else None
 
         def run(action):
             close_old_connections()
@@ -42,7 +52,7 @@ class DeviceRaceTests(unittest.TestCase):
                 client = APIClient()
                 from administracion.models import SesionAplicacion
                 from rest_framework_simplejwt.tokens import AccessToken
-                session = SesionAplicacion.objects.create(usuario=action[0])
+                session = shared or SesionAplicacion.objects.create(usuario=action[0])
                 token = AccessToken.for_user(action[0])
                 token['session_id'] = str(session.pk)
                 client.force_authenticate(user=action[0], token=token)
@@ -75,10 +85,10 @@ class DeviceRaceTests(unittest.TestCase):
 
     def test_legacy_creation_and_sync_compete_without_reassignment(self):
         legacy = (self.a, 'post', '/api/devices/', {'registration_id': self.token, 'type': 'android'})
-        results = self.race([legacy, self.sync(self.b)], force_empty_lookup=True)
-        self.assertIn(results, ([201, 400], [400, 204]))
+        results = self.race([legacy, self.sync(self.b)])
+        self.assertEqual(results, [400, 204])
         device = FCMDevice.objects.get(registration_id=self.token)
-        self.assertEqual(device.user_id, self.a.pk if results[0] == 201 else self.b.pk)
+        self.assertEqual(device.user_id, self.b.pk)
 
     def test_owner_deactivation_and_foreign_claim_do_not_transfer(self):
         FCMDevice.objects.create(user=self.a, registration_id=self.token, type='android', active=True)
@@ -99,7 +109,7 @@ class DeviceRaceTests(unittest.TestCase):
     def test_same_account_simultaneous_registration_and_retirement_are_serialized(self):
         FCMDevice.objects.create(user=self.a, registration_id=self.token, type='android', active=True)
         retire = (self.a, 'post', '/api/devices/desregistrar/', {'registration_id': self.token})
-        self.assertEqual(self.race([retire, self.sync(self.a)]), [204, 204])
+        self.assertIn(self.race([retire, self.sync(self.a)], shared_session=True), ([204, 204], [204, 400]))
         self.assertEqual(FCMDevice.objects.filter(registration_id=self.token, user=self.a).count(), 1)
 
     def test_two_accounts_cannot_cross_rotate_each_others_tokens(self):

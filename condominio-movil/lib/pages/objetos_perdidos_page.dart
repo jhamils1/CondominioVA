@@ -110,7 +110,7 @@ class _ObjetosPerdidosPageState extends State<ObjetosPerdidosPage> {
                               'No hay objetos perdidos',
                               style: TextStyle(
                                 fontSize: 18,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -205,7 +205,7 @@ class _ObjetosPerdidosPageState extends State<ObjetosPerdidosPage> {
                       'Encontrado en: ${objeto.lugarEncontrado}',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 4),

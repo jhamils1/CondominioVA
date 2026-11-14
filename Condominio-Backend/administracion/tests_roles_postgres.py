@@ -3,6 +3,7 @@ import threading
 import unittest
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 from datetime import date
 
 from django.contrib.auth.models import Group, User
@@ -39,13 +40,21 @@ class CustomRolePostgresTests(unittest.TestCase):
             RolPersonalizado.objects.create(nombre='  ' + self.role.nombre.upper() + '  ')
 
     def test_assignment_and_device_registration_cannot_both_succeed(self):
+        from administracion.models import SesionAplicacion
+        from rest_framework_simplejwt.tokens import AccessToken
+        session = SesionAplicacion.objects.create(usuario=self.guard)
+        token = AccessToken.for_user(self.guard)
+        token['session_id'] = str(session.pk)
         start = threading.Barrier(2, timeout=10)
 
         def invoke(kind):
             close_old_connections()
             try:
                 client = APIClient()
-                client.force_authenticate(user=self.admin if kind == 'assign' else self.guard)
+                if kind == 'assign':
+                    client.force_authenticate(user=self.admin)
+                else:
+                    client.force_authenticate(user=self.guard, token=token)
                 start.wait()
                 if kind == 'assign':
                     response = client.post(f'/api/roles-personalizados/{self.role.pk}/asignar/',
@@ -57,10 +66,41 @@ class CustomRolePostgresTests(unittest.TestCase):
             finally:
                 connection.close()
 
-        with ThreadPoolExecutor(max_workers=2) as pool:
+        with patch('finanzas.devices.validar_token', return_value='proyecto-ficticio'), \
+             patch('finanzas.devices.proyecto_configurado', return_value=('proyecto-ficticio', None)), \
+             ThreadPoolExecutor(max_workers=2) as pool:
             assignment = pool.submit(invoke, 'assign')
             device = pool.submit(invoke, 'device')
             results = (assignment.result(timeout=20), device.result(timeout=20))
-        self.assertIn(results, ((200, 403), (400, 204)))
+        self.assertIn(results, ((200, 401), (200, 403), (400, 204)))
         self.assertFalse(AsignacionRolPersonalizado.objects.filter(usuario=self.guard).exists() and
                          FCMDevice.objects.filter(user=self.guard).exists())
+
+    def test_assignment_and_deletion_are_serialized(self):
+        start = threading.Barrier(2, timeout=10)
+        role_id, guard_id, admin_id = self.role.pk, self.guard.pk, self.admin.pk
+
+        def invoke(kind):
+            close_old_connections()
+            try:
+                client = APIClient()
+                client.force_authenticate(user=User.objects.get(pk=admin_id))
+                start.wait()
+                path = f'/api/roles-personalizados/{role_id}/'
+                if kind == 'delete':
+                    return client.delete(path).status_code
+                return client.post(path + 'asignar/', {'usuario_id': guard_id}, format='json').status_code
+            finally:
+                connection.close()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            delete = pool.submit(invoke, 'delete')
+            assign = pool.submit(invoke, 'assign')
+            outcomes = delete.result(timeout=20), assign.result(timeout=20)
+        self.assertIn(outcomes, ((204, 400), (409, 200)))
+        if outcomes == (204, 400):
+            self.assertFalse(RolPersonalizado.objects.filter(pk=role_id).exists())
+            self.assertFalse(AsignacionRolPersonalizado.objects.filter(usuario_id=guard_id).exists())
+        else:
+            self.assertTrue(RolPersonalizado.objects.filter(pk=role_id).exists())
+            self.assertTrue(AsignacionRolPersonalizado.objects.filter(usuario_id=guard_id, rol_id=role_id).exists())

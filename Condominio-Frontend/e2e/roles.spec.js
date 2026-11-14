@@ -8,7 +8,7 @@ async function login(page, username) {
   await page.goto(`${web}/login`);
   await page.locator('#username').fill(username);
   await page.locator('#password').fill('PruebaTemporal2026');
-  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+  await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
   await expect(page).toHaveURL(`${web}/admin/dashboard`);
 }
 
@@ -44,6 +44,17 @@ test('rol personalizado: creación, asignación, consulta, revocación y cierre'
       await expect(row).toBeVisible();
       await expect(row.getByRole('button', { name: /Editar|Eliminar/ })).toHaveCount(0);
     }
+    await admin.getByLabel('Nombre del rol', { exact: true }).fill('Temporal ficticio');
+    await admin.getByRole('button', { name: 'Crear rol', exact: true }).click();
+    await expect(admin.getByRole('status')).toHaveText('Rol creado sin permisos.');
+    await admin.getByLabel('Seleccionar rol', { exact: true }).selectOption({ label: 'Temporal ficticio' });
+    admin.once('dialog', dialog => dialog.dismiss());
+    await admin.getByRole('button', { name: 'Eliminar rol', exact: true }).click();
+    await expect(admin.getByLabel('Seleccionar rol').locator('option', { hasText: 'Temporal ficticio' })).toHaveCount(1);
+    admin.once('dialog', dialog => dialog.accept());
+    await admin.getByRole('button', { name: 'Eliminar rol', exact: true }).click();
+    await expect(admin.getByRole('status')).toHaveText('Rol personalizado eliminado.');
+    await expect(admin.getByLabel('Seleccionar rol').locator('option', { hasText: 'Temporal ficticio' })).toHaveCount(0);
     await admin.getByLabel('Nombre del rol', { exact: true }).fill(roleName);
     await admin.getByRole('button', { name: 'Crear rol', exact: true }).click();
     await expect(admin.getByRole('status')).toHaveText('Rol creado sin permisos.');
@@ -59,6 +70,8 @@ test('rol personalizado: creación, asignación, consulta, revocación y cierre'
     await admin.getByRole('button', { name: 'Asignar rol', exact: true }).click();
     await expect(admin.getByRole('status')).toHaveText('Rol asignado a la cuenta.');
     await expect(admin.getByText('Estado: Activo · Cuentas asignadas: 1')).toBeVisible();
+    await expect(admin.getByRole('button', { name: 'Eliminar rol', exact: true })).toBeDisabled();
+    await expect(admin.getByText('Para eliminar este rol, primero reasigna todas sus cuentas.')).toBeVisible();
     await admin.screenshot({ path: testInfo.outputPath('rol-asignado.png'), fullPage: true });
 
     const employee = await newPage();
@@ -112,7 +125,7 @@ test('rol personalizado: creación, asignación, consulta, revocación y cierre'
     await expect(employee).toHaveURL(`${web}/login`);
     await employee.locator('#username').fill('empleado_ficticio');
     await employee.locator('#password').fill('PruebaTemporal2026');
-    await employee.getByRole('button', { name: 'Sign In', exact: true }).click();
+    await employee.getByRole('button', { name: 'Ingresar', exact: true }).click();
     await expect(employee.getByText('Usuario, contraseña o cuenta no autorizada.')).toBeVisible();
     // PaymentModal importa Stripe al cargar la aplicación, aunque no se abra.
     // Su CDN está bloqueada intencionalmente: pagos no pertenecen a esta prueba.

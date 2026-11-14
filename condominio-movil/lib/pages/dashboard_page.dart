@@ -80,7 +80,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Dashboard Financiero'),
-          backgroundColor: Colors.blue[700],
+
         ),
         body: const Center(
           child: Column(
@@ -99,7 +99,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Dashboard Financiero'),
-          backgroundColor: Colors.blue[700],
+
         ),
         body: Center(
           child: Padding(
@@ -129,7 +129,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard Financiero'),
-        backgroundColor: Colors.blue[700],
+
       ),
       body: RefreshIndicator(
         onRefresh: _cargarDatosDashboard,
@@ -140,12 +140,12 @@ class _DashboardPageState extends State<DashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Título y descripción
-              const Text(
+              Text(
                 'Resumen General',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
@@ -256,7 +256,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -292,10 +292,10 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -427,7 +427,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -443,10 +443,10 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Text(
             _graficoExpensas!['titulo'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -509,7 +509,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -528,10 +528,10 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Text(
                 _graficoIngresos!['titulo'],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               DropdownButton<int>(
@@ -651,7 +651,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -667,10 +667,10 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Text(
             _graficoMorosos!['titulo'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -768,7 +768,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -784,10 +784,10 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Text(
             _graficoComparativo!['titulo'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),

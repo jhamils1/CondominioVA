@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { analizarFotograma, estadoCamaraDemo, obtenerZonaImou, guardarZonaImou } from '../api/visionDemoApi.js';
 import { useSession } from '../auth/sessionContext.js';
 import { crearSeguimiento, intervaloNoConfiable } from '../vision/permanencia.js';
+import { colorDeteccion } from '../vision/coloresDeteccion.js';
 import { zonaValida } from '../vision/zonas.js';
 import ZonaVideo from './ZonaVideo.jsx';
 import './VideoArchivoDemostracion.css';
@@ -26,7 +27,7 @@ function dibujar(canvas, imagen, detecciones, config) {
     const permanencia = deteccion.permanencia;
     const detalle = advertencia ? ' · revisar'
       : permanencia ? ` · ${permanencia.segundos.toFixed(1)}/${config.segundos} s en zona` : '';
-    const color = advertencia ? '#ff3030' : permanencia ? '#ffc247' : '#00ff40';
+    const color = colorDeteccion(deteccion);
     const texto = `${nombres[deteccion.clase] || deteccion.clase} ${Math.round(deteccion.confianza * 100)}%${detalle}`;
     const y = Math.max(19, y1);
     ctx.strokeStyle = color;
@@ -277,7 +278,7 @@ export default function AnalisisImou({ ultimoFotograma, muestraAnalizada, automa
           }}>{zona.length ? 'Cambiar zona Imou' : 'Dibujar zona Imou'}</button>
           {zona.length > 0 && <>
             <button type="button" className="border rounded px-3 py-2" onClick={() => setMostrarZona(actual => !actual)}>{mostrarZona ? 'Ocultar zona Imou' : 'Mostrar zona Imou'}</button>
-            <button type="button" disabled={guardarOcupado || hayPendientes || !!guardadoPendiente} className="border rounded px-3 py-2" onClick={() => {
+            <button type="button" disabled={guardarOcupado || hayPendientes || !!guardadoPendiente} className="action-danger border rounded px-3 py-2" onClick={() => {
               if (window.confirm('¿Eliminar la zona Imou? Se detendrá el registro automático hasta configurar una nueva zona.')) {
                 setMostrarZona(false);
                 void guardarConfiguracion({ ...guardado.current, puntos: [], automatico: false });

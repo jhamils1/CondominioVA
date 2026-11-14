@@ -19,6 +19,9 @@
 .seguridad-source-tabs button[aria-pressed="true"] svg { color: #39c0ff; }
 .seguridad-source-note { color: #9ab0c5; font-size: 12px; margin: 0 0 12px; }
 .seguridad-eventos { margin-top: 22px; }
+.seguridad-incidencias-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0 10px; }
+.seguridad-incidencias-filtros button:not(.seguridad-secondary) { padding: 9px 13px; border: 1px solid #365c7b; border-radius: 6px; color: #c6d9eb; background: #102b46; font-size: 13px; font-weight: 700; }
+.seguridad-incidencias-filtros button[aria-pressed="true"] { color: #fff; background: #086699; border-color: #30a9e2; }
 .seguridad-eventos-tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid #1d3c5a; background: #07182b; border-radius: 8px 8px 0 0; padding: 0 8px; }
 .seguridad-eventos-tabs button { display: inline-flex; align-items: center; gap: 9px; color: #8fa4bc; padding: 15px 13px 12px; border-bottom: 3px solid transparent; font-size: 13px; font-weight: 700; }
 .seguridad-eventos-tabs button[aria-selected="true"] { color: #f1f7ff; border-bottom-color: #09afff; }
@@ -43,7 +46,7 @@
 .seguridad-manual h3, .seguridad-detail h3 { color: white; font-size: 16px; font-weight: 700; }
 .seguridad-manual p { margin: 8px 0 15px; color: #abc0d4; font-size: 13px; }
 .seguridad-manual label, .seguridad-review label { display: block; margin: 12px 0; font-size: 13px; font-weight: 600; color: #c6d9eb; }
-.seguridad-manual input, .seguridad-manual textarea, .seguridad-review textarea { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #345675; border-radius: 6px; background: #061325; color: #f3f8fd; }
+.seguridad-manual input, .seguridad-manual textarea, .seguridad-review input, .seguridad-review textarea { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #345675; border-radius: 6px; background: #061325; color: #f3f8fd; }
 .seguridad-manual textarea, .seguridad-review textarea { min-height: 90px; }
 .seguridad-primary, .seguridad-secondary, .seguridad-danger, .seguridad-close { display: inline-flex; align-items: center; border: 1px solid #227cac; border-radius: 6px; padding: 9px 13px; margin: 5px 9px 0 0; color: #e9f8ff; background: #086699; font-size: 12px; font-weight: 700; }
 .seguridad-secondary, .seguridad-close { background: #16314b; border-color: #365c7b; }

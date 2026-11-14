@@ -34,20 +34,29 @@ class DetalleEventoSeguridad {
   final String estado;
   final String fecha;
   final bool evidenciaDisponible;
+  final String camara;
+  final String ubicacion;
+  final String prioridad;
 
   const DetalleEventoSeguridad({required this.id, required this.categoria, required this.descripcion,
-    required this.estado, required this.fecha, this.evidenciaDisponible = false});
+    required this.estado, required this.fecha, this.evidenciaDisponible = false,
+    this.camara = '', this.ubicacion = '', this.prioridad = ''});
 
   factory DetalleEventoSeguridad.fromJson(dynamic data, String esperado) {
     if (data is! Map<String, dynamic> || data['id'] != esperado ||
         data['categoria'] is! String || data['descripcion'] is! String ||
         data['estado'] is! String || data['fecha_evento'] is! String ||
-        (data['evidencia_disponible'] != null && data['evidencia_disponible'] is! bool)) {
+        (data['evidencia_disponible'] != null && data['evidencia_disponible'] is! bool) ||
+        (data['camara'] != null && data['camara'] is! String) ||
+        (data['ubicacion'] != null && data['ubicacion'] is! String) ||
+        (data['prioridad'] != null && data['prioridad'] is! String)) {
       throw const FormatException('Evento inválido');
     }
     return DetalleEventoSeguridad(id: esperado, categoria: data['categoria'],
         descripcion: data['descripcion'], estado: data['estado'], fecha: data['fecha_evento'],
-        evidenciaDisponible: data['evidencia_disponible'] == true);
+        evidenciaDisponible: data['evidencia_disponible'] == true,
+        camara: data['camara'] as String? ?? '', ubicacion: data['ubicacion'] as String? ?? '',
+        prioridad: data['prioridad'] as String? ?? '');
   }
 }
 
@@ -102,6 +111,37 @@ class AlertasSeguridadService {
       return decoded.map(AlertaSeguridad.fromJson).toList();
     } catch (_) {
       throw const AlertasException('La respuesta de alertas no es válida.');
+    }
+  }
+
+  /// Lista eventos autorizados al operador; no trata notificaciones leídas como incidencias resueltas.
+  Future<List<DetalleEventoSeguridad>> listarEventos() async {
+    final response = await _request('/eventos-seguridad/');
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) throw const FormatException('Lista inválida');
+      return decoded.map((item) {
+        if (item is! Map<String, dynamic> || !_validId(item['id'])) {
+          throw const FormatException('Evento inválido');
+        }
+        final evento = DetalleEventoSeguridad.fromJson(item, item['id'] as String);
+        if (!{'PENDIENTE_REVISION', 'CONFIRMADA', 'EN_ATENCION', 'RESUELTA', 'FALSO_POSITIVO'}.contains(evento.estado)) {
+          throw const FormatException('Estado de evento desconocido');
+        }
+        return evento;
+      }).toList();
+    } catch (_) {
+      throw const AlertasException('La respuesta de incidencias no es válida.');
+    }
+  }
+
+  Future<DetalleEventoSeguridad> obtenerEvento(String id) async {
+    if (!_validId(id)) throw const AlertasException('La incidencia no es válida.');
+    final response = await _request('/eventos-seguridad/$id/');
+    try {
+      return DetalleEventoSeguridad.fromJson(jsonDecode(response.body), id);
+    } catch (_) {
+      throw const AlertasException('La respuesta del evento no es válida.');
     }
   }
 

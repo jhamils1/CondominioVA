@@ -138,7 +138,7 @@ const ObjetoPerdidoList = ({ objetosPerdidos, onEdit, onDelete, onAddNew }) => {
                         Editar
                       </Button>
                       <Button 
-                        variant="cancelar" 
+                        variant="peligro"
                         onClick={() => onDelete(objeto.id)}
                         className="text-xs px-2 py-1 min-w-fit"
                       >

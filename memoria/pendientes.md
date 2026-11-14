@@ -1,5 +1,11 @@
 # Pendientes
 
+2026-11-14: validar con video autorizado la precisión de zona, seguimiento, colores y recepción real por guardias; los eventos de grabación pueden corresponder a hechos antiguos. Falta comprobar el procesamiento y entrega push en el entorno operativo y gestionar duplicados entre análisis repetidos.
+
+2026-11-14: validar visualmente el flujo web con el usuario y, con autorización apropiada, probar aviso de extremo a extremo con datos ficticios y recepción móvil. Alinear el historial móvil en una etapa posterior si el usuario lo solicita: la web incluye confirmadas y en atención; el móvil las conserva activas y muestra descartados en su historial.
+
+2026-11-14: validar visualmente en el Xiaomi la transición derecha y las listas con incidencias reales autorizadas. El móvil consulta estados y detalle; confirmar, descartar o resolver desde la app no forma parte de este cambio.
+
 2026-11-07: validar zona en segunda cámara física y después diseñar procesamiento y eventos asociados a cámara; las zonas nuevas aún no activan IA ni alertas. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
 
 2026-11-07: probar selección y video de una segunda cámara RTSP real autorizada; zonas, eventos y permisos individuales por cámara siguen pendientes. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
@@ -293,3 +299,31 @@ Una consulta oficial de solo lectura confirmó que ese proyecto sí existe y que
 2026-11-14: Falta verificar aviso con app cerrada y eventual prueba con cuenta habitual en entorno autorizado. Recepcion en primer plano y segundo plano, incluido toque real de notificacion, comprobadas con app aislada y cuenta ficticia.
 
 2026-11-14: Pendiente prueba de extremo a extremo con camara y confirmacion humana real; la prueba de app cerrada uso incidencia, placa y guardia ficticios, y la apertura de Mis avisos fue confirmada por el usuario. App separada de prueba conectada por USB al backend local.
+
+2026-11-14: Revisar visualmente el resto de pantallas y flujos con datos autorizados. El lint global conserva 66 errores y cuatro advertencias preexistentes; el lint de archivos cambiados no tuvo errores y mostro dos advertencias preexistentes en dashboard. Dos recorridos antiguos de camaras no finalizaron por expectativas que no coinciden con la interfaz/permisos actuales.
+
+2026-11-14: Pendiente revision visual del resto de botones y flujos con datos autorizados; la comprobacion cubrio pantallas simuladas de usuarios y bloques.
+
+2026-11-14: Investigar cuatro fallos de la suite amplia PostgreSQL temporal en pruebas de dispositivo/FCM: dos esperas de intercepcion, un resultado 503 y un resultado 401 frente a los esperados. La prueba especifica de eliminacion concurrente paso. Verificar visualmente con el entorno habitual despues de reiniciar Django; no se eliminaron roles reales.
+
+2026-11-14: Pendiente confirmacion del usuario de apertura del aviso reenviado y limpieza acordada de recursos de prueba. La incidencia ficticia tiene historial y evidencia; no se elimino a ciegas. Los dos roles personalizados existentes no presentan nombres marcados como prueba. La suite PostgreSQL de nueve casos paso dos ejecuciones tras actualizar las pruebas.
+
+2026-11-14: Pendiente confirmacion del detalle por el usuario y limpieza acordada de recursos ficticios. El historial de la incidencia de prueba sigue conservado y la app requiere el backend local temporal y enlace USB.
+
+2026-11-14: La incidencia ficticia anterior y su evidencia/historial siguen en la base local por trazabilidad; estan marcados como PRUEBA. El usuario confirmo apertura del detalle y ya se retiraron los recursos moviles y desactivaron cuentas ficticias.
+
+2026-11-14: Confirmar metodo de conexion movil al backend antes de actualizar la app instalada; el APK existente contiene una direccion local adicional ausente en el APK generado por defecto. Pendiente revision visual en dispositivo real y pruebas de todas las pantallas con datos autorizados.
+
+2026-11-14: Confirmar con el usuario la apariencia en el telefono y revisar otras pantallas con datos autorizados. El enlace USB 8001 a 8000 requiere backend local disponible y puede necesitar restablecerse al desconectar el telefono.
+
+2026-11-14: El usuario confirmo que el nuevo diseno movil se ve bien; sigue pendiente una revision de todos los flujos con datos autorizados.
+
+2026-11-14: En segundo telefono comprobar manualmente apertura e inicio de sesion; el enlace USB requiere el backend local y puede necesitar restablecerse al reconectar. No se verifico FCM real en ese dispositivo.
+
+2026-11-14: Confirmar apariencia en el telefono conectado. El historial movil representa notificaciones leidas de la cuenta, no el historial completo de incidencias; confirmar/revisar incidentes desde movil no esta implementado. La actualizacion cada 30 segundos depende de pantalla visible, app activa y conexion.
+
+2026-11-14: El segundo Xiaomi tiene el APK que contiene la barra; falta la confirmacion visual del usuario. La actualizacion anterior tenia interfaz anterior y su reporte de instalacion no demostraba que incluyera los cambios.
+
+2026-11-14: Pendiente confirmacion del usuario de que la barra movil instalada cumple lo esperado; la visibilidad de sus cuatro opciones ya se comprobo.
+
+2026-11-14: El usuario confirmo que la barra inferior ya aparece; la revision completa de acciones y flujos reales sigue pendiente.

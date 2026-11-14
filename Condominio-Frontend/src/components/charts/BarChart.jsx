@@ -32,6 +32,7 @@ const BarChart = ({ titulo, labels, datasets, estadisticas }) => {
     plugins: {
       legend: {
         position: 'top',
+        labels: { color: '#c5d8e9' },
       },
       tooltip: {
         callbacks: {
@@ -44,9 +45,12 @@ const BarChart = ({ titulo, labels, datasets, estadisticas }) => {
       },
     },
     scales: {
+      x: { ticks: { color: '#b9cbe0' }, grid: { color: '#24445f' } },
       y: {
         beginAtZero: true,
+        grid: { color: '#24445f' },
         ticks: {
+          color: '#b9cbe0',
           callback: function(value) {
             return 'Bs. ' + value.toLocaleString();
           },

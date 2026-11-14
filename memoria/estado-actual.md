@@ -1,5 +1,11 @@
 # Estado actual
 
+2026-11-14: análisis web de video grabado usa el seguimiento Imou con tolerancia de pérdida, colores compartidos y zona oculta tras dibujar. Registro automático activado por defecto y desactivable: crea eventos etiquetados como grabación con fotograma JPEG y advierte si no había guardias. El análisis y el registro ocurren antes de reproducir el resultado; repetir análisis puede duplicar eventos. Sin validación con video real ni entrega real en esta etapa; [pruebas](pruebas.md).
+
+2026-11-14: web de eventos separa pendientes de revisión, historial de incidencias confirmadas y eventos descartados. Confirmar no las marca como resueltas. Guardia comprueba placa y destinatario antes de preparar y encolar aviso en un solo paso; el resultado distingue cola y entrega. El móvil conserva su separación anterior: confirmadas/en atención siguen activas. Sin cambios de backend ni envíos reales; ver [pruebas](pruebas.md).
+
+2026-11-14: la app móvil abre Ajustes desde la derecha. Para guardias y administradores, Incidencias lista eventos pendientes, confirmados o en atención; Historial muestra resueltos y falsos positivos. El detalle consulta evidencia autorizada cuando existe. Los residentes conservan sus avisos propios. La lista activa se actualiza cada 30 segundos mientras está visible; no es tiempo real continuo. Sin cambios del backend.
+
 2026-11-07: configuraciones de zonas independientes para cámaras adicionales, sin IA ni alertas; migración local aditiva aplicada con respaldo, Imou preservada. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
 
 2026-11-07: selección y vista RTSP para cámaras adicionales activas, con puente independiente de Imou y permisos locales de operador; falta validación con segunda cámara física. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
@@ -432,3 +438,31 @@ No se consultaron valores `.env`, base persistente, configuración real de Fireb
 2026-11-14: Prueba real aislada superada de FCM residente con app en segundo plano: el usuario toco la notificacion Android y el test confirmo apertura del listado y detalle del aviso ficticio. Sin verificar app cerrada.
 
 2026-11-14: Prueba FCM desde backend y PostgreSQL locales con cuenta de propietario ficticia y aplicacion Android separada del mismo codigo, conectada por USB: app cerrada con proceso finalizado, una entrega ENVIADA y usuario confirmo que al tocarla abrio Mis avisos. Se crearon registros ficticios persistentes de residente, guardia, vehiculo e incidencia; no se probo camara ni deteccion real.
+
+2026-11-14: Renovada la apariencia web con paleta oscura del modulo de camaras: inicio, acceso, estructura del panel, componentes compartidos, tablas, formularios, buscadores, dashboard y graficos; menu movil inicia cerrado y se cierra al navegar. Sin cambios de backend. Compilacion correcta; revision visual simulada en Edge de inicio, acceso, dashboard, bloques, formulario, navegacion movil y aislamiento de camaras. Falta revision visual de todas las pantallas con datos reales.
+
+2026-11-14: Ajustados colores de botones web segun accion: crear/guardar y editar en azul, cancelar en gris y eliminar/desactivar/descartar en rojo. Aplicado a componentes compartidos y acciones especificas de roles, notificaciones y zonas de camara. Sin cambios de backend; compilacion, lint selectivo y recorrido visual simulado correctos.
+
+2026-11-14: Implementada eliminacion de roles personalizados sin asignaciones, con confirmacion, validacion y auditoria; los cuatro roles principales siguen protegidos. Sin migraciones ni eliminaciones de datos reales. 105 pruebas SQLite, prueba web aislada y concurrencia especifica en PostgreSQL temporal correctas; cuatro casos de la suite amplia PostgreSQL de dispositivos/FCM fallaron.
+
+2026-11-14: En base PostgreSQL local se valido la sincronizacion de la cuenta de prueba mediante el codigo Django y Firebase real: HTTP 204 en transaccion revertida. Reenvio directo FCM del aviso ficticio al unico dispositivo verificado; Firebase acepto y Android registra notificacion, confirmacion de apertura pendiente. Se actualizaron pruebas PostgreSQL antiguas de dispositivos y sesiones; 9 casos pasan dos veces en instancia temporal.
+
+2026-11-14: Tras recibir el aviso, el usuario indico no conocer el acceso de prueba. Se restablecio unicamente la contrasena de la cuenta ficticia y se inicio la variante Android separada; pantalla local mostro Mis avisos y la incidencia de prueba. No se guardo ni publico la credencial temporal; detalle y limpieza pendientes.
+
+2026-11-14: El usuario confirmo que el aviso ficticio abrio el detalle en Android. Se desactivaron exclusivamente las dos cuentas ficticias, sus perfiles, un dispositivo y dos sesiones; se retiro la app Android de prueba, su enlace USB y el servidor Django temporal. La incidencia, evidencia y su historial ficticios se conservan por trazabilidad; app habitual intacta.
+
+2026-11-14: Actualizada interfaz Flutter con paleta azul de la web, oscuro inicial y opcion clara; acceso adaptable, perfil con accesos por rol y bandejas de avisos/alertas renovados. Contrastadas pantallas auxiliares. 95 pruebas correctas, dos omitidas, analisis sin errores y APK debug generado. La app instalada no se ha actualizado: el APK previo contiene una direccion de conexion adicional distinta a la configuracion predeterminada y debe confirmarse como se conecta.
+
+2026-11-14: Diseno movil Flutter actualizado a paleta azul de la web y modo oscuro por defecto, con opcion clara. 95 pruebas correctas, 2 omitidas, APK debug compilado. Tras confirmar uso USB y documentacion previa, se compilo con API local 127.0.0.1:8001/api y se actualizo la aplicacion habitual con instalacion que conserva datos. APK instalado coincide con el generado y enlace USB 8001 a 8000 activo; revision visual del usuario pendiente.
+
+2026-11-14: El usuario confirmo que el nuevo diseno azul oscuro de la aplicacion Android instalada se ve bien en su telefono.
+
+2026-11-14: Por solicitud del usuario se instalo en el segundo telefono Android el APK debug del condominio con el diseno actualizado. Tras habilitar instalacion USB en Xiaomi, se verifico que el APK instalado coincide con el compilado y que el enlace USB 8001 a 8000 esta activo. No se probo inicio de sesion ni recepcion en este segundo telefono.
+
+2026-11-14: Agregada barra movil por rol con Inicio, incidencias o avisos nuevos, historial de notificaciones leidas y Ajustes con hoja animada; rol personalizado solo ve opciones autorizadas. Bandejas nuevas se consultan cada 30 segundos mientras estan visibles y la app activa; no es video en vivo. Detalle de alerta de guardia incluye ubicacion, camara y prioridad si la API los provee. 100 pruebas correctas, dos omitidas y analisis selectivo limpio. APK USB debug actualizado en el telefono conectado; revision visual del usuario pendiente.
+
+2026-11-14: El usuario informo que no aparecia la barra en el segundo Xiaomi. Se comprobo que el APK anteriormente instalado correspondia a una compilacion con interfaz anterior pese al exito del build. Se recompilo con una revision de compilacion adicional, se verifico que el APK contiene el codigo de navegacion y la direccion USB, y se reinstalo sin borrar datos. Hash instalado y enlace USB comprobados; confirmacion visual pendiente.
+
+2026-11-14: Tras reinstalar el APK corregido se verifico en la pantalla del segundo telefono que son visibles Inicio, Incidencias, Historial y Ajustes. Confirmacion de satisfaccion del usuario pendiente.
+
+2026-11-14: El usuario confirmo que la barra inferior de guardia ya aparece en el segundo Xiaomi tras instalar el APK recompilado.

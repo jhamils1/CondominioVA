@@ -1,3 +1,4 @@
+import '../theme/app_theme.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -31,7 +32,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Reconocimiento Facial"),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: AppTheme.blue,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -102,7 +103,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
                     icon: const Icon(Icons.camera_alt),
                     label: const Text("Cámara"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: AppTheme.blue,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -114,7 +115,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
                     icon: const Icon(Icons.photo_library),
                     label: const Text("Galería"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: AppTheme.blue,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -144,7 +145,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
               min: 0.5,
               max: 1.0,
               divisions: 10,
-              activeColor: Colors.deepPurple,
+              activeColor: AppTheme.blue,
               onChanged: _isProcessing
                   ? null
                   : (value) {
@@ -190,7 +191,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
                   _isProcessing ? "Procesando..." : "Reconocer Persona",
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
+                  backgroundColor: AppTheme.blue,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -210,6 +211,10 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
 
   Widget _buildRecognitionResult() {
     final isSuccess = _recognitionResult!['success'] == true;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final statusColor = isSuccess
+        ? (dark ? Colors.green.shade300 : Colors.green.shade700)
+        : (dark ? Colors.red.shade300 : Colors.red.shade700);
 
     return Card(
       elevation: 4,
@@ -217,9 +222,11 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          color: isSuccess ? Colors.green.shade50 : Colors.red.shade50,
+          color: dark
+              ? (isSuccess ? const Color(0xFF123B37) : const Color(0xFF482932))
+              : (isSuccess ? Colors.green.shade50 : Colors.red.shade50),
           border: Border.all(
-            color: isSuccess ? Colors.green : Colors.red,
+            color: statusColor,
             width: 2,
           ),
         ),
@@ -227,7 +234,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
           children: [
             Icon(
               isSuccess ? Icons.check_circle : Icons.cancel,
-              color: isSuccess ? Colors.green : Colors.red,
+              color: statusColor,
               size: 48,
             ),
             const SizedBox(height: 16),
@@ -236,7 +243,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: isSuccess ? Colors.green : Colors.red,
+                color: statusColor,
               ),
             ),
             const SizedBox(height: 16),
@@ -256,7 +263,7 @@ class _ReconocimientoFacialPageState extends State<ReconocimientoFacialPage> {
               const SizedBox(height: 8),
               Text(
                 "Similitud: ${(_recognitionResult!['data']['similaridad'] * 100).toStringAsFixed(1)}%",
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ] else ...[
               Text(

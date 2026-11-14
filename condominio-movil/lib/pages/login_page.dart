@@ -25,6 +25,13 @@ class _LoginPageState extends State<LoginPage> {
   final _passController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _userController.dispose();
+    _passController.dispose();
+    super.dispose();
+  }
+
   void _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -90,57 +97,70 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (notice is String && notice.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(notice, style: const TextStyle(color: Colors.red)),
+      body: SafeArea(
+        child: LayoutBuilder(builder: (context, constraints) {
+          final theme = Theme.of(context);
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: (constraints.maxHeight - 48).clamp(0, double.infinity)),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          if (notice is String && notice.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Text(notice, style: TextStyle(color: theme.colorScheme.error)),
+                            ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.asset('assets/images/logo_condominio.png', height: 92, width: 92),
+                          ),
+                          const SizedBox(height: 18),
+                          Text('CONDOMINIO', style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.primary, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          Text('Seguridad y administración', textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                          const SizedBox(height: 26),
+                          CustomTextField(
+                            controller: _userController,
+                            label: 'Usuario',
+                            validator: (value) => value!.isEmpty ? 'Ingrese su usuario' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                            controller: _passController,
+                            label: 'Contraseña',
+                            isPassword: true,
+                            validator: (value) => value!.isEmpty ? 'Ingrese su contraseña' : null,
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _login,
+                              child: _isLoading
+                                  ? const SizedBox(height: 20, width: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2))
+                                  : const Text('Ingresar'),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ),
                 ),
-              // 👇 Logo en la parte superior
-              SizedBox(
-                height: 180,
-                width: 180,
-                child: Image.asset("assets/images/logo_condominio.png"),
               ),
-              const SizedBox(height: 32),
-
-              CustomTextField(
-                controller: _userController,
-                label: "Usuario",
-                validator: (value) =>
-                    value!.isEmpty ? "Ingrese su usuario" : null,
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _passController,
-                label: "Contraseña",
-                isPassword: true,
-                validator: (value) =>
-                    value!.isEmpty ? "Ingrese su contraseña" : null,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text("Ingresar"),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }

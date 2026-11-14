@@ -124,6 +124,43 @@ class AccessTests(unittest.TestCase):
         self.auth(self.admin)
         self.assertEqual(self.client.get('/api/roles-personalizados/').status_code, 503)
         self.assertEqual(self.client.post('/api/roles-personalizados/', {'nombre': 'Recepción'}, format='json').status_code, 503)
+        role = RolPersonalizado.objects.create(nombre='Inactivo ficticio')
+        self.assertEqual(self.client.delete(f'/api/roles-personalizados/{role.pk}/').status_code, 503)
+        self.assertTrue(RolPersonalizado.objects.filter(pk=role.pk).exists())
+
+    @override_settings(ROLES_PERSONALIZADOS_ACTIVOS=True)
+    def test_delete_custom_role_requires_admin_and_keeps_builtin_roles(self):
+        role = RolPersonalizado.objects.create(nombre='Temporal ficticio', activo=True)
+        CapacidadRolPersonalizado.objects.create(rol=role, codigo='visitas.consultar_operativas')
+        role_id = role.pk
+        path = f'/api/roles-personalizados/{role_id}/'
+        self.assertEqual(self.client.delete(path).status_code, 401)
+        self.auth(self.guard)
+        self.assertEqual(self.client.delete(path).status_code, 403)
+        self.auth(self.admin)
+        for group in self.groups.values():
+            self.assertEqual(self.client.delete(f'/api/roles/{group.pk}/').status_code, 405)
+        self.assertEqual(self.client.delete(path).status_code, 204)
+        self.assertFalse(RolPersonalizado.objects.filter(pk=role_id).exists())
+        self.assertFalse(CapacidadRolPersonalizado.objects.filter(rol_id=role_id).exists())
+        self.assertTrue(LogEntry.objects.filter(user_id=self.admin.pk, object_id=str(role_id), action_flag=3).exists())
+        self.assertEqual(self.client.delete(path).status_code, 404)
+        self.assertEqual(Group.objects.filter(pk__in=[group.pk for group in self.groups.values()]).count(), 4)
+
+    @override_settings(ROLES_PERSONALIZADOS_ACTIVOS=True)
+    def test_delete_custom_role_rejects_assigned_accounts_and_rolls_back_on_audit_failure(self):
+        self.auth(self.admin)
+        role = RolPersonalizado.objects.create(nombre='Asignado ficticio', activo=False)
+        assignment = AsignacionRolPersonalizado.objects.create(usuario=self.guard, rol=role)
+        path = f'/api/roles-personalizados/{role.pk}/'
+        self.assertEqual(self.client.delete(path).status_code, 409)
+        self.assertTrue(AsignacionRolPersonalizado.objects.filter(pk=assignment.pk).exists())
+        self.assertTrue(RolPersonalizado.objects.filter(pk=role.pk).exists())
+        assignment.delete()
+        with patch('administracion.roles_personalizados.record_action', side_effect=RuntimeError('error simulado')):
+            with self.assertRaises(RuntimeError):
+                self.client.delete(path)
+        self.assertTrue(RolPersonalizado.objects.filter(pk=role.pk).exists())
 
     @override_settings(ROLES_PERSONALIZADOS_ACTIVOS=True)
     def test_custom_role_creation_assignment_and_visit_scope(self):

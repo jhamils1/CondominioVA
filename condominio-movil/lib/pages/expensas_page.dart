@@ -258,7 +258,7 @@ class _ExpensasPageState extends State<ExpensasPage> {
             const SizedBox(height: 16),
             Text(
               'No hay expensas $_filtroSeleccionado'.toLowerCase(),
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),

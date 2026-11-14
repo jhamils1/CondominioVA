@@ -9,5 +9,5 @@ test('el evento describe video grabado y conserva identificador y fecha para rei
   assert.match(e.descripcion, /video grabado/);
   assert.match(e.descripcion, /1:10/);
   assert.match(e.descripcion, /no están verificadas/);
-  assert.match(e.descripcion, /No se adjunta/);
+  assert.match(e.descripcion, /fotograma del hallazgo, no el video completo/);
 });

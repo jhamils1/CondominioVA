@@ -2,7 +2,7 @@
 import unicodedata
 
 from django.conf import settings
-from django.contrib.admin.models import ADDITION, CHANGE
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 from fcm_django.models import FCMDevice
@@ -90,6 +90,22 @@ class ListaRolesPersonalizados(APIView):
 
 class DetalleRolPersonalizado(APIView):
     permission_classes = [AdministratorOnly]
+
+    @transaction.atomic
+    def delete(self, request, rol_id):
+        exigir_activacion()
+        bloqueo_administradores()
+        role = RolPersonalizado.objects.select_for_update().filter(pk=rol_id).first()
+        if not role:
+            return Response({'detail': 'Rol no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        if role.asignaciones.exists():
+            return Response({'detail': 'No se puede eliminar un rol con cuentas asignadas. Reasigna esas cuentas primero.'},
+                            status=status.HTTP_409_CONFLICT)
+        # Las capacidades pertenecen al rol; las asignaciones permanecen protegidas.
+        record_action(request.user, role, 'Eliminación de rol personalizado', DELETION)
+        role.capacidades.all().delete()
+        role.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @transaction.atomic
     def patch(self, request, rol_id):

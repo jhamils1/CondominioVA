@@ -29,7 +29,8 @@ class AvisosResidenteService {
     return data.map((e) {
       if (e is! Map<String, dynamic> || e['id'] is! String ||
           !RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(e['id']) || e['categoria'] is! String ||
-          e['fecha_evento'] is! String || e['evidencia_disponible'] is! bool) {
+          e['fecha_evento'] is! String || e['evidencia_disponible'] is! bool ||
+          (e['leida_en'] != null && e['leida_en'] is! String)) {
         throw const FormatException('Aviso inválido');
       }
       return e;

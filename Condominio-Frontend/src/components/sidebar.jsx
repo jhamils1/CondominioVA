@@ -17,7 +17,7 @@ import {
 } from "react-icons/fa"; 
 import logo from "../assets/images/logo.jpg";
 
-const Sidebar = ({ sidebarOpen }) => {
+const Sidebar = ({ sidebarOpen, onNavigate }) => {
   const [openMenu, setOpenMenu] = useState(null);
   const navigate = useNavigate();
   const { user, endSession } = useSession();
@@ -129,6 +129,7 @@ const Sidebar = ({ sidebarOpen }) => {
   const NavItem = ({ to, icon, children }) => (
     <NavLink
       to={to}
+      onClick={onNavigate}
       className={({ isActive }) =>
         `px-4 py-3 flex items-center space-x-4 rounded-xl transition-all duration-300 ${
           isActive
@@ -193,6 +194,7 @@ const Sidebar = ({ sidebarOpen }) => {
                       <li key={idx}>
                         <NavLink
                           to={sub.path}
+                          onClick={onNavigate}
                           className={({ isActive }) =>
                             `block px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                               isActive
