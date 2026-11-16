@@ -1,5 +1,13 @@
 # Seguridad inteligente
 
+2026-11-16: la web permite seleccionar inferencia local o un servicio propio RF-DETR Nano por HTTPS, por pestaña. Las reglas siguen en el cliente; el monitor independiente conserva su configuración. La infraestructura remota aún no existe ni se ha probado con imágenes reales. Ver `Condominio-Backend/seguridad_vision/IA_POR_INTERNET.md`.
+
+2026-11-16: la regla de piscina advierte por una persona detectada en la zona y ninguna otra detectada en la imagen durante el tiempo configurado. Está disponible en análisis web de video y vistas en vivo, con guardado por cámara de red o por dispositivo local en el navegador. Es una detección orientativa, no identifica edad ni ahogamientos, y no reemplaza vigilancia humana. Probada con fuentes simuladas.
+
+2026-11-15: en la webcam, la consulta puntual de placa captura bajo demanda y la lectura automática requiere activación explícita. Ambas usan Plate Recognizer mediante el flujo existente; no identifican automáticamente al conductor ni vinculan por sí solas una placa a una incidencia.
+
+2026-11-15: la zona y el registro automático de las cámaras de red del catálogo se guardan por cámara y se evalúan en la vista web activa, con evidencia para el flujo de guardias. La webcam guarda su zona y ajustes por dispositivo en el navegador. No constituye un servicio continuo independiente ni se validó aún con cámara adicional física.
+
 2026-11-07: las cámaras de red adicionales admiten configuración de zona e historial propios; esa configuración aún no genera detecciones ni notificaciones. Imou conserva su zona y proceso anteriores. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
 
 2026-11-07: cámaras adicionales RTSP activas pueden seleccionarse para vista local mediante un puente separado; todavía no tienen zonas ni eventos propios. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
@@ -116,3 +124,7 @@ El catálogo puede identificar la Imou existente por coincidencia única de dire
 La navegación web separa **Cámaras → Monitor en vivo** (administrador y guardia), **Cámaras → Gestión de cámaras** (administrador) y **Seguridad → Eventos e incidencias** (administrador). El guardia conserva revisión de eventos en el monitor y por la API. [Detalle](../documentacion/seguridad/MENU_MONITOR_CAMARAS.md).
 
 El catálogo de cámaras de red admite usuario, ruta RTSP y contraseña cifrada que no se devuelve en la API. La conexión RTSP genérica todavía no utiliza estos datos; la Imou conserva su configuración local anterior. [Detalle](../documentacion/seguridad/CREDENCIALES_CAMARAS.md).
+
+2026-11-15: el administrador puede eliminar cámaras del catálogo solo cuando no existan referencias protegidas; se registra auditoría. Las cámaras vinculadas al monitor o a zonas/historial protegido deben conservarse o deshabilitarse. La selección del mosaico es temporal y ocultar una vista no detiene su captura.
+
+2026-11-16: La pasarela remota admite proveedor Roboflow alojado mediante clave privada en entorno. Conexi?n real a?n no verificada.

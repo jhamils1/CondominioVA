@@ -24,6 +24,12 @@ from .firebase_credentials import seleccionar_credencial
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# El destino remoto es configuración privada del servidor, nunca del navegador.
+VISION_REMOTA_URL = config('VISION_REMOTA_URL', default='')
+VISION_REMOTA_TOKEN = config('VISION_REMOTA_TOKEN', default='')
+VISION_REMOTA_PROVEEDOR = config('VISION_REMOTA_PROVEEDOR', default='propio')
+ROBOFLOW_API_KEY = config('ROBOFLOW_API_KEY', default='')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/

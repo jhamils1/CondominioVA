@@ -1,0 +1,12 @@
+.resultado-placa { margin-top: 14px; padding: 16px; color: #dceafa; background: #0a1d32; border: 1px solid #38516a; border-left: 3px solid #d6a643; border-radius: 8px; }
+.resultado-placa--coincide { border-left-color: #2ec584; }
+.resultado-placa-cabecera { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }
+.resultado-placa-cabecera h4 { margin: 0; color: #f4f8ff; font-size: 14px; font-weight: 700; }
+.resultado-placa-punto { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #f1bc55; }
+.resultado-placa--coincide .resultado-placa-punto { background: #4bd99a; }
+.resultado-placa-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin: 0; }
+.resultado-placa-datos dt { color: #9eb5ca; font-size: 11px; font-weight: 600; }
+.resultado-placa-datos dd { margin: 4px 0 0; color: #eef6ff; font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.resultado-placa-principal dd { color: #a9e2ff; font-size: 17px; letter-spacing: .06em; }
+.resultado-placa-vinculo { margin: 12px 0 0; font-size: 12px; }
+.resultado-placa-nota { margin: 13px 0 0; padding-top: 11px; color: #a9bed1; border-top: 1px solid #29445c; font-size: 12px; line-height: 1.45; }

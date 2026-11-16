@@ -34,24 +34,15 @@ Abre la dirección que muestra Vite, normalmente `http://localhost:5173`. El fro
 
 ## Cámaras e IA local
 
-Con el backend y frontend iniciados, ejecuta desde la **raíz del proyecto**:
-
-```powershell
-# Puente para la cámara Imou
-.\Condominio-Backend\seguridad_vision\.venv\Scripts\python.exe .\Condominio-Backend\seguridad_vision\imou_local.py
-```
+Al iniciar Django con `manage.py runserver`, los puentes locales de Imou y de cámaras de catálogo se inician automáticamente si está preparado el entorno de visión. Para utilizar la IA local, ejecuta por separado desde la **raíz del proyecto**:
 
 ```powershell
 # IA local, en otra terminal
 .\Condominio-Backend\seguridad_vision\.venv\Scripts\python.exe .\Condominio-Backend\seguridad_vision\camara_local.py
 ```
 
-Para otras cámaras de red registradas, inicia también este puente en otra terminal:
-
-```powershell
-.\Condominio-Backend\seguridad_vision\.venv\Scripts\python.exe .\Condominio-Backend\seguridad_vision\camaras_catalogo.py
-```
-
-Entra como administrador a **Cámaras → Gestión de cámaras** para configurarlas y a **Cámaras → Monitor en vivo** para verlas. La cámara debe ser accesible desde la PC por Wi‑Fi o Ethernet. La lectura de placas usa Plate Recognizer y requiere internet y un token configurado. Los servicios se inician manualmente; `Ctrl+C` los detiene.
+Entra como administrador a **Cámaras → Gestión de cámaras** para configurarlas y a **Cámaras → Monitor en vivo** para verlas. La cámara debe ser accesible desde la PC por Wi‑Fi o Ethernet. La lectura de placas usa Plate Recognizer y requiere internet y un token configurado. La supervisión de puentes se aplica al servidor local `runserver`; en producción necesitan una configuración de servicios propia. La IA local se inicia y detiene por separado.
 
 La lectura automática, las alertas para cámaras adicionales y la notificación móvil al residente aún requieren pruebas e integración completas. Más información en [documentación](documentacion/README.md) y [pendientes](memoria/pendientes.md).
+
+La web también permite seleccionar un procesador de IA por internet. Requiere un servidor propio configurado; no hay ningún servicio contratado o activado por defecto. Consulta [IA por internet](Condominio-Backend/seguridad_vision/IA_POR_INTERNET.md).

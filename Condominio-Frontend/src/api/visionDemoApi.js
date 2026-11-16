@@ -6,8 +6,18 @@ client.interceptors.request.use(config => {
   return config;
 });
 
-export async function estadoCamaraDemo(signal) {
-  return (await client.get('vision-camara/estado/', { signal })).data;
+export function procesadorVision() {
+  try { return sessionStorage.getItem('vision-procesador') === 'remoto' ? 'remoto' : 'local'; }
+  catch { return 'local'; }
+}
+
+export function guardarProcesadorVision(modo) {
+  if (!['local', 'remoto'].includes(modo)) throw new Error('Procesador inválido');
+  sessionStorage.setItem('vision-procesador', modo);
+}
+
+export async function estadoCamaraDemo(signal, procesador = procesadorVision()) {
+  return (await client.get('vision-camara/estado/', { signal, params: { procesador } })).data;
 }
 
 export async function camarasMonitor(signal) {
@@ -20,6 +30,14 @@ export async function obtenerZonaCamara(id, signal) {
 
 export async function guardarZonaCamara(id, datos) {
   return (await client.put(`vision-camaras/${id}/zona/`, datos)).data;
+}
+
+export async function obtenerReglaPiscina(fuente, signal) {
+  return (await client.get(`vision-piscina/${fuente}/`, { signal })).data;
+}
+
+export async function guardarReglaPiscina(fuente, datos) {
+  return (await client.put(`vision-piscina/${fuente}/`, datos)).data;
 }
 
 export async function fotogramaCamara(id, signal) {
@@ -57,5 +75,5 @@ export async function fotogramaImou(signal) {
 export async function analizarFotograma(imagen, signal) {
   const datos = new FormData();
   datos.append('imagen', imagen, 'fotograma.jpg');
-  return (await client.post('vision-camara/analizar/', datos, { signal })).data;
+  return (await client.post('vision-camara/analizar/', datos, { signal, params: { procesador: procesadorVision() } })).data;
 }

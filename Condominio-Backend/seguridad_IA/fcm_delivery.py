@@ -17,6 +17,20 @@ MAX_INTENTOS = 5
 RESERVA_SEGUNDOS = 300
 
 
+def texto_notificacion(notification):
+    """Texto fijo y prudente, sin información personal en la pantalla bloqueada."""
+    if notification.tipo == 'AVISO_RESIDENTE':
+        return 'Seguridad del condominio', 'Tienes un aviso del condominio.'
+    if notification.tipo == 'CONFIRMADA':
+        return 'Seguridad del condominio', 'Hay una incidencia confirmada.'
+    categoria = notification.evento.categoria.strip().casefold()
+    if categoria == 'posible persona sola cerca de piscina':
+        return 'Alerta de piscina', 'Posible persona sola cerca de la piscina. Revisa la incidencia.'
+    if categoria == 'posible estacionamiento en zona prohibida':
+        return 'Alerta de estacionamiento', 'Posible vehículo estacionado en zona prohibida. Revisa la incidencia.'
+    return 'Seguridad del condominio', 'Hay una alerta para revisar.'
+
+
 def token_hash(value):
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
 
@@ -75,7 +89,7 @@ def procesar_reserva(delivery_id, reservation_id):
             not delivery.reserva_hasta or delivery.reserva_hasta <= timezone.now()):
         return 'RESERVA_VENCIDA'
     notification, device = delivery.notificacion, delivery.dispositivo
-    roles = {'REVISION': ('guardia',), 'CONFIRMADA': ('administrador',), 'AVISO_RESIDENTE': ('propietario', 'inquilino')}
+    roles = {'REVISION': ('guardia', 'administrador'), 'CONFIRMADA': ('administrador',), 'AVISO_RESIDENTE': ('propietario', 'inquilino')}
     roles_permitidos = roles.get(notification.tipo, ())
     es_residente = notification.tipo == 'AVISO_RESIDENTE'
     obsolete = notification.tipo == 'REVISION' and notification.evento.estado != EventoSeguridad.PENDIENTE
@@ -84,10 +98,10 @@ def procesar_reserva(delivery_id, reservation_id):
             (es_residente and not aviso_residente_valido(notification)) or
             token_hash(device.registration_id) != delivery.token_hash):
         return finalizar(delivery_id, reservation_id, 'CANCELADA', 'DESTINATARIO_NO_VALIDO')
+    titulo, cuerpo = texto_notificacion(notification)
     message = messaging.Message(
         token=device.registration_id,
-        notification=messaging.Notification(title='Seguridad del condominio',
-            body='Tienes un aviso del condominio.' if es_residente else ('Hay una alerta para revisar.' if notification.tipo == 'REVISION' else 'Hay una incidencia confirmada.')),
+        notification=messaging.Notification(title=titulo, body=cuerpo),
         data=({'tipo': 'aviso_residente', 'notificacion_id': str(notification.pk)} if es_residente else
               {'tipo': 'seguridad', 'notificacion_id': str(notification.pk), 'evento_id': str(notification.evento_id)}),
         android=messaging.AndroidConfig(notification=messaging.AndroidNotification(tag=str(notification.pk))),

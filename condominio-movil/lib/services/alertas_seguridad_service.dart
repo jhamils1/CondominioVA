@@ -75,7 +75,7 @@ class AlertasSeguridadService {
   AlertasSeguridadService({this.client, Future<String?> Function()? readToken})
       : readToken = readToken ?? AuthService.getAccessToken;
 
-  Future<http.Response> _request(String path, {bool post = false}) async {
+  Future<http.Response> _request(String path, {bool post = false, bool confirmacion = false}) async {
     try {
       final token = await readToken();
       if (token == null || token.isEmpty) {
@@ -92,6 +92,9 @@ class AlertasSeguridadService {
         throw const AlertasException('No tienes acceso a esta información.');
       }
       if (response.statusCode == 503) throw const AlertasException('Las alertas de seguridad no están habilitadas.');
+      if (confirmacion && response.statusCode == 400) {
+        throw const AlertasException('La incidencia pudo ser revisada por otra persona. Actualiza para comprobar su estado.');
+      }
       if (response.statusCode != 200) throw const AlertasException('No se pudo consultar la información.');
       return response;
     } on AlertasException {
@@ -143,6 +146,22 @@ class AlertasSeguridadService {
     } catch (_) {
       throw const AlertasException('La respuesta del evento no es válida.');
     }
+  }
+
+  Future<void> confirmarEvento(String id) async {
+    if (!_validId(id)) throw const AlertasException('La incidencia no es válida.');
+    final response = await _request('/eventos-seguridad/$id/confirmar/', post: true, confirmacion: true);
+    try {
+      final evento = DetalleEventoSeguridad.fromJson(jsonDecode(utf8.decode(response.bodyBytes)), id);
+      if (evento.estado != 'CONFIRMADA') throw const FormatException('Estado inesperado');
+    } catch (_) {
+      throw const AlertasException('No se pudo comprobar la confirmación. Actualiza para revisar el estado.');
+    }
+  }
+
+  Future<void> retirarHistorial(String id) async {
+    if (!_validId(id)) throw const AlertasException('La incidencia no es válida.');
+    await _request('/eventos-seguridad/$id/retirar-historial/', post: true);
   }
 
   Future<DetalleEventoSeguridad> abrir(AlertaSeguridad alerta) async {

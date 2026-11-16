@@ -27,6 +27,7 @@ class ZonaCamara(models.Model):
     camara = models.OneToOneField('camaras.Camara', on_delete=models.PROTECT, related_name='zona_seguridad')
     puntos = models.JSONField(default=list)
     segundos = models.PositiveSmallIntegerField(default=5)
+    automatico = models.BooleanField(default=False)
     actualizado = models.DateTimeField(default=timezone.now)
     actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
@@ -35,6 +36,25 @@ class HistorialZonaCamara(models.Model):
     camara = models.ForeignKey('camaras.Camara', on_delete=models.PROTECT)
     puntos = models.JSONField()
     segundos = models.PositiveSmallIntegerField()
+    automatico = models.BooleanField(default=False)
+    fecha = models.DateTimeField(default=timezone.now)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
+class ReglaPiscina(models.Model):
+    fuente = models.CharField(max_length=64, primary_key=True)
+    puntos = models.JSONField(default=list)
+    segundos = models.PositiveSmallIntegerField(default=10)
+    automatico = models.BooleanField(default=False)
+    actualizado = models.DateTimeField(default=timezone.now)
+    actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
+class HistorialReglaPiscina(models.Model):
+    fuente = models.CharField(max_length=64)
+    puntos = models.JSONField(default=list)
+    segundos = models.PositiveSmallIntegerField(default=10)
+    automatico = models.BooleanField(default=False)
     fecha = models.DateTimeField(default=timezone.now)
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 

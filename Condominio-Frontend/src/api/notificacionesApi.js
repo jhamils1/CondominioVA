@@ -8,6 +8,7 @@ export async function listarNotificaciones() { return (await client.get('notific
 export async function leerNotificacion(id) { return (await client.post(`notificaciones-seguridad/${id}/leer/`)).data; }
 export async function obtenerEvento(id) { return (await client.get(`eventos-seguridad/${id}/`)).data; }
 export async function revisarEvento(id, accion, motivo) { return (await client.post(`eventos-seguridad/${id}/${accion}/`, { motivo })).data; }
+export async function retirarHistorialEvento(id) { await client.post(`eventos-seguridad/${id}/retirar-historial/`); }
 export async function registrarPlacaEvento(id, placa) { return (await client.post(`eventos-seguridad/${id}/registrar-placa/`, { placa })).data; }
 export async function reconocerPlacaEvidencia(id) { return (await client.post(`eventos-seguridad/${id}/reconocer-placa-evidencia/`, {}, { timeout: 45000 })).data; }
 export async function posiblesLecturasEntrada(id) { return (await client.get(`eventos-seguridad/${id}/posibles-lecturas-entrada/`)).data; }

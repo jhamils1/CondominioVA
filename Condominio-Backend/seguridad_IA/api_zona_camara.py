@@ -1,4 +1,4 @@
-"""Zonas de cámaras del catálogo, sin activar monitoreo ni notificaciones."""
+"""Configuración independiente de las cámaras del catálogo."""
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -15,6 +15,7 @@ from .models import ZonaCamara, HistorialZonaCamara
 
 def datos_zona(zona):
     return {'puntos': zona.puntos if zona else [], 'segundos': zona.segundos if zona else 5,
+            'automatico': zona.automatico if zona else False,
             'version': zona.actualizado.isoformat() if zona else None}
 
 
@@ -35,9 +36,12 @@ class ConfiguracionZonaCamara(APIView):
     def put(self, request, pk):
         if not is_admin(request.user):
             return Response({'detail': 'Solo el administrador puede configurar zonas.'}, status=403)
-        if not isinstance(request.data, dict) or set(request.data) != {'puntos', 'segundos', 'version'}:
+        if not isinstance(request.data, dict) or not {'puntos', 'segundos', 'version'} <= set(request.data) or set(request.data) - {'puntos', 'segundos', 'version', 'automatico'}:
             return Response({'detail': 'Configuración inválida.'}, status=400)
         puntos, segundos, version = request.data['puntos'], request.data['segundos'], request.data['version']
+        automatico = request.data.get('automatico')
+        if ('automatico' in request.data and not isinstance(automatico, bool)) or (automatico and not puntos):
+            return Response({'detail': 'El registro automático requiere una zona válida.'}, status=400)
         if not isinstance(puntos, list) or (puntos and not validar_zona(puntos)):
             return Response({'detail': 'La zona debe ser un polígono válido.'}, status=400)
         if isinstance(segundos, bool) or not isinstance(segundos, int) or not 2 <= segundos <= 120:
@@ -51,10 +55,12 @@ class ConfiguracionZonaCamara(APIView):
             zona = ZonaCamara.objects.filter(camara=camara).first()
             if version != (zona.actualizado.isoformat() if zona else None):
                 return Response({'detail': 'La configuración cambió. Recarga antes de guardar.'}, status=409)
+            if automatico is None:
+                automatico = bool(puntos and zona and zona.automatico)
             ahora = timezone.now()
             zona, _ = ZonaCamara.objects.update_or_create(camara=camara, defaults={
-                'puntos': puntos, 'segundos': segundos, 'actualizado': ahora, 'actualizado_por': request.user})
-            HistorialZonaCamara.objects.create(camara=camara, puntos=puntos, segundos=segundos, fecha=ahora, actor=request.user)
+                'puntos': puntos, 'segundos': segundos, 'automatico': automatico, 'actualizado': ahora, 'actualizado_por': request.user})
+            HistorialZonaCamara.objects.create(camara=camara, puntos=puntos, segundos=segundos, automatico=automatico, fecha=ahora, actor=request.user)
         respuesta = Response(datos_zona(zona))
         respuesta['Cache-Control'] = 'private, no-store'
         return respuesta

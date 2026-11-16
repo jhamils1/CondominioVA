@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { scanPlate } from '../api/recognitionApi.jsx';
 import { crearControlLectura } from '../vision/lecturaAutomatica.js';
+import ResultadoPlaca from './ResultadoPlaca.jsx';
 
 export default function LecturaAutomaticaImou({ muestraAnalizada, cameraId = 'Imou' }) {
   const [activa, setActiva] = useState(false);
@@ -29,13 +30,13 @@ export default function LecturaAutomaticaImou({ muestraAnalizada, cameraId = 'Im
     return () => { vigente = false; controller.abort(); clearInterval(timer); };
   }, [activa, muestraAnalizada, cameraId]);
   return <section className="imou-notice">
-    <h4>Lectura automática de placas de prueba</h4>
-    <p>Al activarla se enviarán fotogramas a Plate Recognizer cuando la IA detecte un único vehículo; mientras esté activa espera al menos 30 segundos entre consultas. Requiere internet, puede generar consumo del servicio y solo funciona con esta vista y la IA activas.</p>
+    <h4>Lectura automática</h4>
+    <p>Para esta sesión; requiere IA e internet. Puede consumir el servicio.</p>
     <button type="button" className="imou-secondary" onClick={() => { setActiva(!activa); setResultado(null); setMensaje(''); }}>
       {activa ? 'Detener lectura automática' : 'Activar lectura automática'}
     </button>
     {mensaje && <p role="status">{mensaje}</p>}
-    {resultado?.plate && <p>Placa sugerida: <strong>{resultado.plate}</strong>. {resultado.coincidencia_ambigua ? 'Coincidencia ambigua.' : resultado.match ? 'Hay un vehículo registrado coincidente.' : 'Sin coincidencia registrada.'} No confirma identidad ni está vinculada automáticamente a una incidencia.</p>}
-    {resultado && !resultado.plate && <p>No se pudo leer una placa en la imagen.</p>}
+    <ResultadoPlaca resultado={resultado} />
+    {resultado && <p>Esta lectura no se vincula automáticamente a una incidencia.</p>}
   </section>;
 }

@@ -1,15 +1,95 @@
 .seguridad-dashboard { color: #e7eff9; max-width: 1700px; margin: 0 auto; }
+.seguridad-zona-actualizacion { min-height: 100px; }
+.seguridad-refresh-status { text-align: center; padding: 10px; color: #8dd7fa; font-size: 13px; }
 .seguridad-dashboard .imou-panel { padding: 20px; border: 1px solid #1e3d5e; border-radius: 10px; background: #07182d; }
 .seguridad-dashboard .imou-panel button { margin: 8px 8px 8px 0; padding: 10px 16px; border: 1px solid #33729e; border-radius: 6px; background: #123758; color: #fff; }
 .seguridad-dashboard .imou-panel button:disabled { opacity: .5; }
-.camara-catalogo-visor { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
-.camara-catalogo-visor img { display: block; max-width: 100%; height: auto; }
+.camara-catalogo-visor { position: relative; display: block; width: 100%; line-height: 0; }
+.camara-catalogo-visor img { display: block; width: 100%; height: auto; }
+.camara-catalogo-visor:fullscreen { display: flex; align-items: center; justify-content: center; background: #000; }
+.camara-catalogo-visor:fullscreen img { max-height: 100vh; object-fit: contain; }
+.seguridad-dashboard .imou-panel .camara-catalogo-expand { position: absolute; right: 9px; bottom: 9px; margin: 0; padding: 8px; line-height: 1; background: rgb(0 8 18 / 80%); }
 .seguridad-dashboard [hidden] { display: none !important; }
 .seguridad-heading { display: flex; align-items: center; gap: 13px; margin: -24px -24px 24px; padding: 22px 26px; background: linear-gradient(105deg, #081b33 0%, #0b2848 65%, #092139 100%); border-bottom: 1px solid #1b3c60; }
 .seguridad-heading-icon { display: grid; place-items: center; width: 43px; height: 43px; flex: 0 0 43px; border-radius: 11px; background: #0c355c; color: #32baff; font-size: 19px; }
 .seguridad-heading h2 { color: #f5f9ff; font-weight: 700; font-size: clamp(19px, 2vw, 24px); line-height: 1.2; margin: 3px 0 0; }
 .seguridad-heading p, .seguridad-eyebrow { color: #7ea3c6; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
 .seguridad-heading-mark { margin-left: auto; color: #2f739f; font-size: 24px; opacity: .55; }
+.seguridad-heading-configuracion { background: linear-gradient(105deg, #10223a 0%, #113d51 100%); border-bottom-color: #267b8d; }
+.seguridad-heading-configuracion .seguridad-heading-icon { background: #125366; color: #82e6e2; }
+.seguridad-configuracion-descripcion { margin-top: 6px; color: #a9c6d7; font-size: 13px; }
+.seguridad-source-label { margin: 0 0 8px; color: #d2e3f2; font-size: 13px; font-weight: 700; }
+.seguridad-procesador { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; padding: 14px; border: 1px solid #295476; border-radius: 8px; background: #0d2942; }
+.seguridad-procesador h3 { margin: 0; color: #eef8ff; font-size: 15px; font-weight: 700; }
+.seguridad-procesador p { margin: 0; color: #aec8dc; font-size: 12px; }
+.seguridad-procesador > p { flex-basis: 100%; }
+.seguridad-procesador label { display: flex; align-items: center; gap: 8px; color: #dceefa; font-size: 13px; }
+.seguridad-procesador select { padding: 8px; color: #edf8ff; background: #071b30; border: 1px solid #456b88; border-radius: 5px; }
+.selector-incidencia { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 12px; color: #d7eafa; font-weight: 700; }
+.selector-incidencia select { max-width: 100%; padding: 9px 12px; color: #edf8ff; background: #071b30; border: 1px solid #456b88; border-radius: 6px; }
+.seguridad-camara-seleccionada { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 20px; margin: 0 0 14px; padding: 12px 15px; border: 1px solid #2a627b; border-radius: 8px; background: #0b293e; }
+.seguridad-camara-seleccionada div { display: flex; flex-direction: column; gap: 2px; }
+.seguridad-camara-seleccionada span { color: #82c4d5; font-size: 10px; font-weight: 700; letter-spacing: .09em; }
+.seguridad-camara-seleccionada strong { color: #f2f8ff; font-size: 15px; }
+.seguridad-camara-seleccionada small, .seguridad-camara-seleccionada p { color: #b4cbd9; font-size: 12px; }
+.seguridad-camara-seleccionada p { margin: 0; align-self: center; }
+.configuracion-placas-camara h4 { margin: 10px 0 4px; color: #e7f6ff; font-weight: 700; }
+.configuracion-placas-camara > p { margin: 0 0 8px; color: #afc7d8; font-size: 12px; }
+.configuracion-placas-camara { margin-top: 20px; padding-top: 16px; border-top: 1px solid #31516c; }
+.configuracion-placas-camara .imou-notice { margin-top: 12px; }
+.configuracion-guardar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #31516c; }
+.configuracion-guardar p { margin: 0; color: #a9bed1; font-size: 12px; }
+.piscina-estado { position: absolute; z-index: 4; left: 8px; bottom: 8px; max-width: calc(100% - 16px); padding: 5px 8px; border-radius: 5px; background: #402c11eF; color: #fff3c8; font-size: 12px; line-height: 1.3; }
+.seguridad-mosaico { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; align-items: stretch; }
+.seguridad-mosaico > [hidden] { display: none; }
+.seguridad-mosaico > .mosaico-camara-ampliada { grid-column: span 2; }
+@media (max-width: 900px) { .seguridad-mosaico > .mosaico-camara-ampliada { grid-column: 1 / -1; } }
+.seguridad-mosaico .imou-monitor { margin: 0; }
+.seguridad-mosaico .imou-camera-card, .seguridad-dashboard .seguridad-mosaico .camara-mosaico-catalogo { position: relative; overflow: hidden; padding: 0; border: 1px solid #284966; border-radius: 5px; background: #020b19; }
+.seguridad-mosaico .imou-card-heading, .seguridad-mosaico .camara-catalogo-cabecera { display: flex; align-items: center; gap: 6px; height: 36px; margin: 0; padding: 4px 7px; background: #11283d; }
+.seguridad-mosaico .imou-card-title, .seguridad-mosaico .camara-catalogo-cabecera h3 { min-width: 0; margin-right: auto; }
+.seguridad-mosaico .imou-card-title h3, .seguridad-mosaico .camara-catalogo-cabecera h3 { overflow: hidden; color: #fff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.seguridad-mosaico .imou-card-title p, .seguridad-mosaico .imou-card-title .imou-icon { display: none; }
+.seguridad-mosaico .imou-live-badge { font-size: 0; padding: 4px; }
+.seguridad-mosaico .imou-stage { height: auto; min-height: 0; aspect-ratio: 16 / 9; border-radius: 0; }
+.seguridad-mosaico .imou-vista-directo, .seguridad-mosaico .imou-analysis-slot, .seguridad-mosaico .imou-vista-ia { height: 100%; }
+.seguridad-mosaico .imou-vista-directo img, .seguridad-mosaico .imou-vista-ia canvas { width: 100%; height: 100%; object-fit: contain; }
+.seguridad-mosaico .imou-placeholder { min-height: 0; height: 100%; }
+.seguridad-mosaico .imou-side-buttons, .seguridad-mosaico .camara-catalogo-acciones { display: flex; align-items: center; flex: none; gap: 4px; margin: 0; }
+.seguridad-mosaico .imou-side-buttons button, .seguridad-dashboard .seguridad-mosaico .camara-catalogo-acciones button { min-height: 27px; margin: 0; padding: 0 7px; font-size: 11px; }
+.seguridad-mosaico .imou-side-buttons button:disabled, .seguridad-mosaico .imou-camera-message, .seguridad-mosaico .imou-camera-caption, .seguridad-mosaico .imou-expand { display: none; }
+.seguridad-mosaico .camara-mosaico-catalogo > p { display: none; }
+.seguridad-mosaico .camara-mosaico-catalogo > .camara-catalogo-aviso { display: block; padding: 6px 8px; color: #ffe3af; font-size: 12px; }
+.seguridad-mosaico .camara-catalogo-acciones button:disabled { display: none; }
+.seguridad-mosaico .camara-catalogo-visor { height: auto; aspect-ratio: 16 / 9; background: #020b19; }
+.seguridad-mosaico .camara-catalogo-visor img { position: absolute; width: 100%; height: 100%; object-fit: contain; }
+.camara-catalogo-analisis { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.mosaico-sin-imagen { height: 100%; display: grid; place-items: center; color: #829bb0; font-size: 12px; }
+.seguridad-dashboard .seguridad-mosaico .mosaico-ampliar { display: inline-grid; place-items: center; width: 27px; height: 27px; min-height: 27px; flex: none; margin: 0; padding: 0; color: #dff3ff; background: #193d58; border: 1px solid #49728b; border-radius: 4px; }
+.seguridad-dashboard .seguridad-mosaico .mosaico-ampliar:hover { background: #286086; }
+.seguridad-dashboard .seguridad-mosaico .camara-local-compacta { overflow: hidden; margin: 0; padding: 0; border: 1px solid #284966; border-radius: 5px; background: #020b19; }
+.seguridad-mosaico .camara-local-barra { display: flex; align-items: center; gap: 4px; min-height: 36px; padding: 4px 7px; background: #11283d; }
+.seguridad-mosaico .camara-local-barra h3 { flex: 1; margin: 0; font-size: 12px; }
+.seguridad-mosaico .camara-local-barra button:not(.mosaico-ampliar) { min-height: 27px; margin: 0; padding: 0 7px; font-size: 11px; }
+.seguridad-mosaico .camara-local-barra button:disabled { display: none; }
+.seguridad-mosaico .camara-local-compacta .camara-zona-marco { margin: 0; aspect-ratio: 16 / 9; }
+.seguridad-mosaico .camara-local-compacta .camara-zona-imagen { width: 100%; height: 100%; object-fit: contain; }
+.camara-local-placeholder { display: grid; place-items: center; aspect-ratio: 16 / 9; color: #829bb0; font-size: 12px; }
+.camara-local-dispositivo { display: block; padding: 5px 8px; font-size: 12px; }
+.seguridad-agregar-camara { min-height: 190px; border: 1px dashed #356382; border-radius: 5px; color: #a8c9df; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; background: #081a2c; }
+.seguridad-agregar-camara:hover { color: #e7f5ff; border-color: #4bb6e8; background: #0d2840; }
+.seguridad-agregar-camara svg { font-size: 22px; color: #39baf0; }
+.seguridad-agregar-camara span { font-weight: 700; }
+.seguridad-agregar-camara small { color: #8caac2; }
+.seguridad-selector-fondo { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: #000a; }
+.seguridad-selector { width: min(100%, 480px); max-height: 85vh; overflow: auto; padding: 20px; border: 1px solid #37668a; border-radius: 10px; background: #0a1d35; color: #ecf6ff; box-shadow: 0 16px 45px #0008; }
+.seguridad-selector h3 { font-size: 18px; font-weight: 700; }
+.seguridad-selector p { margin: 10px 0; color: #a9bfd2; font-size: 13px; }
+.seguridad-selector label { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #25425e; }
+.seguridad-selector-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; margin-top: 16px; }
+.seguridad-selector-acciones a { margin-right: auto; color: #8dd8ff; }
+.seguridad-selector-acciones button { padding: 8px 12px; border: 1px solid #527894; border-radius: 5px; background: #19344e; color: white; }
+.seguridad-selector-acciones .seguridad-primary { background: #0870a5; border-color: #149cdb; }
 .seguridad-topline, .seguridad-section-title { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 0 0 15px; }
 .seguridad-topline h3, .seguridad-section-title h3 { color: #f2f7ff; font-size: 18px; font-weight: 700; margin-top: 3px; }
 .seguridad-back, .seguridad-configuration-button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #365f80; border-radius: 7px; padding: 9px 12px; color: #d5e9f8; background: #102b46; font-size: 12px; font-weight: 700; }

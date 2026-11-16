@@ -51,6 +51,11 @@ def distribuir_revision(evento_id):
     if evento.estado != EventoSeguridad.PENDIENTE:
         raise TransicionInvalida('El evento ya fue revisado.')
     count = crear_notificaciones(evento, 'guardia', 'REVISION')
+    # El administrador también recibe el aviso preliminar de la Imou;
+    # sigue siendo un evento pendiente hasta que el guardia lo confirme.
+    if (evento.camara == 'Imou (vista local)' and
+            evento.categoria == 'Posible estacionamiento en zona prohibida'):
+        crear_notificaciones(evento, 'administrador', 'REVISION')
     evento.sin_guardias = count == 0
     evento.save(update_fields=['sin_guardias'])
     return count
@@ -72,8 +77,9 @@ def registrar_evento(actor, evento_id, datos):
 
 @transaction.atomic
 def revisar_evento(actor, evento_id, confirmar, motivo=''):
-    if effective_role(actor) != 'guardia':
-        raise PermissionError('Solo un guardia activo puede revisar el evento.')
+    rol = effective_role(actor)
+    if rol != 'guardia' and not (confirmar and rol == 'administrador'):
+        raise PermissionError('No tienes permiso para revisar el evento.')
     evento = EventoSeguridad.objects.select_for_update().get(pk=evento_id)
     if evento.estado != EventoSeguridad.PENDIENTE:
         raise TransicionInvalida('El evento ya fue revisado.')

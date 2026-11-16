@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import axios from '../api/client.js';
 import './CamarasPage.css';
-import FuncionesPropuestasCamara from '../components/FuncionesPropuestasCamara.jsx';
 import { posibleDuplicada } from './camarasDuplicadas.js';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL });
@@ -27,6 +26,7 @@ export default function CamarasPage() {
   const [probando, setProbando] = useState(null);
   const [incorporando, setIncorporando] = useState(false);
   const [vinculando, setVinculando] = useState(false);
+  const [eliminando, setEliminando] = useState(null);
   const [pruebas, setPruebas] = useState({});
   const controladorPrueba = useRef(null);
   const [mostrarNueva, setMostrarNueva] = useState(false);
@@ -61,6 +61,18 @@ export default function CamarasPage() {
     return () => { vigente = false; };
   }, []);
   function nuevo() { limpiarAcceso(); setForm(inicial); setEditando(null); setError(''); setAviso(''); setAbierto(true); }
+  async function eliminar(camara) {
+    if (eliminando !== null || probando !== null) return;
+    if (!window.confirm(`¿Eliminar «${camara.nombre}» del catálogo? La operación no se puede deshacer.`)) return;
+    setEliminando(camara.id); setError(''); setAviso('');
+    try {
+      await api.delete(`camaras/${camara.id}/`);
+      setCamaras(actual => actual.filter(c => c.id !== camara.id));
+      setAviso('Cámara eliminada del catálogo.');
+    } catch (err) {
+      setError(err.response?.status === 409 ? err.response.data.detail : 'No se pudo eliminar la cámara. Vuelve a intentarlo.');
+    } finally { setEliminando(null); }
+  }
   async function incorporarImou() {
     if (incorporando) return;
     setIncorporando(true); setError(''); setAviso('');
@@ -232,12 +244,15 @@ export default function CamarasPage() {
         {c.vinculo_imou === 'ambiguo' && <p>Hay varios registros con la misma IP y puerto; corrígelos para identificar la Imou.</p>}
         {c.vinculo_imou === 'deshabilitada' && <p>El registro coincide con la Imou local, pero está deshabilitado en el catálogo.</p>}
         {pruebas[c.id] && <p role="status">{pruebas[c.id]}</p>}
-        <FuncionesPropuestasCamara camara={c} api={api} />
       </div><div><span>{c.activa ? 'Habilitada en catálogo' : 'Deshabilitada en catálogo'}</span>
         {c.activa && c.tipo === 'RED' && (c.vinculo_imou === 'vinculada' || c.vinculo_imou === 'sin_vinculo') && <button onClick={() => probar(c)} disabled={probando !== null}>{probando === c.id ? 'Comprobando…' : 'Probar conexión'}</button>}
-        {c.vinculo_imou === 'vinculada' && <Link to="/admin/monitor-camaras">Abrir monitor</Link>}
+        {c.activa && c.tipo === 'RED' && ['vinculada', 'sin_vinculo'].includes(c.vinculo_imou) && <>
+          <Link to={c.vinculo_imou === 'vinculada' ? '/admin/monitor-camaras' : `/admin/monitor-camaras?camara=${c.id}`}>Ver cámara</Link>
+          <Link to={c.vinculo_imou === 'vinculada' ? '/admin/monitor-camaras?configuracion=analisis' : `/admin/monitor-camaras?configuracion=analisis&camara=${c.id}`}>Configurar incidencias</Link>
+        </>}
         {c.vinculo_imou === 'vinculada' && !c.monitor_en_catalogo && <button onClick={() => vincularMonitor(c)} disabled={vinculando || probando !== null}>{vinculando ? 'Vinculando…' : 'Vincular al monitor'}</button>}
-        <button onClick={() => editar(c)} disabled={probando !== null}>Editar</button></div></article>)}
+        <button onClick={() => editar(c)} disabled={probando !== null || eliminando !== null}>Editar</button>
+        <button type="button" className="cam-eliminar" onClick={() => eliminar(c)} disabled={probando !== null || eliminando !== null}>{eliminando === c.id ? 'Eliminando…' : 'Eliminar'}</button></div></article>)}
     </div>}
     {abierto && <div className="cam-formulario"><form onSubmit={guardar}>
       <h2>{editando ? 'Editar cámara' : 'Registrar cámara'}</h2>

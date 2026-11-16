@@ -5,6 +5,7 @@ export const securityPaths = ['eventos-seguridad','notificaciones','visitas','ve
 export function canAccess(role, path, capacidades = []) {
   if (!roles.includes(role)) return false;
   if (path === 'dashboard') return true;
+  if (path === 'ajustes') return role === 'guardia';
   if (role === 'personalizado') return path === 'visitas' && Array.isArray(capacidades) && capacidades.includes('visitas.consultar_operativas');
   if (path === 'perfil') return ['propietario', 'inquilino'].includes(role);
   if (role === 'administrador') return adminPaths.includes(path);

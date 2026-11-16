@@ -1,5 +1,5 @@
 .imou-monitor { margin-bottom: 1.25rem; }
-.imou-monitor-layout { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(250px, 1fr); gap: 12px; }
+.imou-monitor-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .imou-camera-card, .imou-side-card { min-width: 0; background: #07182e; border: 1px solid #21446a; border-radius: 10px; }
 .imou-camera-card { padding: 14px; }
 .imou-card-heading, .imou-card-title, .imou-side-heading { display: flex; align-items: center; gap: 11px; }
@@ -28,7 +28,8 @@
 .imou-camera-message { color: #a9bed5; font-size: 12px; margin: 9px 0 0; }
 .imou-side-card { padding: 16px; display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
 .imou-side-heading { padding-bottom: 15px; border-bottom: 1px solid #1d3b5c; }
-.imou-side-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.imou-side-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.imou-side-buttons button { padding: 0 14px; }
 .imou-primary, .imou-secondary, .imou-toggle, .imou-config-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 39px; border-radius: 6px; font-size: 12px; font-weight: 700; transition: background .15s, border-color .15s; }
 .imou-primary { color: #eaf8ff; border: 1px solid #00a9f3; background: #0767a2; }
 .imou-primary:hover:not(:disabled) { background: #087ab9; }

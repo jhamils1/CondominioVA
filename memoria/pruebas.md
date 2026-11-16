@@ -1,5 +1,31 @@
 # Pruebas y verificación
 
+2026-11-16: IA remota: pruebas Django aisladas comprobaron autorización, modo remoto/local, fallo sin fallback, HTTPS y límites del contrato. Prueba del servicio con modelo e imagen simulados verificó autenticación y formato; pruebas web simuladas comprobaron selección, error sin cambio y regla de piscina en cámara y video con procesador remoto seleccionado. Build y ESLint correctos. Sin servidor o envío real por internet, medición de rendimiento ni uso de imágenes reales.
+
+2026-11-16: pruebas unitarias de seguimiento comprueban 10 segundos, segunda persona, salida y pérdida; API Django en SQLite temporal comprueba permisos, validación e independencia; pruebas web simuladas cubren video con evidencia, Imou, cámara de red y webcam, reintentos y reglas previas. Build y ESLint correctos. PostgreSQL local: respaldo `Condominio-Backend/backups_locales/antes_regla_piscina_20261116_024123.dump` legible antes de migración 0009. No se enviaron avisos reales ni se probó reconocimiento físico o recepción móvil.
+
+2026-11-16: build y ESLint de los componentes modificados correctos. Las pruebas simuladas de webcam, cámaras de red e Imou verificaron un único guardado después de incidencias y placas; también pasaron la prueba de eventos con evidencia y los reintentos de Imou. Sin cámaras físicas ni envío al proveedor.
+
+2026-11-15: build y ESLint correctos; pruebas de cámara local, cámaras de red e Imou con API simulada verificaron el nuevo resultado. Se comprobaron coincidencia, ausencia, ambigüedad y confianza no disponible, y se revisó una captura del resultado sin coincidencia. Sin cámara ni proveedor real.
+
+2026-11-15: build y ESLint correctos. Pruebas de navegador con fuentes y API simuladas comprobaron vista única, cambio entre cámaras, visualización, consulta puntual con IA detenida, lectura automática bajo acción explícita y conservación de zona; también pasaron las pruebas de cámaras de red y de Imou. Sin acceso a cámara física ni envío al proveedor.
+
+2026-11-15: 7 pruebas Django en SQLite temporal verificaron zona, auditoría, permisos y notificación idempotente a guardia. e2e/incidencias_camaras_simuladas.mjs verificó dos fuentes de red, aislamiento, JPEG reducido de 1920 a 1280 píxeles y reintento con el mismo identificador; e2e/camara_local_mosaico.mjs, configuración y evidencia simulada; e2e/zonas_camaras_simuladas.mjs e e2e/imou_simulada.mjs pasaron. Pasaron 24 pruebas unitarias de visión, build y ESLint. PostgreSQL local respaldado en Condominio-Backend/backups_locales/antes_zonas_camara_20261115_193253.dump antes de aplicar 0008; se comprobó que el respaldo se puede listar. No se usaron cámaras ni se enviaron avisos reales.
+
+2026-11-15: 108 pruebas Django aisladas correctas, incluida la comprobación de contraseña compartida y edición administrativa sin exponerla; Flutter pruebas de campo y servicio correctas; build, ESLint y dos recorridos web con datos simulados correctos. APK instalada en el teléfono conectado y hash verificado. Sin pruebas de contraseñas reales.
+
+2026-11-15: Flutter: 105 pruebas correctas y 2 omitidas; confirma, cancela, impide confirmar al administrador y maneja fallo simulado. Analizador, build web y ESLint correctos; pruebas Edge simuladas cubrieron confirmación web, ocultación de bandeja administrativa y redistribución. APK final instalada en el teléfono conectado; hash y enlace USB comprobados. Sin incidentes ni notificaciones reales en esta etapa.
+
+2026-11-15: 107 pruebas Django en SQLite aislado pasaron, incluidas validación de contraseña y revocación de sesiones y dispositivos ficticios; Flutter 102 pasaron y 2 omitidas; analizador Flutter, build web, ESLint y recorrido web simulado correctos. APK compilada e instalada conservando datos en el teléfono conectado; hash y enlace USB comprobados. Sin prueba de contraseña ni envío push real en esta etapa.
+
+2026-11-15: build y ESLint de navegación web correctos. Edge con API ficticia verificó accesos de guardia, historial, confirmación, vínculo de notificación al evento y el flujo de aviso simulado. No se usaron cuentas ni envíos reales; retiro de historial sin implementar.
+
+2026-11-14: build y ESLint del exportador correctos. Recorrido Edge con video generado y API simulada descargó los tres modos; OpenCV decodificó los archivos completos y comprobó recuadros de persona, vehículo dentro y fuera de zona. Se verificó que exportar no repite inferencia ni registra eventos. No se utilizó video real del usuario.
+
+2026-11-14: 16 pruebas Node, build y ESLint correctos. En Edge con video y respuestas simuladas, el nuevo modo oculta vehículos fuera de zona y conserva el de dentro, sus colores y el evento único; al desaparecer la detección se retira el recuadro. El recorrido Imou simulado verificó la indicación cuando no hay zona y conservó el flujo existente. Sin pruebas físicas ni avisos reales.
+
+2026-11-14: 16 pruebas Node de colores, filtros y seguimiento; build y ESLint correctos. Edge con video generado verificó mostrar/ocultar persona, verde, amarillo, rojo, desaparición del recuadro y evento único simulado. La prueba Imou con datos simulados verificó ambos modos y reintento; no se probó notificación real.
+
 2026-11-14: 15 pruebas Node de seguimiento, eventos y colores; build y ESLint correctos. Edge con video generado y API simulada verificó zona oculta, amarillo/rojo, un evento con JPEG, reproducción sin registros nuevos y registro desactivado. Recorrido Imou simulado pasó. No se verificó el video del usuario ni envío o recepción real de avisos.
 
 2026-11-14: tras separar eventos descartados del historial de incidencias confirmadas, build, ESLint del componente y recorrido Edge simulado correctos; se verificó que los descartados aparezcan solo en su vista.
@@ -409,3 +435,92 @@ No ejecutar los comandos anteriores como parte de una mera lectura documental: a
 2026-11-14: Verificacion en pantalla Android: Inicio, Incidencias, Historial y Ajustes visibles tras instalar el APK recompilado. No se probaron operaciones con datos reales.
 
 2026-11-14: Confirmacion del usuario en segundo Xiaomi: la barra inferior ya aparece tras reinstalar la version corregida.
+
+2026-11-15: por solicitud del usuario se eliminó de la base local la incidencia de prueba de estacionamiento vinculada al guardia ficticio, junto con sus cuatro registros de historial, evidencia, notificación y entrega; también se eliminó la cuenta ficticia del guardia y su empleado de prueba. La cuenta ficticia residente se conservó. La operación fue transaccional y se comprobó la ausencia del evento y del usuario.
+
+2026-11-15: a solicitud del usuario se eliminó transaccionalmente de la base local la cuenta inactiva residente ficticia de prueba, su perfil y vehículo ficticios, dispositivo, sesiones, tokens y registros dependientes. Se verificó que la cuenta ya no existe.
+
+2026-11-15: runserver local supervisa los puentes Imou y catálogo con el entorno de visión existente, sin iniciar IA; detecta puertos ocupados, reintenta procesos y solicita cierre autenticado de procesos propios. Los puertos siguen fijos (28766 y 28768); un servicio ajeno puede bloquearlos. Se probaron tres casos simulados y el inicio real de ambos puentes con un servidor temporal, sin abrir cámara. Falta validar reconexión, cierre y monitoreo real; no aplica automáticamente a producción.
+
+2026-11-15: las vistas Imou y catálogo reintentan cada cinco segundos tras fallos de imagen; permisos denegados detienen la vista y un fallo de Imou desactiva la IA y registro. La compilación web pasó. Al ocultar la pestaña siguen deteniéndose y no se garantiza análisis continuo; validación real de reconexión pendiente.
+
+2026-11-15: por solicitud del usuario, el monitor Imou muestra solo vehículos dentro de la zona guardada: verde al detectar, amarillo durante el tiempo de tolerancia y rojo al cumplir el umbral. El aviso preliminar de estacionamiento de Imou se crea para guardias y administradores; sigue pendiente de revisión. La prueba simulada usó SQLite en memoria, sin envío real: 11 pruebas backend y 17 de seguimiento/colores pasaron; build web correcto. Falta validación visual real y recepción push con cuentas autorizadas.
+
+2026-11-15: comprobada la configuración compartida de zona Imou entre ajustes y monitor: el componente aplica la misma zona y tiempo guardados en Django. Se aclaró el vínculo en la pantalla y se amplió la prueba de navegador con API e imágenes simuladas para validar guardado, retorno al monitor y filtro de objetos; prueba integral y build web correctos. Actualmente se admite una sola zona de estacionamiento Imou; múltiples zonas y tipos de incidencia requieren ampliación posterior. Sin migraciones ni pruebas con cámara real.
+
+2026-11-15: Configuración de análisis se movió al submenú Cámaras; monitor y ajustes comparten la misma ruta con estado de vista, evitando desmontar la Imou al alternar. Zona, tiempo y avisos Imou se aplican con Guardar configuración; las cámaras de catálogo también usan borrador y guardado explícito. Pruebas simuladas: navegación y guardado Imou (incluido borrador sin aplicar y fallo con reintento), catálogo y compilación web correctos; guardado de catálogo y visualización con cámara real pendientes. Sin cambios de backend ni migraciones.
+
+2026-11-15: los botones Ver cámara Imou y Detener vista Imou se ubicaron horizontalmente entre el título y el video; los controles adicionales quedaron debajo para ampliar el monitor. Build web correcto; pendiente validación visual por el usuario. Sin cambios de backend.
+
+2026-11-15: el submenú y encabezado de configuración se renombraron a Configuración de incidencias, con icono y estilo diferenciados del monitor. Se mantuvo la misma ruta interna y configuración. Build web y recorrido Imou con API simulada correctos; sin cambios del backend ni pruebas con cámara real.
+
+2026-11-15: Gestión de cámaras ofrece enlaces Ver cámara y Configurar incidencias para cámaras de red habilitadas; el monitor acepta la cámara seleccionada por enlace, muestra las cámaras disponibles y permite un mosaico con inicio manual por cámara. Las zonas siguen independientes; análisis y alertas automáticas de cámaras adicionales no se incorporaron. Build web y pruebas simuladas de enlaces, dos vistas y guardado de zona pasaron; falta validar con una segunda cámara real. Sin cambios de backend ni migraciones.
+
+2026-11-15: se comprobó en la base local que la Imou está vinculada y no hay cámaras de red adicionales habilitadas. La opción Ver varias cámaras se mantiene visible aun sin cámaras adicionales, con orientación hacia Gestión de cámaras. Build web y recorrido Imou simulado correctos; no se modificaron cámaras ni datos.
+
+2026-11-15: el monitor en mosaico ofrece Ampliar para cada cámara y mantiene montadas las vistas iniciadas al seleccionar una y volver; las cámaras de catálogo permiten pantalla completa y ocupan el ancho disponible. El mosaico oculta controles secundarios sin desmontarlos. Build y prueba de navegador con dos cámaras simuladas pasaron; sin prueba con segunda cámara física ni cambios de backend.
+
+2026-11-15: por observación del usuario, el monitor abre directamente en mosaico con tarjetas compactas y acceso Agregar cámara; Ampliar muestra una cámara y la vista múltiple conserva las cámaras iniciadas. Los enlaces directos a una cámara siguen abriéndola seleccionada. Build web y pruebas de navegador con cámaras simuladas correctos; falta revisión visual con el usuario y validación con segunda cámara real. Sin cambios de backend.
+
+2026-11-15: rediseñado el mosaico del monitor en cuadros 16:9 uniformes con imagen, nombre y control integrados; seleccionar la imagen amplía la cámara y Agregar cámara conserva el mismo tamaño de cuadro. Vista comprobada con captura y dos cámaras simuladas, build y recorridos simulados Imou y catálogo correctos; falta validación con cámaras físicas. Sin cambios de backend.
+
+2026-11-15: controles compactos Ver/Detener y botón de ampliación se colocaron en una barra superior fuera de las imágenes del mosaico, para Imou y cámaras de catálogo. Build, prueba de dos cámaras simuladas, recorrido Imou y revisión visual de captura simulada correctos; falta validación visual del usuario con cámara real. Sin cambios de backend.
+
+2026-11-15: por solicitud del usuario se ocultó el selector de fuentes en Monitor en vivo y se añadió Volver al mosaico en la vista ampliada. La selección de cámara permanece en Configuración de incidencias; incorporar la cámara de laptop al mosaico queda para otra etapa. Build web y recorridos de Imou y dos cámaras simuladas correctos; sin cambios de backend ni prueba física.
+
+2026-11-15: la ampliación alterna el tamaño de la cámara dentro del mosaico mediante el mismo icono; no cambia a la vista independiente. Las demás cámaras permanecen visibles y activas. Gestión de cámaras puede abrir la cámara resaltada en el mismo mosaico; Configuración de incidencias conserva sus controles. Build y pruebas de dos cámaras e Imou simuladas correctos; falta validación visual física. Sin cambios de backend.
+
+2026-11-15: Gestión de cámaras permite eliminación con confirmación y auditoría solo para administrador; Django rechaza la eliminación si hay vínculos protegidos de monitor, configuración o historial. En el mosaico, Agregar cámara abre un selector de cámaras de red habilitadas; ocultar una vista no detiene una transmisión iniciada y la selección es temporal en la página. Pasaron 28 pruebas backend con SQLite en memoria, dos recorridos web simulados y build; sin eliminación real ni migraciones. Falta validación en interfaz con cámaras físicas.
+
+2026-11-15: retirada de Gestión de cámaras la sección de preferencias no operativas Funciones previstas. Se conservan backend y datos existentes. Build web y recorrido simulado del catálogo correctos; sin cambios en cámaras reales.
+
+2026-11-15: Configuración de incidencias identifica la cámara seleccionada y aclara el alcance individual. Se agruparon los controles existentes de lectura de placas por cámara y la consulta puntual ahora indica el identificador de la cámara en la solicitud. Prueba web con dos cámaras simuladas verificó zonas y tiempos independientes y origen de placa distinto; cinco pruebas backend de zonas y build web pasaron. Las cámaras de catálogo aún no generan automáticamente incidencias por zona; la lectura automática es una activación de sesión y usa servicio externo. Sin migraciones ni cambios en datos reales.
+# 2026-11-15 — cámara local en navegador
+
+`npm.cmd run build` y ESLint de los dos componentes modificados: correctos. `node e2e/camara_local_mosaico.mjs`: correcto con dos dispositivos y API simulados; comprueba selección, zona y tiempo por dispositivo, mosaico y ampliación. No se usaron dispositivos físicos ni se enviaron avisos reales. `node e2e/camaras_catalogo.mjs` falló en línea 170 al comparar las IP simuladas 192.168.20.20 y 192.168.20.21; pendiente de investigar.
+
+2026-11-16: Ocho pruebas de seguridad_IA.tests_camara_demo correctas con DEBUG temporal v?lido. Roboflow simulado; sin llamadas ni im?genes reales.
+
+2026-11-16: Ocho pruebas de c?mara correctas; llamada real de pasarela a Roboflow con imagen blanca sint?tica devolvi? detecciones v?lidas vac?as. Sin prueba de video ni avisos.
+
+2026-11-16: Build frontend correcto y ESLint correcto para componentes principales. Sin validacion visual en navegador.
+
+2026-11-16: Tres pruebas Django de permisos y retirada correctas, build web y ESLint correctos; prueba Flutter sin resultado por bloqueo de herramienta.
+
+2026-11-16: Build frontend y recorrido simulado de guardia y confirmacion de administrador desde monitor correctos; sin cambios en incidencias reales.
+
+2026-11-16: Build frontend y recorrido simulado de seleccion, confirmacion, retorno y consulta de historial correctos; sin modificar datos reales.
+
+2026-11-16: Build frontend y ESLint del menu pasaron; sin validacion visual del usuario.
+
+2026-11-16: API locales de eventos e incidentes devolvieron HTTP 200 con sesion activa; consulta de BD correcta; build, ESLint y flujo simulado incluido error 401 correctos.
+
+2026-11-16: 15 pruebas Django de revision, monitor y piscina y 6 de FCM correctas; recorridos simulados piscina video y camaras y camaras de estacionamiento correctos. Suite AccessTests fallo en inicializacion por grupos existentes y no valida el flujo; no se enviaron avisos reales.
+
+2026-11-16: FCM devolvio ENVIADA para una notificacion ficticia dirigida al unico dispositivo elegible del guardia; recepcion en dispositivo todavia no confirmada.
+
+2026-11-16: Recepcion real de un aviso ficticio confirmada por usuario; toque abre incidencias activas. Flujo individual de estacionamiento y piscina aun no confirmado con entregas reales.
+
+2026-11-16: Recepcion real confirmada por usuario para dos eventos ficticios (estacionamiento y piscina); Firebase acepto ambas entregas. Sin comprobar generacion automatica con video o camara reales.
+
+2026-11-16: Once pruebas Django FCM y revision pasaron con Firebase simulado, incluyendo categorias y mensajes de residente. No se envio push real con los textos nuevos.
+
+2026-11-16: Dos eventos ficticios autorizados siguieron registro y cola habitual; Firebase acepto ambos y usuario confirmo recepcion de textos diferentes. No se proceso cola previa.
+
+2026-11-16: XML del manifest y recursos validos. Intento de compilacion Flutter sin salida durante mas de un minuto, interrumpido; sin APK ni validacion visual nueva.
+
+2026-11-16: Compilacion debug correcta, instalacion actualizada sin borrar datos y prueba FCM individual autorizada: Firebase acepto y usuario confirmo icono y color. Sin procesar cola anterior.
+
+2026-11-16: Nueve pruebas de navegacion Flutter pasaron, incluidas cancelacion y retirada ficticia; APK debug compilada e instalada conservando datos.
+
+2026-11-16: Diez pruebas Flutter aprobadas; incluyen confirmar incidencia antigua sin promoverla por hora de confirmacion y ausencia de accion de retiro en pendientes.
+
+2026-11-16: Build Flutter debug e instalacion adb -r correctos; redireccion USB 8000 presente. Sin confirmacion visual todavia.
+
+2026-11-16: Se verifico que APK anterior no contenia texto nuevo; regeneracion del kernel incorporo el cambio, compilacion e instalacion adb -r correctas.
+
+2026-11-16: Once pruebas Flutter pasaron, incluida actualizacion por gesto con lista vacia; APK recompilada con kernel actualizado e instalada sin borrar datos.
+
+2026-11-16: Build y ESLint frontend correctos; prueba simulada verifica gesto tactil y llamada API, junto con flujo de revision. Sin validacion en dispositivo tactil real.
+
+2026-11-16: Build, ESLint y prueba web simulada correctos: guardia sin pesta?a descartados, administrador la conserva.

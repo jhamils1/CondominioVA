@@ -319,7 +319,20 @@ class CamarasTests(TestCase):
         self.assertEqual(self.llamar('administrador', 'patch', {'activa': False}, response.data['id']).status_code, 200)
         self.assertFalse(Camara.objects.get().activa)
         self.assertEqual(LogEntry.objects.count(), 2)
-        self.assertNotIn('delete', resolve(f"/api/camaras/{response.data['id']}/").func.actions)
+        self.assertIn('delete', resolve(f"/api/camaras/{response.data['id']}/").func.actions)
+
+    def test_eliminar_requiere_administrador_y_conserva_referencias_protegidas(self):
+        from .models import MonitorImou
+        camara = Camara.objects.create(**self.datos)
+        self.assertEqual(self.llamar('guardia', 'delete', pk=camara.pk).status_code, 403)
+        MonitorImou.objects.create(pk=1, camara=camara)
+        self.assertEqual(self.llamar('administrador', 'delete', pk=camara.pk).status_code, 409)
+        self.assertTrue(Camara.objects.filter(pk=camara.pk).exists())
+        self.assertEqual(LogEntry.objects.count(), 0)
+        MonitorImou.objects.filter(camara=camara).delete()
+        self.assertEqual(self.llamar('administrador', 'delete', pk=camara.pk).status_code, 204)
+        self.assertFalse(Camara.objects.filter(pk=camara.pk).exists())
+        self.assertEqual(LogEntry.objects.count(), 1)
 
     def test_permiso_y_validacion(self):
         for rol in ('guardia', 'propietario', 'inquilino', None):

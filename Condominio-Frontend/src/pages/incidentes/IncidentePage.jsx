@@ -7,17 +7,21 @@ import { fetchAllIncidentes, createIncidente, updateIncidente, deleteIncidente }
 const IncidentePage = () => {
   const [incidentes, setIncidentes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errorCarga, setErrorCarga] = useState('');
   const [editingIncidente, setEditingIncidente] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
   const loadIncidentes = async () => {
     setLoading(true);
+    setErrorCarga('');
     try {
       const data = await fetchAllIncidentes();
       setIncidentes(data.results || data); // Adaptado para paginación
     } catch (error) {
-      console.error(error.message);
-      alert('Error al cargar los incidentes: ' + error.message);
+      setErrorCarga(error.response?.status === 401 ? 'Tu sesión venció. Cierra sesión y vuelve a ingresar.'
+        : error.response?.status === 403 ? 'Tu cuenta no tiene permiso para consultar incidentes.'
+        : !error.response ? 'No se pudo conectar con el servidor. Comprueba que Django esté iniciado.'
+        : 'No se pudieron cargar los incidentes. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -82,12 +86,14 @@ const IncidentePage = () => {
   return (
     <div className="relative w-full max-w-full overflow-hidden">
       {/* Tabla de incidentes */}
-      <IncidenteList
+      {errorCarga ? <div role="alert" className="p-4 rounded border border-red-500 text-red-100 bg-red-950">
+        <p>{errorCarga}</p><button type="button" onClick={loadIncidentes} className="mt-3 underline">Reintentar</button>
+      </div> : <IncidenteList
         incidentes={incidentes}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onAddNew={() => setShowForm(true)}
-      />
+      />}
 
       {/* Modal de Formulario */}
       {showForm && (

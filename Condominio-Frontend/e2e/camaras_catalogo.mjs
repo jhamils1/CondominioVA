@@ -23,12 +23,13 @@ try {
   const pagina = await navegador.newPage();
   await pagina.addInitScript(() => localStorage.setItem('access', 'token-ficticio'));
   let rol = 'administrador', registros = [], modificaciones = 0, consultasImou = 0, direccionesBusqueda = ['192.168.20.55'];
-  let evento = { id: 'evento-ficticio', categoria: 'Alerta ficticia', descripcion: 'Para revisión', estado: 'PENDIENTE_REVISION', origen: 'IA', camara: 'Imou', fecha_evento: '2026-11-06T10:00:00Z', evidencia_disponible: false };
+  let evento = { id: 'evento-ficticio', categoria: 'Alerta ficticia', descripcion: 'Para revisión', estado: 'PENDIENTE_REVISION', origen: 'IA', camara: 'Imou', fecha_evento: '2026-11-06T10:00:00Z', evidencia_disponible: false, sin_guardias: true };
   await pagina.route('**/api/**', async route => {
     const req = route.request(), path = new URL(req.url()).pathname;
     if (path.endsWith('/me/')) return route.fulfill({ json: { username: 'demo', role: rol, capacidades: [] } });
     if (path.endsWith('/eventos-seguridad/') && req.method() === 'GET') return route.fulfill({ json: [evento] });
     if (path.endsWith('/evento-ficticio/historial/')) return route.fulfill({ json: [] });
+    if (path.endsWith('/evento-ficticio/redistribuir/')) { evento = { ...evento, sin_guardias: false }; return route.fulfill({ json: { guardias_activos: 1 } }); }
     if (path.endsWith('/evento-ficticio/confirmar/') && req.method() === 'POST') {
       evento = { ...evento, estado: 'CONFIRMADA' }; return route.fulfill({ json: evento });
     }
@@ -62,6 +63,12 @@ try {
       const item = { ...otros, contrasena_configurada: !!contrasena_nueva, vinculo_imou: 'sin_vinculo', id: 1 }; registros = [item]; modificaciones++;
       return route.fulfill({ status: 201, json: item });
     }
+    if (path.endsWith('/camaras/1/') && req.method() === 'DELETE') {
+      registros = registros.filter(c => c.id !== 1); return route.fulfill({ status: 204 });
+    }
+    if (path.endsWith('/camaras/2/') && req.method() === 'DELETE') {
+      return route.fulfill({ status: 409, json: { detail: 'La cámara tiene vínculos protegidos.' } });
+    }
     if (path.endsWith('/camaras/1/') && req.method() === 'PUT') {
       const { contrasena_nueva, ...otros } = req.postDataJSON();
       const item = { ...otros, contrasena_configurada: !!contrasena_nueva || registros[0].contrasena_configurada, vinculo_imou: 'sin_vinculo', id: 1 }; registros = [item]; modificaciones++;
@@ -77,6 +84,7 @@ try {
   await pagina.keyboard.press('Enter');
   assert.equal(await menuCamaras.getAttribute('aria-expanded'), 'true');
   assert.equal(await pagina.getByRole('link', { name: 'Monitor en vivo' }).count(), 1);
+  assert.equal(await pagina.getByRole('link', { name: 'Configuración de incidencias' }).count(), 1);
   assert.equal(await pagina.getByRole('link', { name: 'Gestión de cámaras' }).count(), 1);
   await pagina.getByRole('button', { name: 'Añadir cámara' }).click();
   await pagina.getByRole('button', { name: 'Buscar cámaras en la red' }).click();
@@ -110,6 +118,8 @@ try {
   await pagina.getByLabel('Ruta RTSP').fill('/video');
   await pagina.getByRole('button', { name: 'Guardar cámara' }).click();
   await pagina.getByText(/Cámara guardada en el catálogo/).waitFor();
+  assert.equal(await pagina.getByRole('link', { name: 'Ver cámara', exact: true }).getAttribute('href'), '/admin/monitor-camaras?camara=1');
+  assert.equal(await pagina.getByRole('link', { name: 'Configurar incidencias', exact: true }).getAttribute('href'), '/admin/monitor-camaras?configuracion=analisis&camara=1');
   assert.equal(registros[0].direccion_ip, '192.168.20.10');
   assert.equal('contrasena_nueva' in registros[0], false);
   await pagina.getByRole('button', { name: 'Probar conexión' }).click();
@@ -135,7 +145,7 @@ try {
   await pagina.getByRole('button', { name: 'Probar conexión' }).click();
   await pagina.getByText('Conexión comprobada: el puente recibió una imagen.').waitFor();
   assert.equal(consultasImou, 3, 'La comprobación mantiene activa la conexión hasta recibir imagen');
-  assert.equal(await pagina.getByRole('link', { name: 'Abrir monitor' }).count(), 1);
+  assert.equal(await pagina.getByRole('link', { name: 'Ver cámara', exact: true }).count(), 1);
   await pagina.getByRole('button', { name: 'Añadir cámara' }).click();
   direccionesBusqueda = [];
   await pagina.getByRole('button', { name: 'Buscar cámaras en la red' }).click();
@@ -158,9 +168,27 @@ try {
   await pagina.getByRole('button', { name: 'Guardar cámara' }).click();
   await pagina.getByText('Vinculada al monitor: la conexión usa los datos del catálogo.').waitFor();
   assert.equal(registros.find(c => c.id === 2).direccion_ip, '192.168.20.21');
+  pagina.once('dialog', dialog => dialog.dismiss());
+  await pagina.locator('article').filter({ hasText: 'Cámara Imou' }).getByRole('button', { name: 'Eliminar' }).click();
+  assert.ok(registros.some(c => c.id === 2), 'Cancelar no elimina la cámara');
+  pagina.once('dialog', dialog => dialog.accept());
+  await pagina.locator('article').filter({ hasText: 'Cámara Imou' }).getByRole('button', { name: 'Eliminar' }).click();
+  await pagina.getByText('La cámara tiene vínculos protegidos.').waitFor();
+  assert.ok(registros.some(c => c.id === 2), 'Una cámara protegida permanece en el catálogo');
+  pagina.once('dialog', dialog => dialog.accept());
+  await pagina.locator('article').filter({ hasText: 'Entrada' }).getByRole('button', { name: 'Eliminar' }).click();
+  await pagina.getByText('Cámara eliminada del catálogo.').waitFor();
+  assert.equal(registros.some(c => c.id === 1), false);
   await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/eventos-seguridad`);
   await pagina.getByRole('heading', { name: 'Eventos e incidencias de seguridad' }).waitFor();
   assert.equal(await pagina.getByRole('button', { name: 'Ver cámara Imou' }).count(), 0, 'El administrador consulta eventos sin duplicar el monitor');
+  await pagina.getByText('Evento pendiente sin guardias activos:', { exact: false }).waitFor();
+  await pagina.getByRole('button', { name: 'Reintentar distribución' }).click();
+  await pagina.getByText('Aviso enviado a la bandeja de los guardias activos.').waitFor();
+  await pagina.locator('nav').getByRole('button', { name: 'Seguridad', exact: true }).click();
+  assert.equal(await pagina.locator('nav').getByRole('link', { name: 'Notificaciones', exact: true }).count(), 0);
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/notificaciones`);
+  await pagina.waitForURL('**/admin/eventos-seguridad');
   rol = 'guardia';
   await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/camaras`);
   await pagina.reload();

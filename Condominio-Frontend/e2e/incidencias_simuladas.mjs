@@ -24,11 +24,18 @@ try {
   await pagina.addInitScript(() => localStorage.setItem('access', 'token-ficticio'));
   let evento = { id: 'evento-ficticio', categoria: 'Vehículo en zona', descripcion: 'Incidencia ficticia', estado: 'PENDIENTE_REVISION', origen: 'IA', camara: 'Entrada', fecha_evento: '2026-11-14T10:00:00Z', evidencia_disponible: true };
   const acciones = [];
-  let candidatoEstado = 'candidato', fallaEntrega = false;
+  let candidatoEstado = 'candidato', fallaEntrega = false, rol = 'guardia', fallaCarga = false, consultasEventos = 0;
   await pagina.route('**/api/**', async route => {
     const req = route.request(), path = new URL(req.url()).pathname;
-    if (path.endsWith('/me/')) return route.fulfill({ json: { username: 'guardia-ficticio', role: 'guardia', capacidades: [] } });
-    if (path.endsWith('/eventos-seguridad/') && req.method() === 'GET') return route.fulfill({ json: [evento, { ...evento, id: 'resuelto', categoria: 'Incidencia resuelta', estado: 'RESUELTA', evidencia_disponible: false }, { ...evento, id: 'descartado', categoria: 'Evento descartado ficticio', estado: 'FALSO_POSITIVO', evidencia_disponible: false }] });
+    if (path.endsWith('/me/')) return route.fulfill({ json: { username: 'operador-ficticio', role: rol, capacidades: [] } });
+    if (path.endsWith('/change-password/')) {
+      assert.deepEqual(req.postDataJSON(), { old_password: 'anterior-ficticia', new_password: 'nueva-ficticia' });
+      return route.fulfill({ json: { detail: 'Contraseña actualizada.' } });
+    }
+    if (path.endsWith('/eventos-seguridad/') && req.method() === 'GET') { consultasEventos++; return fallaCarga ? route.fulfill({ status: 401, json: {} }) : route.fulfill({ json: [evento, { ...evento, id: 'resuelto', categoria: 'Incidencia resuelta', estado: 'RESUELTA', evidencia_disponible: false }, { ...evento, id: 'descartado', categoria: 'Evento descartado ficticio', estado: 'FALSO_POSITIVO', evidencia_disponible: false }] }); }
+    if (path.endsWith('/eventos-seguridad/evento-ficticio/')) return route.fulfill({ json: evento });
+    if (path.endsWith('/notificaciones-seguridad/')) return route.fulfill({ json: [{ id: 'notificacion-ficticia', evento: 'evento-ficticio', mensaje: 'Evento enviado a revisión', creada: '2026-11-14T10:00:00Z', leida_en: null }] });
+    if (path.endsWith('/notificaciones-seguridad/notificacion-ficticia/leer/')) return route.fulfill({ json: { id: 'notificacion-ficticia', evento: 'evento-ficticio', mensaje: 'Evento enviado a revisión', creada: '2026-11-14T10:00:00Z', leida_en: '2026-11-14T11:00:00Z' } });
     if (path.endsWith('/historial/')) return route.fulfill({ json: [] });
     if (path.endsWith('/evidencia/')) return route.fulfill({ status: 200, contentType: 'image/jpeg', body: Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==', 'base64') });
     if (path.endsWith('/confirmar/')) { evento = { ...evento, estado: 'CONFIRMADA' }; return route.fulfill({ json: evento }); }
@@ -40,6 +47,30 @@ try {
     return route.fulfill({ status: 404, json: {} });
   });
   await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/eventos-seguridad`);
+  await pagina.getByText('Vehículo en zona').waitFor();
+  const consultasAntes = consultasEventos;
+  const respuestaActualizacion = pagina.waitForResponse(r => r.url().includes('/eventos-seguridad/') && r.request().method() === 'GET');
+  await pagina.getByLabel('Lista de incidencias').evaluate(zona => {
+    document.scrollingElement.scrollTop = 0;
+    for (let nodo = zona; nodo; nodo = nodo.parentElement) nodo.scrollTop = 0;
+    const toque = y => new Touch({ identifier: 1, target: zona, clientX: 100, clientY: y });
+    zona.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [toque(100)] }));
+    zona.dispatchEvent(new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [toque(190)] }));
+    zona.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true, touches: [], changedTouches: [toque(190)] }));
+  });
+  await respuestaActualizacion;
+  await pagina.waitForFunction(() => !document.querySelector('.seguridad-refresh-status'));
+  assert.equal(consultasEventos, consultasAntes + 1);
+  const menu = pagina.locator('nav');
+  for (const nombre of ['Inicio', 'Incidencias', 'Historial', 'Ajustes']) {
+    assert.equal(await menu.getByRole('link', { name: nombre, exact: true }).count(), 1);
+  }
+  assert.equal(await menu.getByRole('link', { name: 'Notificaciones', exact: true }).count(), 0);
+  assert.equal(await menu.getByRole('button', { name: 'Más opciones', exact: true }).count(), 0);
+  assert.equal(await menu.getByRole('link', { name: 'Monitor en vivo' }).count(), 0);
+  await menu.getByRole('link', { name: 'Historial', exact: true }).click();
+  await pagina.getByText('Incidencia resuelta').waitFor();
+  await menu.getByRole('link', { name: 'Incidencias', exact: true }).click();
   await pagina.getByText('Vehículo en zona').waitFor();
   assert.equal(await pagina.getByText('Incidencia resuelta').count(), 0);
   await pagina.getByText('Vehículo en zona').click();
@@ -73,11 +104,43 @@ try {
   await pagina.getByText('Incidencia resuelta').waitFor();
   assert.equal(await pagina.getByText('Vehículo en zona').count(), 1);
   assert.equal(await pagina.getByText('Evento descartado ficticio').count(), 0);
-  await pagina.getByRole('button', { name: 'Eventos descartados' }).click();
-  await pagina.getByText('Evento descartado ficticio').waitFor();
-  assert.equal(await pagina.getByText('Vehículo en zona').count(), 0);
+  assert.equal(await pagina.getByRole('button', { name: 'Eventos descartados' }).count(), 0);
   await pagina.getByRole('button', { name: 'Pendientes de revisión' }).click();
+  await pagina.getByText('Vehículo en zona').waitFor({ state: 'hidden' });
   assert.equal(await pagina.getByText('Vehículo en zona').count(), 0);
+  await menu.getByRole('link', { name: 'Ajustes', exact: true }).click();
+  await pagina.getByLabel('Contraseña actual', { exact: true }).fill('anterior-ficticia');
+  await pagina.getByRole('button', { name: 'Mostrar contraseña actual' }).click();
+  assert.equal(await pagina.getByLabel('Contraseña actual', { exact: true }).getAttribute('type'), 'text');
+  await pagina.getByRole('button', { name: 'Ocultar contraseña actual' }).click();
+  assert.equal(await pagina.getByLabel('Contraseña actual', { exact: true }).getAttribute('type'), 'password');
+  await pagina.getByLabel('Nueva contraseña', { exact: true }).fill('nueva-ficticia');
+  await pagina.getByLabel('Repetir nueva contraseña', { exact: true }).fill('nueva-ficticia');
+  await pagina.getByRole('button', { name: 'Cambiar contraseña', exact: true }).click();
+  await pagina.getByText('Contraseña actualizada. Las otras sesiones se cerraron.').waitFor();
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/notificaciones`);
+  await pagina.getByRole('button', { name: 'Ver evento' }).click();
+  await pagina.getByText('Evento enviado a revisión · Leída').waitFor();
+  await pagina.getByRole('link', { name: 'Abrir incidencia completa' }).click();
+  await pagina.getByText('Estado: CONFIRMADA', { exact: false }).waitFor();
+  assert.equal(await pagina.getByRole('button', { name: 'Historial de incidencias' }).getAttribute('aria-pressed'), 'true');
+  rol = 'administrador';
+  evento = { ...evento, estado: 'PENDIENTE_REVISION' };
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras`);
+  assert.equal(await pagina.getByRole('button', { name: 'Eventos descartados' }).count(), 1);
+  await pagina.getByText('Vehículo en zona').click();
+  await pagina.getByRole('heading', { name: 'Detalle de la incidencia' }).waitFor();
+  await pagina.getByRole('button', { name: 'Confirmar incidencia' }).click();
+  await pagina.getByText('Incidencia confirmada. Ya está disponible en el historial de incidencias.').waitFor();
+  assert.equal(await pagina.getByRole('button', { name: 'Confirmar incidencia' }).count(), 0);
+  await pagina.getByRole('button', { name: 'Volver a incidencias' }).click();
+  assert.equal(await pagina.getByText('Vehículo en zona').count(), 0);
+  await pagina.getByRole('button', { name: 'Historial de incidencias' }).click();
+  await pagina.getByText('Vehículo en zona').waitFor();
+  fallaCarga = true;
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/eventos-seguridad`);
+  await pagina.getByText('Tu sesión venció. Cierra sesión y vuelve a ingresar.').waitFor();
+  assert.equal(await pagina.getByText('No hay incidencias pendientes de revisión.').count(), 0);
   console.log('Recorrido ficticio de incidencia y aviso aprobado');
 } finally {
   await navegador?.close();

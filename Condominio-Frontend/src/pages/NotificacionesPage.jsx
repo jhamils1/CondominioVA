@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { listarNotificaciones, leerNotificacion, obtenerEvento, revisarEvento, atenderEvento, listarEventos, redistribuirEvento } from '../api/notificacionesApi.js';
 import { useSession } from '../auth/sessionContext.js';
 import EvidenciaEvento from '../components/EvidenciaEvento.jsx';
@@ -10,6 +11,7 @@ export default function NotificacionesPage() {
   const [loading, setLoading] = useState(true);
   const [motivo, setMotivo] = useState('');
   const [sinGuardias, setSinGuardias] = useState([]);
+  const detalleRef = useRef(null);
   const { user } = useSession();
   useEffect(() => {
     let active = true;
@@ -18,6 +20,9 @@ export default function NotificacionesPage() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [user.role]);
+  useEffect(() => {
+    if (event?.id) detalleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [event?.id]);
   async function open(item) {
     setError('');
     try {
@@ -49,15 +54,17 @@ export default function NotificacionesPage() {
     } catch { setError('No se pudo redistribuir la alerta.'); }
   }
   return <div className="bg-white p-6 rounded-lg shadow-md"><h2 className="text-2xl font-semibold mb-4">Notificaciones de seguridad</h2>
+    <p className="mb-4">Estos avisos informan sobre eventos. Las incidencias y su estado se consultan en <Link className="text-indigo-700 underline" to="/admin/eventos-seguridad">Incidencias</Link>.</p>
     {error && <p role="alert" className="text-red-700 mb-4">{error}</p>}
     {sinGuardias.map(item => <div key={item.id} className="border border-amber-300 p-3 mb-3"><p>Evento pendiente sin guardias activos: {item.categoria}</p><button className="text-indigo-700" onClick={() => retry(item)}>Reintentar distribución</button></div>)}
     {loading ? <p>Cargando…</p> : !error && items.length === 0 ? <p>No hay notificaciones.</p> : items.map(item => <div key={item.id} className="border-t py-3">
       <p>{item.mensaje} {item.leida_en ? '· Leída' : '· Sin leer'}</p><p className="text-sm text-gray-500">{new Date(item.creada).toLocaleString()}</p>
       <button className="text-indigo-700" onClick={() => open(item)}>Ver evento</button></div>)}
-    {event && <section className="mt-5 border rounded p-4"><h3 className="font-semibold">Detalle del evento</h3>
+    {event && <section ref={detalleRef} className="mt-5 border rounded p-4"><h3 className="font-semibold">Detalle del evento</h3>
       <p>{event.categoria} · {event.estado}</p><p>{event.descripcion}</p><p>{event.camara || 'Sin cámara'} · {event.ubicacion || 'Sin ubicación'}</p>
       <p>{new Date(event.fecha_evento).toLocaleString()}</p>
       <EvidenciaEvento key={event.id} evento={event} />
+      <p className="mt-2"><Link className="text-indigo-700 underline" to={`/admin/eventos-seguridad?${new URLSearchParams({ ...(event.estado === 'FALSO_POSITIVO' ? { vista: 'descartadas' } : event.estado === 'PENDIENTE_REVISION' ? {} : { vista: 'historial' }), evento: event.id })}`}>Abrir incidencia completa</Link></p>
       {user.role === 'guardia' && event.estado === 'PENDIENTE_REVISION' && <div className="mt-3 space-y-2">
         <button className="bg-indigo-600 text-white rounded px-3 py-2" onClick={() => review('confirmar')}>Confirmar incidencia</button>
         <label className="block">Motivo del descarte <input className="border rounded p-1" value={motivo} onChange={e => setMotivo(e.target.value)} /></label>

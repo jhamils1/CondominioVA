@@ -28,3 +28,5 @@ Fuentes verificadas el 2026-10-31: [modelos de administración](../Condominio-Ba
 - Registrar matrícula o reconocer rostro no prueba autorización física de entrada, identidad del conductor, vivienda única ni responsabilidad por un hecho.
 
 Quedan por definir la baja coordinada de empleados/cuentas no guardia, titularidad histórica, reglas de incidentes IA, evidencias, retención y destinatarios administrativos/financieros. No inferir esas decisiones a partir de campos existentes.
+
+2026-11-15: excepción solicitada para posibles estacionamientos de Imou: el aviso preliminar se dirige a guardias y administradores, sin convertirlo en incidencia confirmada. Los demás eventos mantienen la distribución previa.

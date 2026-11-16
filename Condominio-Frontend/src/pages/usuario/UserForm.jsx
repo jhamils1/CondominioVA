@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import StyledForm from "../../components/form";
 import Button from "../../components/button"; // Nuevo componente reutilizable
+import PasswordField from '../../components/PasswordField.jsx';
 import { roleKey, roles as permittedRoles } from '../../auth/access.js';
 
 const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading, isOwnAccount }) => {
@@ -11,6 +12,7 @@ const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading, isOwnA
     password: "",
     role_id: "",
   });
+  const [cambiarPassword, setCambiarPassword] = useState(false);
 
   useEffect(() => {
     if (initialData && roles.length > 0) {
@@ -32,7 +34,9 @@ const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading, isOwnA
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    const datos = { ...formData };
+    if (isEditing && !cambiarPassword) delete datos.password;
+    onSubmit(datos);
   };
 
   const isEditing = !!initialData;
@@ -71,25 +75,12 @@ const UserForm = ({ onSubmit, onCancel, initialData, roles = [], loading, isOwnA
         />
       </div>
 
-      {/* Password */}
       <div>
-        <label className="block text-sm font-medium mb-1 text-gray-700" htmlFor="password">
-          Contraseña
-        </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          required={!isEditing}
-          className="w-full px-3 py-2 rounded-md bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        {isEditing && (
-          <p className="text-xs text-gray-500 mt-1">
-            Deja en blanco para mantener la contraseña actual.
-          </p>
-        )}
+        {isEditing && <label className="block text-sm mb-2"><input type="checkbox" checked={cambiarPassword}
+          onChange={e => { setCambiarPassword(e.target.checked); setFormData(actual => ({ ...actual, password: '' })); }} /> Cambiar contraseña de esta cuenta</label>}
+        {(!isEditing || cambiarPassword) && <PasswordField id="password" label={isEditing ? 'Nueva contraseña' : 'Contraseña'}
+          value={formData.password} onChange={handleChange} required />}
+        {isEditing && <p className="text-xs text-gray-500 mt-1">La contraseña guardada no se muestra. Si no seleccionas cambiarla, se conserva la actual.</p>}
       </div>
 
       {/* Role */}

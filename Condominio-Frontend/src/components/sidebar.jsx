@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 import React, { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useSession } from '../auth/sessionContext.js';
 import { canAccess, roleLabel } from '../auth/access.js';
 import {
@@ -14,12 +14,16 @@ import {
   FaRobot,
   FaBuilding,
   FaVideo,
+  FaClipboardList,
+  FaHistory,
+  FaCog,
 } from "react-icons/fa"; 
 import logo from "../assets/images/logo.jpg";
 
 const Sidebar = ({ sidebarOpen, onNavigate }) => {
   const [openMenu, setOpenMenu] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, endSession } = useSession();
   const [closing, setClosing] = useState(false);
   const username = user.username;
@@ -44,10 +48,6 @@ const Sidebar = ({ sidebarOpen, onNavigate }) => {
 
   const allMenuItems = [
     { title: "Dashboard", icon: <FaHome />, key: "dashboard", path: "/admin/dashboard" },
-    { title: "Cámaras", icon: <FaVideo />, key: "camaras", subItems: [
-      { name: "Monitor en vivo", path: "/admin/monitor-camaras" },
-      { name: "Gestión de cámaras", path: "/admin/camaras" },
-    ] },
     {
       title: "Autenticación",
       icon: <FaUserCog />,
@@ -64,24 +64,6 @@ const Sidebar = ({ sidebarOpen, onNavigate }) => {
         { name: "Unidades", path: "/admin/unidades" },
         { name: "Bloques", path: "/admin/bloques" },
         { name: "Mascotas", path: "/admin/mascotas" },
-      ],
-    },
-    {
-      title: "Seguridad",
-      icon: <FaRobot />,
-      key: "seguridad",
-      subItems: [
-        { name: "Notificaciones", path: "/admin/notificaciones" },
-        { name: "Eventos e incidencias", path: "/admin/eventos-seguridad" },
-        { name: "Objetos Perdidos", path: "/admin/objetos-perdidos" },
-        { name: "Reconocimiento Facial", path: "/admin/reconocimiento-facial" },
-        { name: "Reconocimiento Vehicular", path: "/admin/reconocimiento-vehicular" },
-        { name: "Enrolar Persona", path: "/admin/enrolar-persona" },
-        { name: "Detectar Problemas", path: "/admin/detectar-problemas" },
-        { name: "Visitantes", path: "/admin/visitantes" },
-        { name: "Visitas", path: "/admin/visitas" },
-        { name: "Incidentes", path: "/admin/incidentes" },
-        { name: "Servicios", path: "/admin/servicios" },
       ],
     },
     {
@@ -105,6 +87,28 @@ const Sidebar = ({ sidebarOpen, onNavigate }) => {
       ],
     },
     {
+      title: "Seguridad",
+      icon: <FaRobot />,
+      key: "seguridad",
+      subItems: [
+        { name: "Eventos e incidencias", path: "/admin/eventos-seguridad" },
+        { name: "Objetos Perdidos", path: "/admin/objetos-perdidos" },
+        { name: "Reconocimiento Facial", path: "/admin/reconocimiento-facial" },
+        { name: "Reconocimiento Vehicular", path: "/admin/reconocimiento-vehicular" },
+        { name: "Enrolar Persona", path: "/admin/enrolar-persona" },
+        { name: "Detectar Problemas", path: "/admin/detectar-problemas" },
+        { name: "Visitantes", path: "/admin/visitantes" },
+        { name: "Visitas", path: "/admin/visitas" },
+        { name: "Incidentes", path: "/admin/incidentes" },
+        { name: "Servicios", path: "/admin/servicios" },
+      ],
+    },
+    { title: "Cámaras", icon: <FaVideo />, key: "camaras", subItems: [
+      { name: "Monitor en vivo", path: "/admin/monitor-camaras" },
+      { name: "Configuración de incidencias", path: "/admin/monitor-camaras?configuracion=analisis" },
+      { name: "Gestión de cámaras", path: "/admin/camaras" },
+    ] },
+    {
       title: "Comunicación",
       icon: <FaHome />,
       key: "comunicacion",
@@ -114,7 +118,14 @@ const Sidebar = ({ sidebarOpen, onNavigate }) => {
     },
   ];
 
-  const menuItems = ['propietario', 'inquilino'].includes(user.role)
+  const menuItems = user.role === 'guardia'
+    ? [
+        { title: 'Inicio', key: 'inicio', icon: <FaHome />, path: '/admin/dashboard' },
+        { title: 'Incidencias', key: 'incidencias', icon: <FaClipboardList />, path: '/admin/eventos-seguridad' },
+        { title: 'Historial', key: 'historial', icon: <FaHistory />, path: '/admin/eventos-seguridad?vista=historial' },
+        { title: 'Ajustes', key: 'ajustes', icon: <FaCog />, path: '/admin/ajustes' },
+      ]
+    : ['propietario', 'inquilino'].includes(user.role)
     ? [
         { title: 'Inicio', key: 'inicio', icon: <FaHome />, path: '/admin/dashboard' },
         { title: 'Mi perfil', key: 'perfil', icon: <FaUserCircle />, path: '/admin/perfil' },
@@ -123,20 +134,25 @@ const Sidebar = ({ sidebarOpen, onNavigate }) => {
           .map(([title, path]) => ({ title, key: path, path: `/admin/${path}`, icon: <FaHome /> })),
       ]
     : allMenuItems.map(menu => menu.subItems
-        ? { ...menu, subItems: menu.subItems.filter(item => canAccess(user.role, item.path.split('/').pop(), user.capacidades)) }
+        ? { ...menu, subItems: menu.subItems.filter(item => canAccess(user.role, item.path.split('?')[0].split('/').pop(), user.capacidades)) }
         : menu).filter(menu => menu.subItems ? menu.subItems.length > 0 : canAccess(user.role, menu.path.split('/').pop(), user.capacidades));
 
   const NavItem = ({ to, icon, children }) => (
     <NavLink
       to={to}
       onClick={onNavigate}
-      className={({ isActive }) =>
+      className={({ isActive }) => {
+        if (user.role === 'guardia' && to.startsWith('/admin/eventos-seguridad')) {
+          const historial = new URLSearchParams(location.search).get('vista') === 'historial';
+          isActive = location.pathname === '/admin/eventos-seguridad' && historial === to.includes('vista=historial');
+        }
+        return (
         `px-4 py-3 flex items-center space-x-4 rounded-xl transition-all duration-300 ${
           isActive
             ? "text-white bg-gradient-to-r from-sky-800 to-blue-900 shadow-md"
             : "text-gray-300 hover:text-white hover:bg-gray-700/50"
-        }`
-      }
+        }`);
+      }}
     >
       <span className="text-lg">{icon}</span>
       <span className="font-medium">{children}</span>
@@ -195,13 +211,18 @@ const Sidebar = ({ sidebarOpen, onNavigate }) => {
                         <NavLink
                           to={sub.path}
                           onClick={onNavigate}
-                          className={({ isActive }) =>
+                          className={({ isActive }) => {
+                            if (sub.path.startsWith('/admin/monitor-camaras')) {
+                              isActive = location.pathname === '/admin/monitor-camaras' &&
+                                (new URLSearchParams(location.search).get('configuracion') === 'analisis') === sub.path.includes('configuracion=analisis');
+                            }
+                            return (
                             `block px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                               isActive
                                 ? "text-white bg-blue-900/80 font-medium shadow-sm"
                                 : "text-gray-400 hover:text-gray-200 hover:bg-gray-700/30"
-                            }`
-                          }
+                            }`);
+                          }}
                         >
                           {sub.name}
                         </NavLink>
@@ -234,14 +255,14 @@ const Sidebar = ({ sidebarOpen, onNavigate }) => {
             <span className="text-xs text-gray-400 capitalize truncate whitespace-nowrap">{userRole}</span>
           </div>
         </div>
-        <button
+        {user.role !== 'guardia' && <button
           onClick={handleLogout}
           disabled={closing}
           className="px-4 py-2.5 flex items-center space-x-3 rounded-xl text-gray-300 group w-full hover:bg-red-500/20 hover:text-red-400 transition-all duration-300 border border-transparent hover:border-red-500/30 min-w-0"
         >
           <FaSignOutAlt className="flex-shrink-0 text-lg" />
           <span className="whitespace-nowrap overflow-hidden text-ellipsis font-medium">{closing ? 'Cerrando sesión…' : 'Cerrar Sesión'}</span>
-        </button>
+        </button>}
       </div>
     </aside>
   );

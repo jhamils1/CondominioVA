@@ -3,6 +3,8 @@ from django.contrib.auth.models import User, Group, Permission
 from django.db.models import Q, Count, Avg, Sum
 from django.db.models import ProtectedError
 from django.utils import timezone
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
@@ -103,6 +105,41 @@ class CurrentUserView(APIView):
             result['capacidades'] = (['visitas.consultar_operativas'] if tiene_capacidad_personalizada(request.user, 'visitas.consultar_operativas') else [])
             result['rol_nombre'] = request.user.asignacion_rol_personalizado.rol.nombre
         return Response(result)
+
+
+class CambiarContrasenaView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        if not isinstance(request.data, dict) or set(request.data) != {'old_password', 'new_password'}:
+            return Response({'detail': 'Indica la contraseña actual y la nueva.'}, status=400)
+        anterior, nueva = request.data['old_password'], request.data['new_password']
+        if not isinstance(anterior, str) or not isinstance(nueva, str) or not anterior or not nueva or max(len(anterior), len(nueva)) > 256:
+            return Response({'detail': 'Indica contraseñas válidas.'}, status=400)
+        sesiones = list(SesionAplicacion.objects.select_for_update().filter(usuario=request.user, revocada__isnull=True).order_by('pk'))
+        sesion_actual = str(request.auth.get('session_id', ''))
+        if not any(str(sesion.pk) == sesion_actual for sesion in sesiones):
+            return Response({'detail': 'La sesión ya no está activa.'}, status=401)
+        usuario = get_user_model().objects.select_for_update().get(pk=request.user.pk)
+        if not usuario.check_password(anterior):
+            return Response({'detail': 'La contraseña actual no es correcta.'}, status=400)
+        if usuario.check_password(nueva):
+            return Response({'detail': 'La nueva contraseña debe ser diferente.'}, status=400)
+        try:
+            validate_password(nueva, usuario)
+        except DjangoValidationError as exc:
+            return Response({'detail': ' '.join(exc.messages)}, status=400)
+        otras = [sesion for sesion in sesiones if str(sesion.pk) != sesion_actual]
+        from finanzas.models import ProcedenciaFCM
+        from fcm_django.models import FCMDevice
+        dispositivos = ProcedenciaFCM.objects.filter(sesion__in=otras).values_list('dispositivo_id', flat=True)
+        FCMDevice.objects.filter(pk__in=dispositivos, user=usuario, active=True).update(active=False)
+        SesionAplicacion.objects.filter(pk__in=[s.pk for s in otras]).update(revocada=timezone.now())
+        usuario.set_password(nueva)
+        usuario.save(update_fields=['password'])
+        record_action(usuario, usuario, 'Cambio de contraseña; otras sesiones revocadas.', CHANGE)
+        return Response({'detail': 'Contraseña actualizada.'})
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()

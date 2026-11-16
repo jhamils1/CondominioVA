@@ -26,12 +26,14 @@ void main() {
     expect(find.text('Alertas de seguridad'), findsNothing);
   });
 
-  testWidgets('guardia no ve expensas ni dashboard y sí reconocimiento', (tester) async {
+  testWidgets('guardia ve solo sus ajustes', (tester) async {
     await showMenu(tester, 'guardia');
     expect(find.text('Mis Expensas'), findsNothing);
     expect(find.text('Dashboard Financiero'), findsNothing);
-    expect(find.text('Reconocimiento Facial'), findsOneWidget);
-    expect(find.text('Alertas de seguridad'), findsOneWidget);
+    expect(find.text('Reconocimiento Facial'), findsNothing);
+    expect(find.text('Alertas de seguridad'), findsNothing);
+    expect(find.text('Cambiar contraseña'), findsOneWidget);
+    expect(find.text('Cerrar sesión'), findsOneWidget);
   });
 
   testWidgets('inquilino no ve expensas ni funciones de seguridad', (tester) async {
@@ -107,7 +109,8 @@ void main() {
     await tester.tap(find.text('Ajustes'));
     await tester.pumpAndSettle();
     expect(find.text('Mis Expensas'), findsNothing);
-    expect(find.text('Reconocimiento Facial'), findsOneWidget);
+    expect(find.text('Reconocimiento Facial'), findsNothing);
+    expect(find.text('Cambiar contraseña'), findsOneWidget);
     expect(calls, greaterThanOrEqualTo(2));
   });
 }

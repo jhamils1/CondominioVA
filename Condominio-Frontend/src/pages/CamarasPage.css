@@ -25,4 +25,6 @@
 .cam-busqueda p { margin: 8px 0; }.cam-busqueda button + button { margin-left: 8px; }
 .cam-campos input[name="ruta_rtsp"]:read-only { background: #263849; border-color: #617080; color: #c5cdd5; cursor: not-allowed; }
 .cam-busqueda input { background: #06172e; color: #fff; border: 1px solid #456582; border-radius: 6px; padding: 7px; margin-left: 8px; width: 100px; }
+.cam-catalogo .cam-lista .cam-eliminar { color: #ffe9ed; background: #8a3040; border-color: #c24d60; }
+.cam-catalogo .cam-lista .cam-eliminar:hover:not(:disabled) { background: #a63c4e; }
 @media (max-width: 650px) { .cam-campos { grid-template-columns: 1fr; }.cam-lista article { flex-direction: column; }.cam-catalogo { padding: 16px; } }

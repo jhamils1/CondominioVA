@@ -6,6 +6,27 @@ import '../security/access_policy.dart';
 
 class AuthService {
   static const _storage = FlutterSecureStorage();
+
+  static Future<String?> cambiarContrasena(String actual, String nueva, {
+    http.Client? client, Future<String?> Function()? readToken,
+  }) async {
+    try {
+      final token = await (readToken ?? getAccessToken)();
+      if (token == null || token.isEmpty) return 'Inicia sesión nuevamente.';
+      final uri = Uri.parse('${ApiConfig.baseUrl}/change-password/');
+      final headers = ApiConfig.getAuthHeaders(token);
+      final body = jsonEncode({'old_password': actual, 'new_password': nueva});
+      final response = await (client == null ? http.post(uri, headers: headers, body: body)
+          : client.post(uri, headers: headers, body: body)).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) return null;
+      if (response.statusCode == 400) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data is Map && data['detail'] is String) return data['detail'] as String;
+      }
+      if (response.statusCode == 401) return 'La sesión venció. Inicia sesión nuevamente.';
+      return 'No se pudo cambiar la contraseña.';
+    } catch (_) { return 'No se pudo conectar al servidor.'; }
+  }
   
   // Login
   static Future<Map<String, dynamic>> login(String username, String password) async {

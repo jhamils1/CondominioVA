@@ -1,5 +1,11 @@
 # Roles, actores y permisos
 
+2026-11-15: la contraseña guardada no se expone al editar cuentas; el usuario puede mostrar solo texto que introduce y el administrador debe seleccionar explícitamente cambiarla. Web y móvil comparten la cuenta cuando utilizan el mismo backend.
+
+2026-11-15: el guardia puede confirmar una incidencia pendiente tanto en web como en el móvil; el backend conserva la verificación de rol y el administrador supervisa. La bandeja de notificaciones deja de mostrarse en el menú web del administrador; la generación y entrega de avisos siguen siendo independientes.
+
+2026-11-15: por decisión del usuario, el menú web y móvil del guardia se limita a Inicio, Incidencias, Historial y Ajustes. Ocultar entradas no altera por sí mismo las autorizaciones existentes; los avisos push permanecen. El historial muestra confirmadas, en atención y resueltas; los descartados se consultan aparte.
+
 2026-11-13: el usuario determin? que el monitor en vivo es exclusivo del administrador; el guardia conserva revisi?n de eventos e incidencias. Solicita un aviso m?vil al propietario o inquilino tras identificaci?n y confirmaci?n humana; implementaci?n y reglas de destinatario pendientes. Esta decisi?n actualiza las referencias anteriores al monitor para guardia.
 
 Revisión: 2026-10-31. Fuente de aplicación: [access.py](../Condominio-Backend/administracion/access.py), permisos y filtros en las vistas, [provision.py](../Condominio-Backend/administracion/provision.py) y [cuentas de empleados](../Condominio-Backend/ROLES_CUENTAS_EMPLEADOS.md).
@@ -24,7 +30,7 @@ La tabla distingue la política aprobada de los límites actuales; las capacidad
 | Cámaras, zonas, grabaciones y evidencias | Política de administración; módulo pendiente | Solo autorización operativa futura | No | No |
 | Reglas generales de notificación | Política de administración; pendiente | No | No | No |
 
-La operación de estados está disponible en web. La bandeja Flutter consulta alertas/detalle y lectura; no implementa esas acciones de revisión. La tabla no certifica cada endpoint ni reemplaza las restricciones concretas de las vistas.
+La operación de estados está disponible en web. En Flutter el guardia puede confirmar eventos pendientes; descartar, atender y resolver continúan disponibles en web. La tabla no certifica cada endpoint ni reemplaza las restricciones concretas de las vistas.
 
 Desde 2026-11-05 la imagen de evidencia de eventos nuevos puede consultarse por
 API autenticada por administradores o guardias activos. La autorización
@@ -50,3 +56,7 @@ Para residentes vinculados a empleados se exige identidad coincidente y perfil a
 Aplicar permisos en backend y limitar datos por relación; ocultar un menú no protege una API. Propietarios e inquilinos no acceden a incidencias internas, cámaras ni grabaciones. El guardia no gestiona usuarios, roles, contratos o finanzas ni elimina evidencia/historial.
 
 2026-11-14: el administrador puede eliminar un rol personalizado sin cuentas asignadas, con confirmacion en web y auditoria en backend. La API bloquea la eliminacion si existe cualquier asignacion; las capacidades del rol eliminado se retiran en la misma transaccion. Los cuatro roles predeterminados siguen protegidos.
+
+2026-11-15: para posibles estacionamientos detectados por la Imou, el usuario solicitó avisar inicialmente tanto a guardias como a administradores. El evento permanece pendiente hasta la revisión del guardia; los demás eventos conservan su distribución anterior.
+
+2026-11-16: Administrador y guardia pueden confirmar pendientes y retirar incidencias confirmadas del historial global; el registro y la auditoria permanecen.

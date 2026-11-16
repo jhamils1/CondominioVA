@@ -1,4 +1,24 @@
-# Pendientes
+﻿# Pendientes
+
+2026-11-16: el usuario todavía no tiene servidor de IA remota. Preparar y configurar uno solo cuando esté disponible; probar TLS, protección, versiones y pesos equivalentes, detecciones, latencia, disponibilidad y costo con imágenes autorizadas. La selección actual no altera el monitor independiente ni soporta la interfaz de Django desde otro equipo.
+
+2026-11-16: validar la regla de piscina con video y cámaras físicas autorizados, bajo revisión humana, y verificar recepción del aviso. La detección no reconoce ahogamientos ni garantiza que no haya personas fuera de cámara. La vista y la IA deben estar activas; varias sesiones o pérdidas de seguimiento pueden duplicar eventos. La webcam conserva la regla por dispositivo en su navegador. Los eventos web se registran con origen MANUAL en la API actual, aunque la descripción explica que son detecciones automáticas; evaluar una procedencia confiable.
+
+2026-11-15: validar con cámara IP adicional y webcam físicas el seguimiento, evidencia y entrega al teléfono, así como el nuevo orden de configuración y la presentación de la lectura con el proveedor real. El análisis web requiere mantener activa la página; no es un servicio continuo, y varias sesiones pueden duplicar eventos. La webcam admite un dispositivo a la vez. Sus lecturas de placas no se vinculan automáticamente a una incidencia. Evaluar identificación persistente y reintentos después de cerrar la página.
+
+2026-11-15: validar visualmente los controles para mostrar contraseñas y el formulario de usuario en el entorno del usuario; la contraseña almacenada no es recuperable y no se presenta en el catálogo.
+
+2026-11-15: verificar con incidencia ficticia y guardia autorizado la confirmación móvil real y la recepción del aviso por administrador; no se modificaron incidentes reales ni se enviaron avisos en esta etapa. La verificación y envío al residente sigue disponible en web, no se agregó al móvil.
+
+2026-11-15: confirmar visualmente con el usuario los menús e historial en la web y el teléfono actualizado. Validar con cuenta ficticia y autorización expresa el cambio de contraseña de extremo a extremo y recepción push después de revocaciones; no se cambiaron cuentas reales.
+
+2026-11-15: pendiente respuesta del usuario sobre archivar conservando auditoría o borrar definitivamente incidencias revisadas para el administrador. No está implementado. Validar visualmente navegación web del guardia.
+
+2026-11-14: comprobar exportación con el video y navegador del usuario; la salida actual es WebM sin audio, tarda aproximadamente la duración del video y requiere mantener la pestaña abierta. Evaluar conservación de sonido si el usuario la solicita.
+
+2026-11-14: verificar el nuevo modo «Vehículos en zona» con una cámara o video autorizado, incluidos entrada y salida de zona y recepción de alertas.
+
+2026-11-14: comprobar visualmente los modos y tiempos con cámara/video autorizados y recepción por un guardia. En Imou el registro automático debe estar habilitado; una configuración guardada de 5 s requiere cambiarse para mostrar amarillo antes de rojo.
 
 2026-11-14: validar con video autorizado la precisión de zona, seguimiento, colores y recepción real por guardias; los eventos de grabación pueden corresponder a hechos antiguos. Falta comprobar el procesamiento y entrega push en el entorno operativo y gestionar duplicados entre análisis repetidos.
 
@@ -327,3 +347,90 @@ Una consulta oficial de solo lectura confirmó que ese proyecto sí existe y que
 2026-11-14: Pendiente confirmacion del usuario de que la barra movil instalada cumple lo esperado; la visibilidad de sus cuatro opciones ya se comprobo.
 
 2026-11-14: El usuario confirmo que la barra inferior ya aparece; la revision completa de acciones y flujos reales sigue pendiente.
+
+2026-11-15: la cuenta ficticia residente de la prueba fue eliminada de la base local a solicitud del usuario.
+
+2026-11-15: validar con cámara autorizada la imagen, reconexión tras caída y continuidad al cambiar de vista; probar cierre normal y recarga en Windows. Definir supervisión para nube y puertos dinámicos; los puertos actuales siguen fijos.
+
+2026-11-15: validar con cámara o video autorizado colores del monitor Imou, salida de zona y recepción real de aviso preliminar por guardia y administrador; análisis web requiere IA y vista activa.
+
+2026-11-15: diseñar e implementar múltiples zonas y tipos de incidencia por cámara con configuración compartida, compatibilidad con la zona existente y pruebas antes de cualquier migración persistente.
+
+2026-11-15: validar en navegador del usuario el submenú y guardado explícito, incluidos cambios de cámara de catálogo y salida con borrador; probar el resultado con cámara autorizada.
+
+2026-11-15: confirmar visualmente la nueva distribución del monitor Imou en pantallas grandes y pequeñas.
+
+2026-11-15: confirmar visualmente el encabezado y submenú Configuración de incidencias en el navegador del usuario.
+
+2026-11-15: validar vista múltiple y enlaces directos con una segunda cámara de red real; implementar incidencias automáticas por cámara adicional y medir capacidad antes de ampliar concurrencia.
+
+2026-11-15: comprobar visualmente en el navegador del usuario la opción Ver varias cámaras y probar una segunda cámara física cuando esté disponible.
+
+2026-11-15: confirmar con el usuario el mosaico y ampliación en navegador y validar dos cámaras físicas, capacidad y continuidad al cambiar de pestaña.
+
+2026-11-15: confirmar visualmente el mosaico predeterminado y validar ampliación con cámaras físicas.
+
+2026-11-15: confirmar con el usuario el mosaico compacto y verificarlo con más de una cámara física.
+
+2026-11-15: confirmar con el usuario los controles superiores del mosaico con la cámara real.
+
+2026-11-15: definir con el usuario la incorporación de la cámara de laptop al mosaico y confirmar visualmente la navegación simplificada.
+
+2026-11-15: confirmar visualmente en el equipo del usuario la ampliación y reducción de una cámara dentro del mosaico.
+
+2026-11-15: validar con el usuario el selector de cámaras y los mensajes de eliminación protegida; probar cámaras físicas sin eliminar registros reales.
+
+2026-11-15: confirmar visualmente la gestión de cámaras sin la sección de funciones previstas.
+
+2026-11-15: completar reglas y alertas automáticas por cámara de catálogo, configuración persistente de lectura de placas y validación con múltiples cámaras físicas; mascotas quedan fuera de esta etapa.
+# Cámara local — límites pendientes (2026-11-15)
+
+- Comprobar la cámara física y la selección de dispositivos en el equipo del usuario.
+- Validar la lectura de placas de cámara local, su identidad y asociación confiable a incidencias; el registro puede duplicar eventos tras perder seguimiento.
+- Investigar el fallo aislado de `camaras_catalogo.mjs` en la comparación de IP (línea 170), ajeno a la prueba de cámara local.
+
+2026-11-16: Verificar Roboflow con credencial configurada por el usuario y fotograma autorizado; comprobar clases, latencia, cr?ditos y avisos.
+
+2026-11-16: Validar an?lisis de video de usuario con Roboflow y comportamiento de incidencias; la imagen sint?tica no valida detecciones ni avisos.
+
+2026-11-16: Comprobar visualmente configuracion de incidencias y alineacion de videos en escritorio y movil.
+
+2026-11-16: Validar en navegadores y telefonos el flujo de confirmacion y retirada del historial; APK aun no actualizada.
+
+2026-11-16: Verificar visualmente confirmacion desde el monitor con incidencia autorizada; el boton aparece solo para pendientes.
+
+2026-11-16: Validar en navegador del usuario el flujo de detalle y retorno del monitor.
+
+2026-11-16: Confirmar visualmente el nuevo orden del menu web.
+
+2026-11-16: Pedir al usuario recargar las vistas de incidencias e incidentes y revisar mensaje exacto si persiste el error original.
+
+2026-11-16: Validar recepcion real de notificaciones de guardia con dispositivo autorizado y cuenta de prueba; procesador FCM detenido y 12 entregas pendientes requieren revision antes de activarlo.
+
+2026-11-16: Confirmar que el guardia recibio y abrio aviso ficticio; decidir limpieza del evento de prueba y revision de 12 entregas previas antes de activar procesador.
+
+2026-11-16: Comprobar entregas reales por tipo si se autorizan. La navegacion FCM movil abre la lista y no usa el id de evento para abrir detalle; evaluar mejora si se solicita.
+
+2026-11-16: Mantener revisable limpieza de tres eventos ficticios y revisar entregas previas antes de iniciar procesador FCM. Validar deteccion automatica real por camara y video.
+
+2026-11-16: Validar en telefono avisos FCM con textos nuevos; procesador continuo detenido y entregas previas requieren revision antes de iniciarlo.
+
+2026-11-16: Revisar y limpiar eventos ficticios identificados y entregas previas antes de iniciar procesador continuo; validar detecciones reales.
+
+2026-11-16: Resolver compilacion Flutter, instalar APK con configuracion de conexion correcta y verificar icono y color en primer y segundo plano con envio autorizado.
+
+2026-11-16: Comprobar tambien apariencia en primer plano y alerta de estacionamiento; revisar cola previa antes de iniciar procesador continuo.
+
+2026-11-16: Confirmar visualmente en telefono el gesto y menu de historial; sin retirar incidencia real durante la prueba.
+
+2026-11-16: Confirmar visualmente en dispositivo el historial de lista unica y pulsacion larga.
+
+2026-11-16: Confirmar en el telefono correcto la lista unica de historial y gesto de pulsacion larga.
+
+2026-11-16: Confirmar en telefono que el historial muestre lista unica y opcion al mantener pulsado.
+
+2026-11-16: Confirmar en telefono el indicador de actualizacion al deslizar incidencias.
+
+2026-11-16: Comprobar gesto web en pantalla tactil real y desplazamiento de la pagina.
+
+2026-11-16: Confirmar visualmente cambio de descartados en web del guardia.

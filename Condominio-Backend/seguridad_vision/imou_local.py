@@ -143,6 +143,9 @@ class Peticion(BaseHTTPRequestHandler):
         if not hmac.compare_digest(self.headers.get('Authorization', ''),
                                    'Bearer ' + self.server.clave):
             estado, cuerpo = 403, b''
+        elif self.path == '/cerrar':
+            estado, cuerpo = 200, b''
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
         elif self.path not in ('/fotograma', '/fotograma-catalogo'):
             estado, cuerpo = 404, b''
         else:

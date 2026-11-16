@@ -7,6 +7,9 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'condominioBACK.settings')
+    # Conserva el comando habitual y supervisa únicamente los puentes de cámara.
+    if len(sys.argv) > 1 and sys.argv[1] == 'runserver':
+        sys.argv[1] = 'runserver_camaras'
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

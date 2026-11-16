@@ -152,7 +152,7 @@ class _PerfilPageState extends State<PerfilPage> {
                 gradient: LinearGradient(colors: [AppTheme.navy, Color(0xFF164A70)]),
               ),
             ),
-            if (puedeAcceder(role, '/editar-perfil')) ListTile(
+            if (role != 'guardia' && puedeAcceder(role, '/editar-perfil')) ListTile(
               leading: const Icon(Icons.edit),
               title: const Text("Editar Perfil"),
               onTap: () {
@@ -168,13 +168,13 @@ class _PerfilPageState extends State<PerfilPage> {
                 Navigator.pushNamed(context, "/cambiar-password");
               },
             ),
-            ListTile(
+            if (role != 'guardia') ListTile(
               leading: Icon(widget.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
               title: Text(widget.isDark ? 'Usar tema claro' : 'Usar tema oscuro'),
               onTap: () { Navigator.pop(context); widget.onToggleTheme(); },
             ),
             const Divider(),
-            if (puedeAcceder(role, '/visitas-operativas', capabilities)) ListTile(
+            if (role != 'guardia' && puedeAcceder(role, '/visitas-operativas', capabilities)) ListTile(
               leading: const Icon(Icons.people_outline),
               title: const Text('Visitas pendientes y activas'),
               onTap: () {
@@ -182,7 +182,7 @@ class _PerfilPageState extends State<PerfilPage> {
                 Navigator.pushNamed(context, '/visitas-operativas');
               },
             ),
-            if (puedeAcceder(role, '/alertas-seguridad')) ListTile(
+            if (role != 'guardia' && puedeAcceder(role, '/alertas-seguridad')) ListTile(
               leading: const Icon(Icons.notifications_active),
               title: const Text('Alertas de seguridad'),
               onTap: () {
@@ -243,7 +243,7 @@ class _PerfilPageState extends State<PerfilPage> {
                 Navigator.pushNamed(context, "/dashboard");
               },
             ),
-            if (puedeAcceder(role, '/reconocimiento-facial')) ListTile(
+            if (role != 'guardia' && puedeAcceder(role, '/reconocimiento-facial')) ListTile(
               leading: const Icon(Icons.face),
               title: const Text("Reconocimiento Facial"),
               subtitle: const Text("Verificar acceso"),
@@ -298,7 +298,8 @@ class _PerfilPageState extends State<PerfilPage> {
               : _selectedTab == 'notificaciones' && staff
                   ? AlertasSeguridadPage(service: widget.alertasService)
               : activeTab == 'nuevos' && staff
-                  ? IncidenciasSeguridadPage(key: const ValueKey('incidencias-activas'), service: widget.alertasService)
+                  ? IncidenciasSeguridadPage(key: const ValueKey('incidencias-activas'), service: widget.alertasService,
+                      puedeConfirmar: role == 'guardia' || role == 'administrador', onConfirmada: () => setState(() { _selectedTab = 'historial'; }))
               : activeTab == 'nuevos' && resident
                   ? AvisosResidentePage(key: const ValueKey('avisos-nuevos'), service: widget.avisosService, filtro: FiltroBandeja.nuevas, actualizarPeriodicamente: true)
               : activeTab == 'historial' && staff
@@ -330,9 +331,9 @@ class _PerfilPageState extends State<PerfilPage> {
                       const SizedBox(height: 14),
                       if (puedeAcceder(role, '/avisos-residente')) _quickLink(context, Icons.notifications_outlined,
                         'Revisar avisos', 'Consulta tus notificaciones del condominio', '/avisos-residente'),
-                      if (puedeAcceder(role, '/alertas-seguridad')) _quickLink(context, Icons.notification_important_outlined,
+                      if (role != 'guardia' && puedeAcceder(role, '/alertas-seguridad')) _quickLink(context, Icons.notification_important_outlined,
                         'Revisar alertas', 'Consulta los eventos de seguridad', '/alertas-seguridad'),
-                      if (puedeAcceder(role, '/visitas-operativas', capabilities)) _quickLink(context, Icons.people_outline,
+                      if (role != 'guardia' && puedeAcceder(role, '/visitas-operativas', capabilities)) _quickLink(context, Icons.people_outline,
                         'Consultar visitas', 'Revisa las visitas pendientes y activas', '/visitas-operativas'),
                       if (puedeAcceder(role, '/expensas')) _quickLink(context, Icons.receipt_long_outlined,
                         'Ver expensas', 'Consulta tus expensas y pagos', '/expensas'),

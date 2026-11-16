@@ -2,8 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { analizarFotograma, estadoCamaraDemo } from '../api/visionDemoApi.js';
 import { zonaValida } from '../vision/zonas.js';
 import { crearSeguimiento } from '../vision/permanencia.js';
-import { colorDeteccion } from '../vision/coloresDeteccion.js';
+import { crearSeguimientoPiscina } from '../vision/personaSolaPiscina.js';
+import { colorDeteccion, esVehiculo, filtrarDetecciones } from '../vision/coloresDeteccion.js';
+import ModoDetecciones from '../components/ModoDetecciones.jsx';
 import { crearEventoVideo } from '../vision/eventoVideo.js';
+import { exportarVideo } from '../vision/exportarVideo.js';
 import ZonaVideo from './ZonaVideo.jsx';
 import './VideoArchivoDemostracion.css';
 
@@ -14,14 +17,14 @@ const MAX_BYTES = 250 * 1024 * 1024;
 const MAX_SEGUNDOS = 300;
 const INTERVALO = 0.5;
 
-function dibujarCajas(contexto, detecciones, segundos, tieneZona) {
-  contexto.font = '16px sans-serif';
+function dibujarCajas(contexto, detecciones, segundos, tieneZona, modo, tipo = 'estacionamiento') {
+  contexto.font = '600 14px system-ui, sans-serif';
   contexto.lineWidth = 2;
-  for (const deteccion of detecciones) {
+  for (const deteccion of filtrarDetecciones(detecciones, modo, tipo === 'piscina' ? 'personas' : 'vehiculos')) {
     if (!Array.isArray(deteccion.caja) || deteccion.caja.length !== 4 ||
         !deteccion.caja.every(Number.isFinite) || !Number.isFinite(deteccion.confianza)) continue;
     const [x1, y1, x2, y2] = deteccion.caja;
-    const color = colorDeteccion(deteccion);
+    const color = tipo === 'piscina' && deteccion.permanencia && !deteccion.permanencia.superaUmbral ? '#ffc247' : colorDeteccion(deteccion);
     contexto.strokeStyle = color;
     contexto.strokeRect(x1, y1, x2 - x1, y2 - y1);
     if (tieneZona && vehiculos.has(deteccion.clase)) {
@@ -29,10 +32,11 @@ function dibujarCajas(contexto, detecciones, segundos, tieneZona) {
       contexto.fillStyle = color; contexto.fill(); contexto.strokeStyle = '#fff'; contexto.stroke();
     }
     const permanencia = deteccion.permanencia;
-    const texto = `${nombres[deteccion.clase] || deteccion.clase} ${Math.round(deteccion.confianza * 100)}%${permanencia ? permanencia.superaUmbral ? ' · revisar' : ` · ${permanencia.segundos.toFixed(1)}/${segundos} s en zona` : ''}`;
+    const nombre = modo !== 'todas' && esVehiculo(deteccion) ? 'Vehículo detectado' : nombres[deteccion.clase] || deteccion.clase;
+    const texto = `${nombre} ${Math.round(deteccion.confianza * 100)}%${permanencia ? permanencia.superaUmbral ? ' · revisar' : ` · ${permanencia.segundos.toFixed(1)}/${segundos} s en zona` : ''}`;
     const y = Math.max(19, y1);
-    contexto.fillStyle = '#111';
-    contexto.fillRect(x1, y - 19, contexto.measureText(texto).width + 8, 20);
+    contexto.fillStyle = 'rgba(5, 20, 36, 0.88)';
+    contexto.fillRect(x1, y - 19, contexto.measureText(texto).width + 10, 20);
     contexto.fillStyle = '#fff';
     contexto.fillText(texto, x1 + 4, y - 4);
   }
@@ -65,6 +69,8 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
   const videoAnalizado = useRef(null);
   const canvas = useRef(null);
   const solicitud = useRef(null);
+  const exportacion = useRef(null);
+  const desmontado = useRef(false);
   const resultados = useRef([]);
   const reproducible = useRef(false);
   const animacion = useRef(null);
@@ -83,22 +89,31 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
   const [proporcion, setProporcion] = useState(16 / 9);
   const [zona, setZona] = useState([]);
+  const [mostrarZona, setMostrarZona] = useState(false);
   const [borradorZona, setBorradorZona] = useState([]);
   const [marcandoZona, setMarcandoZona] = useState(false);
   const [errorZona, setErrorZona] = useState('');
-  const [umbral, setUmbral] = useState('5');
+  const [umbral, setUmbral] = useState('15');
+  const [tipoRegla, setTipoRegla] = useState('estacionamiento');
+  const [modoDetecciones, setModoDetecciones] = useState('todas');
+  const modoDeteccionesRef = useRef('todas');
   const [hallazgos, setHallazgos] = useState([]);
   const [registroAutomatico, setRegistroAutomatico] = useState(false);
   const [pendientes, setPendientes] = useState([]);
   const [reintentando, setReintentando] = useState(false);
   const [registrados, setRegistrados] = useState(0);
   const [sinGuardias, setSinGuardias] = useState(0);
+  const [exportando, setExportando] = useState(false);
+  const [avanceExportacion, setAvanceExportacion] = useState(0);
+  const [mensajeExportacion, setMensajeExportacion] = useState('');
   const umbralValido = Number.isInteger(Number(umbral)) && Number(umbral) >= 2 && Number(umbral) <= 120;
 
-  useEffect(() => () => {
+  useEffect(() => { desmontado.current = false; return () => {
+    desmontado.current = true;
     solicitud.current?.abort();
+    exportacion.current?.abort();
     cancelAnimationFrame(animacion.current);
-  }, []);
+  }; }, []);
   useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
   useEffect(() => {
     function sincronizarPantalla() { setPantallaCompleta(document.fullscreenElement === visor.current); }
@@ -119,8 +134,9 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     event.target.value = '';
     setDuracion(0);
     setRegistroAutomatico(true);
-    setZona([]); setBorradorZona([]); setMarcandoZona(false); setErrorZona('');
+    setZona([]); setMostrarZona(false); setBorradorZona([]); setMarcandoZona(false); setErrorZona('');
     setProgreso(''); setMensaje(''); setEstado('inicial');
+    setMensajeExportacion('');
     setHallazgos([]);
     setUrl(''); setNombre('');
     if (!archivo) return;
@@ -164,6 +180,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     }
     invalidarResultados();
     setZona(borradorZona);
+    setMostrarZona(false);
     setMarcandoZona(false);
     setErrorZona('');
   }
@@ -202,7 +219,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       const lienzo = canvas.current;
       lienzo.width = ancho; lienzo.height = alto;
       const contexto = lienzo.getContext('2d');
-      const seguimiento = zona.length ? crearSeguimiento({ zona, ancho, alto, segundos: Number(umbral), toleranciaPerdida: 2 }) : null;
+      const seguimiento = zona.length ? (tipoRegla === 'piscina' ? crearSeguimientoPiscina({ zona, ancho, alto, segundos: Number(umbral) }) : crearSeguimiento({ zona, ancho, alto, segundos: Number(umbral), toleranciaPerdida: 2 })) : null;
       const total = Math.ceil(duracion / INTERVALO);
       for (let indice = 0; indice < total; indice += 1) {
         const tiempo = Math.min(indice * INTERVALO + 0.001, Math.max(0, duracion - 0.01));
@@ -230,7 +247,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
           }
         }
         resultados.current.push(detecciones);
-        dibujarCajas(contexto, detecciones, umbral, zona.length > 0);
+        dibujarCajas(contexto, detecciones, umbral, zona.length > 0, modoDeteccionesRef.current, tipoRegla);
         setProgreso(`${indice + 1} de ${total} imágenes analizadas`);
       }
       reproducible.current = true;
@@ -241,7 +258,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       if (error.name === 'AbortError' || controlador.signal.aborted) return;
       setEstado('error');
       setMensaje(error.message?.includes('video') ? error.message :
-        'No se pudo analizar el video. Comprueba que el procesador local esté iniciado y que el navegador pueda abrir el archivo.');
+        'No se pudo analizar el video. Comprueba el procesador seleccionado y que el navegador pueda abrir el archivo.');
     }
   }
 
@@ -265,14 +282,14 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     } finally { setReintentando(false); }
   }
 
-  function pintarReproduccion() {
+  function pintarReproduccion(modo = modoDeteccionesRef.current) {
     const fuente = videoAnalizado.current || video.current;
     const lienzo = canvas.current;
     if (!reproducible.current || !fuente || !lienzo || fuente.readyState < 2) return;
     const contexto = lienzo.getContext('2d');
     contexto.clearRect(0, 0, lienzo.width, lienzo.height);
     const indice = Math.min(Math.floor(fuente.currentTime / INTERVALO), resultados.current.length - 1);
-    dibujarCajas(contexto, resultados.current[Math.max(0, indice)] || [], umbral, zona.length > 0);
+    dibujarCajas(contexto, resultados.current[Math.max(0, indice)] || [], umbral, zona.length > 0, modo, tipoRegla);
   }
 
   function otros(lado) {
@@ -356,15 +373,43 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     }
   }
 
-  return <section className="border rounded p-4 mb-5">
-    <h3 className="font-semibold">Analizar un video desde un archivo</h3>
-    <p className="my-2 text-sm">Selecciona un video de hasta 5 minutos y 250 MB. Se analiza una imagen cada medio segundo; el archivo completo no se guarda en el servidor.</p>
+  async function descargarAnalizado() {
+    if (exportacion.current || !reproducible.current || !canvas.current) return;
+    const controlador = new AbortController();
+    exportacion.current = controlador;
+    setExportando(true); setAvanceExportacion(0); setMensajeExportacion('');
+    try {
+      const blob = await exportarVideo({ src: url, ancho: canvas.current.width, alto: canvas.current.height,
+        duracion, resultados: resultados.current.slice(), intervalo: INTERVALO,
+        modo: modoDeteccionesRef.current, segundos: umbral, tieneZona: zona.length > 0,
+        zonaVisible: mostrarZona ? zona : [], dibujar: (...args) => dibujarCajas(...args, tipoRegla), signal: controlador.signal,
+        onProgreso: valor => { if (!desmontado.current) setAvanceExportacion(valor); },
+      });
+      if (controlador.signal.aborted) return;
+      const enlace = document.createElement('a');
+      const objeto = URL.createObjectURL(blob);
+      enlace.href = objeto;
+      enlace.download = `${nombre.replace(/\.[^.]+$/, '') || 'video'}-analizado.webm`;
+      enlace.click();
+      setTimeout(() => URL.revokeObjectURL(objeto), 60000);
+      setMensajeExportacion('Descarga preparada con la visualización seleccionada.');
+    } catch (error) {
+      if (!controlador.signal.aborted && !desmontado.current) setMensajeExportacion(error.message || 'No se pudo exportar el video.');
+    } finally {
+      if (exportacion.current === controlador) exportacion.current = null;
+      if (!desmontado.current) setExportando(false);
+    }
+  }
+
+  return <section className="video-analisis-panel border rounded p-4 mb-5">
+    <h3 className="font-semibold">Analizar video</h3>
+    <p className="my-2 text-sm">Hasta 5 minutos y 250 MB. Se analiza una imagen cada 0,5 segundos.</p>
     <label className="block my-2">Seleccionar video
-      <input type="file" accept="video/*" onChange={seleccionar} disabled={estado === 'procesando'}
+      <input type="file" accept="video/*" onChange={seleccionar} disabled={estado === 'procesando' || exportando}
         className="block mt-1 max-w-full" />
     </label>
     {nombre && <p className="text-sm break-all">{nombre}</p>}
-    {url && <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+    {url && <div className="video-comparacion mt-3">
       <div className="min-w-0">
         <h4 className="font-medium mb-2">Video original</h4>
         <div className="zona-original-marco" style={{ '--proporcion': proporcion }}>
@@ -377,17 +422,17 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
           onSeeked={() => posicionCambiada('original')}
           onError={() => { setDuracion(0); setMensaje('El navegador no puede abrir este video.'); }}
           className="zona-original-video" />
-        <ZonaVideo puntos={marcandoZona ? borradorZona : []} activa={marcandoZona}
+        <ZonaVideo puntos={marcandoZona ? borradorZona : mostrarZona ? zona : []} activa={marcandoZona}
           onAgregar={agregarPuntoZona} />
         </div>
       </div>
       <div className="min-w-0">
         <h4 className="font-medium mb-2">Video analizado</h4>
-        {!progreso && <p className="text-sm">Las detecciones aparecerán aquí al iniciar el análisis.</p>}
         <div ref={visor} className="visor-analizado">
+          {!progreso && <div className="video-resultado-vacio" style={{ '--proporcion': proporcion }}>El resultado aparecerá aquí</div>}
           <div className={`visor-marco ${progreso ? '' : 'hidden'}`}
             style={{ '--proporcion': proporcion }}>
-            {estado === 'terminado' && <video ref={videoAnalizado} src={url} controls muted playsInline preload="auto"
+            {estado === 'terminado' && <video ref={videoAnalizado} src={url} controls controlsList="nodownload" disablePictureInPicture muted playsInline preload="auto"
               aria-label="Video analizado"
               onPointerDown={() => { controlActual.current = 'analizado'; }}
               onKeyDown={() => { controlActual.current = 'analizado'; }}
@@ -398,21 +443,35 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
               onSeeked={() => posicionCambiada('analizado')} />}
             <canvas ref={canvas} className={estado === 'terminado' ? 'capa-detecciones' : 'imagen-analisis'}
               aria-label="Detecciones del video" />
+            {mostrarZona && <ZonaVideo puntos={zona} />}
             {estado === 'terminado' && <button type="button" className="boton-pantalla-analizada"
               onClick={alternarPantallaCompleta} title={pantallaCompleta ? 'Salir de pantalla completa' : 'Pantalla completa'}
               aria-label={pantallaCompleta ? 'Salir de pantalla completa del video analizado' : 'Pantalla completa del video analizado'}>⛶</button>}
           </div>
         </div>
+        {estado === 'terminado' && <div className="mt-3">
+          <button type="button" onClick={descargarAnalizado} disabled={exportando} className="seguridad-primary">Descargar video analizado</button>
+          {exportando && <button type="button" className="seguridad-secondary" onClick={() => { exportacion.current?.abort(); setMensajeExportacion('Exportación cancelada.'); }}>Cancelar descarga</button>}
+          <p className="text-sm mt-2">WebM sin sonido. Mantén esta pestaña abierta durante la descarga.</p>
+          {exportando && <p role="status">Preparando video: {avanceExportacion}%</p>}
+          {mensajeExportacion && <p role="status">{mensajeExportacion}</p>}
+        </div>}
       </div>
     </div>}
+    {url && <div className="video-visualizacion"><ModoDetecciones value={modoDetecciones} tipo={tipoRegla === 'piscina' ? 'personas' : 'vehiculos'} tieneZona={zona.length > 0} disabled={exportando} onChange={modo => { modoDeteccionesRef.current = modo; setModoDetecciones(modo); pintarReproduccion(modo); }} /></div>}
     {url && <div className="zona-acciones mt-4">
-      <h4 className="font-medium">Zona de estacionamiento prohibido</h4>
-      <p className="text-sm">Pausa el video y marca el contorno sobre el video original. La zona solo se conserva mientras este video está abierto.</p>
+      <label>Tipo de incidencia:{' '}<select value={tipoRegla} disabled={estado === 'procesando' || exportando} onChange={event => { invalidarResultados(); setTipoRegla(event.target.value); setZona([]); setBorradorZona([]); setMarcandoZona(false); setUmbral(event.target.value === 'piscina' ? '10' : '15'); }}>
+        <option value="estacionamiento">Estacionamiento prohibido</option>
+        <option value="piscina">Persona sola cerca de piscina</option>
+      </select></label>
+      <h4 className="font-medium">{tipoRegla === 'piscina' ? 'Zona de piscina' : 'Zona de estacionamiento prohibido'}</h4>
+      <p className="text-sm">Pausa el video y dibuja la zona en la imagen original. Se conserva mientras el video esté abierto.</p>
       {!marcandoZona ? <div className="mt-2 flex flex-wrap gap-2">
-        <button type="button" onClick={empezarZona} disabled={!duracion || estado === 'procesando'}
+        <button type="button" onClick={empezarZona} disabled={!duracion || estado === 'procesando' || exportando}
           className="border rounded px-3 py-2 disabled:opacity-50">{zona.length ? 'Cambiar zona' : 'Dibujar zona'}</button>
+        {zona.length > 0 && <button type="button" disabled={exportando} onClick={() => setMostrarZona(actual => !actual)} className="border rounded px-3 py-2">{mostrarZona ? 'Ocultar zona' : 'Mostrar zona'}</button>}
         {zona.length > 0 && <button type="button" onClick={() => { invalidarResultados(); setZona([]); }}
-          disabled={estado === 'procesando'} className="border rounded px-3 py-2 disabled:opacity-50">Borrar zona</button>}
+          disabled={estado === 'procesando' || exportando} className="border rounded px-3 py-2 disabled:opacity-50">Borrar zona</button>}
       </div> : <div className="mt-2">
         <p className="text-sm">Haz clic en al menos 3 puntos sobre el video. También puedes enfocar la imagen y usar las flechas y Enter.</p>
         <p className="text-sm">Puntos marcados: {borradorZona.length} de 30</p>
@@ -426,22 +485,22 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       </div>}
       {errorZona && <p role="alert" className="text-red-700 mt-2">{errorZona}</p>}
       {zona.length > 0 && !marcandoZona && <div className="mt-2">
-        <label className="text-sm">Tiempo mínimo detenido (segundos, de 2 a 120):{' '}
-          <input type="number" min="2" max="120" step="1" value={umbral} disabled={estado === 'procesando'}
+        <label className="text-sm">{tipoRegla === 'piscina' ? 'Tiempo mínimo sola (segundos, de 2 a 120):' : 'Tiempo mínimo detenido (segundos, de 2 a 120):'}{' '}
+          <input type="number" min="2" max="120" step="1" value={umbral} disabled={estado === 'procesando' || exportando}
             onChange={event => { invalidarResultados(); setUmbral(event.target.value); }} className="border rounded p-1 w-20" />
         </label>
         {!umbralValido && <p role="alert" className="text-red-700 text-sm">Introduce un número entero entre 2 y 120.</p>}
-        <p className="text-sm mt-2">Se busca un vehículo prácticamente detenido dentro de la zona. Los resultados son orientativos y necesitan revisión.</p>
+        {tipoRegla === 'piscina' ? <p className="text-sm mt-2">Se avisa si hay una persona dentro de la zona y ninguna otra detectada en la imagen durante el tiempo indicado. No detecta ahogamientos ni personas fuera de cámara.</p> : <><p className="text-sm mt-1">Amarillo desde los 5 s detenido en zona. Si el límite es de 5 s o menos, pasa directamente a rojo y solicita el aviso.</p><p className="text-sm mt-2">Se busca un vehículo prácticamente detenido dentro de la zona. Los resultados son orientativos y necesitan revisión.</p></>}
         <label className="block mt-2 text-sm">
           <input type="checkbox" checked={registroAutomatico} disabled={estado === 'procesando'}
             onChange={event => setRegistroAutomatico(event.target.checked)} />{' '}
           Registrar automáticamente los hallazgos de este video y avisar a los guardias.
         </label>
-        <p className="text-sm mt-1">El registro está activado por defecto y enviará avisos de revisión a los guardias al analizar. Los eventos se identifican como video grabado y adjuntan el fotograma del hallazgo; la fecha y ubicación originales no se verifican. Repetir el análisis puede crear eventos duplicados.</p>
+        <p className="text-sm mt-1">Se adjunta una imagen del video; la fecha y ubicación originales no se verifican. Repetir el análisis puede duplicar eventos.</p>
       </div>}
     </div>}
     <div className="mt-3">
-      <button type="button" onClick={iniciar} disabled={!duracion || estado === 'procesando' || marcandoZona || (zona.length > 0 && !umbralValido)}
+      <button type="button" onClick={iniciar} disabled={!duracion || estado === 'procesando' || exportando || marcandoZona || (zona.length > 0 && !umbralValido) || (tipoRegla === 'piscina' && !zona.length)}
         className="bg-indigo-600 text-white rounded px-3 py-2 mr-3 disabled:opacity-50">
         {estado === 'procesando' ? 'Analizando…' : 'Analizar video'}
       </button>
@@ -458,16 +517,16 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     </div>}
     {estado === 'terminado' && <p className="text-sm mt-2">Los recuadros se basan en una imagen analizada cada medio segundo y pueden no coincidir exactamente con objetos en movimiento.</p>}
     {estado === 'terminado' && zona.length > 0 && <div className="mt-3 border rounded p-3">
-      <h4 className="font-medium">Posibles vehículos detenidos para revisar</h4>
+      <h4 className="font-medium">{tipoRegla === 'piscina' ? 'Posible persona sola para revisar' : 'Posibles vehículos detenidos para revisar'}</h4>
       {hallazgos.length === 0 ? <p className="text-sm mt-1">No se encontró ninguno que cumpla el tiempo configurado.</p> :
         <ul className="list-disc pl-5 text-sm mt-1">{hallazgos.map((h, i) => <li key={`${h.id}-${i}`}>
-          {nombres[h.clase] || h.clase} · aproximadamente {Math.floor(h.duracion)} s detenido ·{' '}
+          {nombres[h.clase] || h.clase} · aproximadamente {Math.floor(h.duracion)} s {tipoRegla === 'piscina' ? 'sin otra persona detectada' : 'detenido'} ·{' '}
           <button type="button" className="text-indigo-700 underline" onClick={() => {
             if (video.current) { controlActual.current = 'original'; video.current.currentTime = h.tiempo; }
           }}>Ver momento {Math.floor(h.tiempo / 60)}:{String(Math.floor(h.tiempo % 60)).padStart(2, '0')}</button>
-          {' · '}<button type="button" className="text-indigo-700 underline" onClick={() => onPrepararEvento({
+          {tipoRegla !== 'piscina' && <> {' · '}<button type="button" className="text-indigo-700 underline" onClick={() => onPrepararEvento({
             clase: nombres[h.clase] || h.clase, tiempo: h.tiempo, duracion: h.duracion,
-          })}>Preparar evento manual</button>
+          })}>Preparar evento manual</button></>}
         </li>)}</ul>}
       <p className="text-sm mt-2">Una pérdida breve de detección pausa el conteo. La lista puede contener repeticiones y no confirma una infracción.</p>
     </div>}

@@ -1,5 +1,17 @@
 # Cambios realizados
 
+2026-11-16: selector de procesador de IA por pestaña, pasarela remota HTTPS y servicio compatible RF-DETR Nano en loopback para despliegue detrás de proxy; selección local y reglas existentes preservadas. Sin migraciones ni despliegue remoto.
+
+2026-11-16: regla de piscina con tiempo configurable y zona individual para fuentes web y video, integración con avisos existentes y migración aditiva 0009 local respaldada. No se modificó el modelo de detección.
+
+2026-11-16: ordenados los controles de incidencias y placas en las cámaras, con separación visual, textos breves y guardado al final; se conservó el reintento de guardado Imou.
+
+2026-11-15: se unificó la presentación de resultados de placa en cámaras y reconocimiento vehicular, sin modificar API ni lógica de consulta.
+
+2026-11-15: se corrigió la vista duplicada de webcam y se reutilizaron los controles de placas y filtros de detección para cámaras locales y de red, sin cambios de backend.
+
+2026-11-15: análisis y registro con evidencia para zonas independientes de cámaras de red adicionales y webcam; migración 0008 local respaldada. La webcam conserva su configuración en el navegador. Ver pruebas.md.
+
 2026-11-07: zonas e historial por cámara adicional, control de permisos y edición web; migración local tras respaldo. [Detalle](../documentacion/seguridad/ZONAS_CAMARAS_CATALOGO.md).
 
 2026-11-07: catálogo mínimo y selector de fuentes adicionales, API protegida y puente local RTSP separado; servicio iniciado sin abrir cámara adicional. [Detalle](../documentacion/seguridad/MONITOR_CAMARAS_CATALOGO.md).
@@ -374,3 +386,104 @@ Separación de pendientes e historial revisado; el detalle conserva evidencia y 
 
 Video e Imou comparten colores y seguimiento con tolerancia de pérdida; el polígono solo aparece durante la edición. Con zona definida el registro automático de eventos está activado inicialmente y se puede desactivar; se adjunta fotograma, se identifica la fuente grabada y se advierte sobre guardias ausentes y repeticiones.
 
+# 2026-11-14 — Visualización de detecciones
+
+Imou y video ofrecen filtros visuales de todas las clases o solo vehículos, sin filtrar seguimiento ni eventos. Etiquetas simplificadas y colores indican detección, 5 s de permanencia y límite configurado. Video propone 15 s y permite mostrar la zona; no se alteró la configuración existente de Imou.
+
+# 2026-11-14 — Vehículos dentro de zona
+
+Se agregó un tercer filtro visual a Imou y video: solo vehículos cuya detección tiene permanencia dentro de la zona. Si no hay zona se informa; el filtro no interfiere en los eventos.
+
+# 2026-11-14 — Descarga de video analizado
+
+Descarga explícita compone localmente el video y las detecciones del modo seleccionado, incluyendo zona si se muestra, sin repetir IA ni generar eventos. El control nativo de descarga de la vista analizada se oculta; la salida es WebM sin sonido y puede cancelarse.
+
+# 2026-11-15 — Navegación web de guardia
+
+Se reorganizaron accesos del guardia, se añadió actualización periódica y enlace desde notificación a incidencia. Se mantuvieron sus rutas autorizadas y el historial web por confirmación. No se implementó eliminación hasta aclarar sus efectos.
+
+# 2026-11-15 — Ajustes e historial del guardia
+
+Se alinearon menús e historial en web y móvil y se ocultaron accesos secundarios en el menú del guardia sin revocar APIs ni borrar notificaciones. Se reparó el cambio de contraseña propio: valida la actual y las reglas del servidor, registra auditoría y revoca otras sesiones y dispositivos asociados. La sesión actual se conserva.
+
+# 2026-11-15 — Confirmación móvil e incidencias del administrador
+
+Guardia puede confirmar desde el detalle móvil mediante el endpoint existente y pasar a Historial; error o respuesta incierta exige actualizar el estado. Se retiró la bandeja de notificaciones del menú del administrador y se conservó redistribución para eventos sin guardias activos dentro de incidencias.
+
+# 2026-11-15 — Visibilidad de contraseñas
+
+Se añadieron controles de mostrar/ocultar para el texto introducido en la web y el móvil. Editar usuario requiere elegir cambiar contraseña para evitar cambios por autocompletado; el campo comienza vacío y el valor almacenado no se expone.
+
+
+2026-11-15: por solicitud del usuario se eliminó de la base local la incidencia de prueba de estacionamiento vinculada al guardia ficticio, junto con sus cuatro registros de historial, evidencia, notificación y entrega; también se eliminó la cuenta ficticia del guardia y su empleado de prueba. La cuenta ficticia residente se conservó. La operación fue transaccional y se comprobó la ausencia del evento y del usuario.
+
+2026-11-15: a solicitud del usuario se eliminó transaccionalmente de la base local la cuenta inactiva residente ficticia de prueba, su perfil y vehículo ficticios, dispositivo, sesiones, tokens y registros dependientes. Se verificó que la cuenta ya no existe.
+
+2026-11-15: runserver local supervisa los puentes Imou y catálogo con el entorno de visión existente, sin iniciar IA; detecta puertos ocupados, reintenta procesos y solicita cierre autenticado de procesos propios. Los puertos siguen fijos (28766 y 28768); un servicio ajeno puede bloquearlos. Se probaron tres casos simulados y el inicio real de ambos puentes con un servidor temporal, sin abrir cámara. Falta validar reconexión, cierre y monitoreo real; no aplica automáticamente a producción.
+
+2026-11-15: las vistas Imou y catálogo reintentan cada cinco segundos tras fallos de imagen; permisos denegados detienen la vista y un fallo de Imou desactiva la IA y registro. La compilación web pasó. Al ocultar la pestaña siguen deteniéndose y no se garantiza análisis continuo; validación real de reconexión pendiente.
+
+2026-11-15: por solicitud del usuario, el monitor Imou muestra solo vehículos dentro de la zona guardada: verde al detectar, amarillo durante el tiempo de tolerancia y rojo al cumplir el umbral. El aviso preliminar de estacionamiento de Imou se crea para guardias y administradores; sigue pendiente de revisión. La prueba simulada usó SQLite en memoria, sin envío real: 11 pruebas backend y 17 de seguimiento/colores pasaron; build web correcto. Falta validación visual real y recepción push con cuentas autorizadas.
+
+2026-11-15: comprobada la configuración compartida de zona Imou entre ajustes y monitor: el componente aplica la misma zona y tiempo guardados en Django. Se aclaró el vínculo en la pantalla y se amplió la prueba de navegador con API e imágenes simuladas para validar guardado, retorno al monitor y filtro de objetos; prueba integral y build web correctos. Actualmente se admite una sola zona de estacionamiento Imou; múltiples zonas y tipos de incidencia requieren ampliación posterior. Sin migraciones ni pruebas con cámara real.
+
+2026-11-15: Configuración de análisis se movió al submenú Cámaras; monitor y ajustes comparten la misma ruta con estado de vista, evitando desmontar la Imou al alternar. Zona, tiempo y avisos Imou se aplican con Guardar configuración; las cámaras de catálogo también usan borrador y guardado explícito. Pruebas simuladas: navegación y guardado Imou (incluido borrador sin aplicar y fallo con reintento), catálogo y compilación web correctos; guardado de catálogo y visualización con cámara real pendientes. Sin cambios de backend ni migraciones.
+
+2026-11-15: los botones Ver cámara Imou y Detener vista Imou se ubicaron horizontalmente entre el título y el video; los controles adicionales quedaron debajo para ampliar el monitor. Build web correcto; pendiente validación visual por el usuario. Sin cambios de backend.
+
+2026-11-15: el submenú y encabezado de configuración se renombraron a Configuración de incidencias, con icono y estilo diferenciados del monitor. Se mantuvo la misma ruta interna y configuración. Build web y recorrido Imou con API simulada correctos; sin cambios del backend ni pruebas con cámara real.
+
+2026-11-15: Gestión de cámaras ofrece enlaces Ver cámara y Configurar incidencias para cámaras de red habilitadas; el monitor acepta la cámara seleccionada por enlace, muestra las cámaras disponibles y permite un mosaico con inicio manual por cámara. Las zonas siguen independientes; análisis y alertas automáticas de cámaras adicionales no se incorporaron. Build web y pruebas simuladas de enlaces, dos vistas y guardado de zona pasaron; falta validar con una segunda cámara real. Sin cambios de backend ni migraciones.
+
+2026-11-15: se comprobó en la base local que la Imou está vinculada y no hay cámaras de red adicionales habilitadas. La opción Ver varias cámaras se mantiene visible aun sin cámaras adicionales, con orientación hacia Gestión de cámaras. Build web y recorrido Imou simulado correctos; no se modificaron cámaras ni datos.
+
+2026-11-15: el monitor en mosaico ofrece Ampliar para cada cámara y mantiene montadas las vistas iniciadas al seleccionar una y volver; las cámaras de catálogo permiten pantalla completa y ocupan el ancho disponible. El mosaico oculta controles secundarios sin desmontarlos. Build y prueba de navegador con dos cámaras simuladas pasaron; sin prueba con segunda cámara física ni cambios de backend.
+
+2026-11-15: por observación del usuario, el monitor abre directamente en mosaico con tarjetas compactas y acceso Agregar cámara; Ampliar muestra una cámara y la vista múltiple conserva las cámaras iniciadas. Los enlaces directos a una cámara siguen abriéndola seleccionada. Build web y pruebas de navegador con cámaras simuladas correctos; falta revisión visual con el usuario y validación con segunda cámara real. Sin cambios de backend.
+
+2026-11-15: rediseñado el mosaico del monitor en cuadros 16:9 uniformes con imagen, nombre y control integrados; seleccionar la imagen amplía la cámara y Agregar cámara conserva el mismo tamaño de cuadro. Vista comprobada con captura y dos cámaras simuladas, build y recorridos simulados Imou y catálogo correctos; falta validación con cámaras físicas. Sin cambios de backend.
+
+2026-11-15: controles compactos Ver/Detener y botón de ampliación se colocaron en una barra superior fuera de las imágenes del mosaico, para Imou y cámaras de catálogo. Build, prueba de dos cámaras simuladas, recorrido Imou y revisión visual de captura simulada correctos; falta validación visual del usuario con cámara real. Sin cambios de backend.
+
+2026-11-15: por solicitud del usuario se ocultó el selector de fuentes en Monitor en vivo y se añadió Volver al mosaico en la vista ampliada. La selección de cámara permanece en Configuración de incidencias; incorporar la cámara de laptop al mosaico queda para otra etapa. Build web y recorridos de Imou y dos cámaras simuladas correctos; sin cambios de backend ni prueba física.
+
+2026-11-15: la ampliación alterna el tamaño de la cámara dentro del mosaico mediante el mismo icono; no cambia a la vista independiente. Las demás cámaras permanecen visibles y activas. Gestión de cámaras puede abrir la cámara resaltada en el mismo mosaico; Configuración de incidencias conserva sus controles. Build y pruebas de dos cámaras e Imou simuladas correctos; falta validación visual física. Sin cambios de backend.
+
+2026-11-15: Gestión de cámaras permite eliminación con confirmación y auditoría solo para administrador; Django rechaza la eliminación si hay vínculos protegidos de monitor, configuración o historial. En el mosaico, Agregar cámara abre un selector de cámaras de red habilitadas; ocultar una vista no detiene una transmisión iniciada y la selección es temporal en la página. Pasaron 28 pruebas backend con SQLite en memoria, dos recorridos web simulados y build; sin eliminación real ni migraciones. Falta validación en interfaz con cámaras físicas.
+
+2026-11-15: retirada de Gestión de cámaras la sección de preferencias no operativas Funciones previstas. Se conservan backend y datos existentes. Build web y recorrido simulado del catálogo correctos; sin cambios en cámaras reales.
+
+2026-11-15: Configuración de incidencias identifica la cámara seleccionada y aclara el alcance individual. Se agruparon los controles existentes de lectura de placas por cámara y la consulta puntual ahora indica el identificador de la cámara en la solicitud. Prueba web con dos cámaras simuladas verificó zonas y tiempos independientes y origen de placa distinto; cinco pruebas backend de zonas y build web pasaron. Las cámaras de catálogo aún no generan automáticamente incidencias por zona; la lectura automática es una activación de sesión y usa servicio externo. Sin migraciones ni cambios en datos reales.
+# 2026-11-15 — cámara local
+
+Se incorporó la cámara de laptop o USB al selector del mosaico, con ampliación y selección de dispositivo cuando existen varios. La zona, el tiempo y la opción de registro se guardan localmente por dispositivo; no se modificó el backend.
+
+2026-11-16: Pasarela remota adaptada para RF-DETR Nano de Roboflow con clave en entorno y conversi?n de detecciones; se conserva proveedor propio y procesamiento local.
+
+2026-11-16: Endpoint remoto de Roboflow corregido y pruebas aisladas de ambos proveedores.
+
+2026-11-16: Textos breves, selector de incidencias destacado y videos alineados con filtros debajo. Solo frontend.
+
+2026-11-16: Confirmacion por administrador y accion para retirar incidencias revisadas del historial con auditoria. No se borran registros ni se aplican migraciones.
+
+2026-11-16: Mejorada visibilidad y respuesta de confirmacion de incidencias desde el monitor sin cambios en el backend.
+
+2026-11-16: Monitor separa pendientes e historial y ofrece retorno explicito desde detalle.
+
+2026-11-16: Reordenadas secciones del menu web sin cambiar permisos ni backend.
+
+2026-11-16: Mensajes diferenciados para fallos de sesion, permisos y conexion; las pantallas no presentan una carga fallida como lista vacia.
+
+2026-11-16: Actualizado selector obsoleto de prueba simulada de video de piscina tras cambio de titulo visual.
+
+2026-11-16: Mensajes FCM especificos por categoria de incidencia, sin incluir placas ni datos personales; navegacion y permisos conservados.
+
+2026-11-16: Agregados recursos Android y configuracion de icono y color en manifest y Flutter; titulos diferenciados existentes conservados.
+
+2026-11-16: Accion de retirar movida del detalle al menu por pulsacion larga en historial movil; descartados ya no se muestran en esa lista. Backend y auditoria sin cambios.
+
+2026-11-16: Agregado gesto de actualizacion movil, incluso con lista vacia, conservando actualizacion automatica.
+
+2026-11-16: Agregado gesto tactil e indicador de consulta a la lista web; sin cambios de backend.
+
+2026-11-16: Ocultada pesta?a de descartados para guardia y retorno a pendientes tras descartar, sin cambios de backend.

@@ -1,5 +1,33 @@
 # Estado actual
 
+2026-11-16: añadida opción de proveedor remoto Roboflow RF-DETR Nano configurable en el backend; clave privada por entorno, conversión de detecciones y pruebas simuladas. La conexión real, créditos, latencia y entrega de avisos aún no se han verificado. Ver `Condominio-Backend/seguridad_vision/IA_POR_INTERNET.md`.
+
+2026-11-16: preparado selector de IA local o remota por pestaña para vistas web y videos. Django conserva el contrato de detecciones y admite un servicio RF-DETR Nano propio por HTTPS con token; la opción local es predeterminada y no hay fallback automático. El usuario aún no dispone de servidor remoto: no está desplegado ni validado por internet. Guía en `Condominio-Backend/seguridad_vision/IA_POR_INTERNET.md`; pruebas simuladas en `pruebas.md`.
+
+2026-11-16: añadida la regla opcional de una persona detectada sola en zona de piscina durante 10 segundos por defecto, en video grabado y vistas web de Imou, cámara de red y webcam. Configuración de red separada de estacionamiento en PostgreSQL; webcam en navegador por dispositivo. Crea eventos pendientes con evidencia para guardias si se habilitan los avisos. Migración 0009 local aplicada tras respaldo. Pruebas simuladas, sin validación física ni entrega real; no detecta ahogamientos ni garantiza ausencia de personas fuera de cámara. Ver `pruebas.md` y `pendientes.md`.
+
+2026-11-16: la configuración web de Imou, webcam y cámaras de red presenta primero las incidencias, después la lectura de placas y finalmente un único botón para guardar zona y avisos. La lectura de placas sigue siendo una acción de la sesión. Comprobado con pruebas simuladas; ver `pruebas.md`.
+
+2026-11-15: la lectura puntual, automática y la pantalla de reconocimiento vehicular comparten una tarjeta adaptada al tema oscuro con placa, confianza y estado cuando están disponibles. Las coincidencias ambiguas y la ausencia de placa se distinguen sin atribuir identidad. Comprobado con respuestas simuladas; ver `pruebas.md`.
+
+2026-11-15: la cámara local muestra una sola vista activa y permite consulta puntual de placas, lectura automática opcional y filtros de detección; las cámaras de red adicionales incluyen los mismos filtros. Pruebas simuladas correctas, falta validar con webcam física y proveedor real. Ver `pruebas.md`.
+
+2026-11-15: las cámaras de red adicionales aplican su zona, tiempo y registro automático guardados por cámara en el monitor web; crean eventos para guardias con fotograma y reintento. La webcam usa zona y tiempo guardados en el navegador por dispositivo y adjunta evidencia. La Imou inicia el análisis al abrir su vista. La migración 0008 se aplicó en PostgreSQL local tras respaldo. Probado con cámaras y API simuladas; requiere vista e IA activas y faltan pruebas físicas y recepción real. Ver pruebas.md y pendientes.md.
+
+2026-11-15: los campos de contraseña del formulario de usuarios, ajustes web del guardia y cambio móvil permiten mostrar u ocultar solo lo escrito. En edición administrativa el cambio requiere seleccionarlo explícitamente; la contraseña almacenada nunca se devuelve. La misma cuenta Django valida acceso desde web y móvil. Probado con cuentas ficticias; sin cambio de contraseñas reales.
+
+2026-11-15: guardia puede confirmar un evento pendiente desde el detalle móvil; el servidor existente verifica el rol, y tras respuesta confirmada la app abre Historial. Web conserva el mismo flujo. Se ocultó la bandeja de notificaciones del menú y ruta de administrador; las notificaciones y push siguen en backend. Los eventos sin guardias mantienen una acción administrativa de redistribución en incidencias. Pruebas simuladas correctas; falta verificación real del usuario.
+
+2026-11-15: guardia ve Inicio, Incidencias, Historial y Ajustes en web y móvil; menús de notificaciones y otras opciones se ocultaron para ese rol sin eliminar sus APIs ni avisos push. Pendientes quedan en Incidencias y confirmadas/en atención/resueltas en Historial; descartadas se consultan aparte. Ajustes permite cambiar contraseña propia y cerrar sesión; nueva API valida contraseña actual y reglas, audita y revoca otras sesiones y sus dispositivos asociados. Sin migraciones ni cambios de contraseñas reales. APK actualizada en el teléfono conectado; falta confirmación visual.
+
+2026-11-15: la web del guardia tiene accesos directos a Inicio, Incidencias, Historial y Notificaciones; las demás funciones autorizadas permanecen agrupadas. Los eventos se actualizan cada 30 s con pestaña visible y una notificación permite abrir su incidencia completa. El historial web sigue incluyendo confirmadas, según instrucción anterior; móvil usa sus estados previos. La eliminación o archivo solicitado al administrador está pendiente de definir; no se alteraron datos ni permisos.
+
+2026-11-14: la vista de video grabado permite descargar en WebM sin sonido la imagen con recuadros y zona visible según el modo elegido. La exportación local reproduce el video completo, usa resultados existentes y no genera alertas; se puede cancelar. Prueba con video generado y API simulada, pendiente validación con archivo del usuario.
+
+2026-11-14: la vista de Imou y video incorpora «Vehículos en zona» además de todos y solo vehículos; muestra exclusivamente vehículos cuyo punto inferior está en la zona y retira el recuadro al salir o perderse la detección. Es un filtro visual, no modifica seguimiento ni avisos. Pruebas simuladas correctas; sin verificación física ni entrega real.
+
+2026-11-14: las vistas Imou y video grabado permiten mostrar todas las detecciones o solo vehículos sin cambiar el seguimiento ni las alertas. Verde al detectar, amarillo desde 5 s detenido y rojo al alcanzar el límite configurado; si el límite existente es 5 s o menor pasa directo a rojo. Videos nuevos proponen 15 s; se conserva el tiempo guardado de Imou. Grabación permite mostrar/ocultar zona. Validado con API y video simulados, no con cámara ni notificaciones reales.
+
 2026-11-14: análisis web de video grabado usa el seguimiento Imou con tolerancia de pérdida, colores compartidos y zona oculta tras dibujar. Registro automático activado por defecto y desactivable: crea eventos etiquetados como grabación con fotograma JPEG y advierte si no había guardias. El análisis y el registro ocurren antes de reproducir el resultado; repetir análisis puede duplicar eventos. Sin validación con video real ni entrega real en esta etapa; [pruebas](pruebas.md).
 
 2026-11-14: web de eventos separa pendientes de revisión, historial de incidencias confirmadas y eventos descartados. Confirmar no las marca como resueltas. Guardia comprueba placa y destinatario antes de preparar y encolar aviso en un solo paso; el resultado distingue cola y entrega. El móvil conserva su separación anterior: confirmadas/en atención siguen activas. Sin cambios de backend ni envíos reales; ver [pruebas](pruebas.md).
@@ -466,3 +494,90 @@ No se consultaron valores `.env`, base persistente, configuración real de Fireb
 2026-11-14: Tras reinstalar el APK corregido se verifico en la pantalla del segundo telefono que son visibles Inicio, Incidencias, Historial y Ajustes. Confirmacion de satisfaccion del usuario pendiente.
 
 2026-11-14: El usuario confirmo que la barra inferior de guardia ya aparece en el segundo Xiaomi tras instalar el APK recompilado.
+
+2026-11-15: por solicitud del usuario se eliminó de la base local la incidencia de prueba de estacionamiento vinculada al guardia ficticio, junto con sus cuatro registros de historial, evidencia, notificación y entrega; también se eliminó la cuenta ficticia del guardia y su empleado de prueba. La cuenta ficticia residente se conservó. La operación fue transaccional y se comprobó la ausencia del evento y del usuario.
+
+2026-11-15: a solicitud del usuario se eliminó transaccionalmente de la base local la cuenta inactiva residente ficticia de prueba, su perfil y vehículo ficticios, dispositivo, sesiones, tokens y registros dependientes. Se verificó que la cuenta ya no existe.
+
+2026-11-15: runserver local supervisa los puentes Imou y catálogo con el entorno de visión existente, sin iniciar IA; detecta puertos ocupados, reintenta procesos y solicita cierre autenticado de procesos propios. Los puertos siguen fijos (28766 y 28768); un servicio ajeno puede bloquearlos. Se probaron tres casos simulados y el inicio real de ambos puentes con un servidor temporal, sin abrir cámara. Falta validar reconexión, cierre y monitoreo real; no aplica automáticamente a producción.
+
+2026-11-15: las vistas Imou y catálogo reintentan cada cinco segundos tras fallos de imagen; permisos denegados detienen la vista y un fallo de Imou desactiva la IA y registro. La compilación web pasó. Al ocultar la pestaña siguen deteniéndose y no se garantiza análisis continuo; validación real de reconexión pendiente.
+
+2026-11-15: por solicitud del usuario, el monitor Imou muestra solo vehículos dentro de la zona guardada: verde al detectar, amarillo durante el tiempo de tolerancia y rojo al cumplir el umbral. El aviso preliminar de estacionamiento de Imou se crea para guardias y administradores; sigue pendiente de revisión. La prueba simulada usó SQLite en memoria, sin envío real: 11 pruebas backend y 17 de seguimiento/colores pasaron; build web correcto. Falta validación visual real y recepción push con cuentas autorizadas.
+
+2026-11-15: comprobada la configuración compartida de zona Imou entre ajustes y monitor: el componente aplica la misma zona y tiempo guardados en Django. Se aclaró el vínculo en la pantalla y se amplió la prueba de navegador con API e imágenes simuladas para validar guardado, retorno al monitor y filtro de objetos; prueba integral y build web correctos. Actualmente se admite una sola zona de estacionamiento Imou; múltiples zonas y tipos de incidencia requieren ampliación posterior. Sin migraciones ni pruebas con cámara real.
+
+2026-11-15: Configuración de análisis se movió al submenú Cámaras; monitor y ajustes comparten la misma ruta con estado de vista, evitando desmontar la Imou al alternar. Zona, tiempo y avisos Imou se aplican con Guardar configuración; las cámaras de catálogo también usan borrador y guardado explícito. Pruebas simuladas: navegación y guardado Imou (incluido borrador sin aplicar y fallo con reintento), catálogo y compilación web correctos; guardado de catálogo y visualización con cámara real pendientes. Sin cambios de backend ni migraciones.
+
+2026-11-15: los botones Ver cámara Imou y Detener vista Imou se ubicaron horizontalmente entre el título y el video; los controles adicionales quedaron debajo para ampliar el monitor. Build web correcto; pendiente validación visual por el usuario. Sin cambios de backend.
+
+2026-11-15: el submenú y encabezado de configuración se renombraron a Configuración de incidencias, con icono y estilo diferenciados del monitor. Se mantuvo la misma ruta interna y configuración. Build web y recorrido Imou con API simulada correctos; sin cambios del backend ni pruebas con cámara real.
+
+2026-11-15: Gestión de cámaras ofrece enlaces Ver cámara y Configurar incidencias para cámaras de red habilitadas; el monitor acepta la cámara seleccionada por enlace, muestra las cámaras disponibles y permite un mosaico con inicio manual por cámara. Las zonas siguen independientes; análisis y alertas automáticas de cámaras adicionales no se incorporaron. Build web y pruebas simuladas de enlaces, dos vistas y guardado de zona pasaron; falta validar con una segunda cámara real. Sin cambios de backend ni migraciones.
+
+2026-11-15: se comprobó en la base local que la Imou está vinculada y no hay cámaras de red adicionales habilitadas. La opción Ver varias cámaras se mantiene visible aun sin cámaras adicionales, con orientación hacia Gestión de cámaras. Build web y recorrido Imou simulado correctos; no se modificaron cámaras ni datos.
+
+2026-11-15: el monitor en mosaico ofrece Ampliar para cada cámara y mantiene montadas las vistas iniciadas al seleccionar una y volver; las cámaras de catálogo permiten pantalla completa y ocupan el ancho disponible. El mosaico oculta controles secundarios sin desmontarlos. Build y prueba de navegador con dos cámaras simuladas pasaron; sin prueba con segunda cámara física ni cambios de backend.
+
+2026-11-15: por observación del usuario, el monitor abre directamente en mosaico con tarjetas compactas y acceso Agregar cámara; Ampliar muestra una cámara y la vista múltiple conserva las cámaras iniciadas. Los enlaces directos a una cámara siguen abriéndola seleccionada. Build web y pruebas de navegador con cámaras simuladas correctos; falta revisión visual con el usuario y validación con segunda cámara real. Sin cambios de backend.
+
+2026-11-15: rediseñado el mosaico del monitor en cuadros 16:9 uniformes con imagen, nombre y control integrados; seleccionar la imagen amplía la cámara y Agregar cámara conserva el mismo tamaño de cuadro. Vista comprobada con captura y dos cámaras simuladas, build y recorridos simulados Imou y catálogo correctos; falta validación con cámaras físicas. Sin cambios de backend.
+
+2026-11-15: controles compactos Ver/Detener y botón de ampliación se colocaron en una barra superior fuera de las imágenes del mosaico, para Imou y cámaras de catálogo. Build, prueba de dos cámaras simuladas, recorrido Imou y revisión visual de captura simulada correctos; falta validación visual del usuario con cámara real. Sin cambios de backend.
+
+2026-11-15: por solicitud del usuario se ocultó el selector de fuentes en Monitor en vivo y se añadió Volver al mosaico en la vista ampliada. La selección de cámara permanece en Configuración de incidencias; incorporar la cámara de laptop al mosaico queda para otra etapa. Build web y recorridos de Imou y dos cámaras simuladas correctos; sin cambios de backend ni prueba física.
+
+2026-11-15: la ampliación alterna el tamaño de la cámara dentro del mosaico mediante el mismo icono; no cambia a la vista independiente. Las demás cámaras permanecen visibles y activas. Gestión de cámaras puede abrir la cámara resaltada en el mismo mosaico; Configuración de incidencias conserva sus controles. Build y pruebas de dos cámaras e Imou simuladas correctos; falta validación visual física. Sin cambios de backend.
+
+2026-11-15: Gestión de cámaras permite eliminación con confirmación y auditoría solo para administrador; Django rechaza la eliminación si hay vínculos protegidos de monitor, configuración o historial. En el mosaico, Agregar cámara abre un selector de cámaras de red habilitadas; ocultar una vista no detiene una transmisión iniciada y la selección es temporal en la página. Pasaron 28 pruebas backend con SQLite en memoria, dos recorridos web simulados y build; sin eliminación real ni migraciones. Falta validación en interfaz con cámaras físicas.
+
+2026-11-15: retirada de Gestión de cámaras la sección de preferencias no operativas Funciones previstas. Se conservan backend y datos existentes. Build web y recorrido simulado del catálogo correctos; sin cambios en cámaras reales.
+
+2026-11-15: Configuración de incidencias identifica la cámara seleccionada y aclara el alcance individual. Se agruparon los controles existentes de lectura de placas por cámara y la consulta puntual ahora indica el identificador de la cámara en la solicitud. Prueba web con dos cámaras simuladas verificó zonas y tiempos independientes y origen de placa distinto; cinco pruebas backend de zonas y build web pasaron. Las cámaras de catálogo aún no generan automáticamente incidencias por zona; la lectura automática es una activación de sesión y usa servicio externo. Sin migraciones ni cambios en datos reales.
+# Cámara local en el mosaico (2026-11-15)
+
+El monitor permite añadir la cámara local sin registrarla en el catálogo; la configuración de incidencias guarda zona, tiempo y registro automático en el navegador, por identificador de dispositivo. La cámara debe iniciarse y concederse permiso en el navegador. Actualización posterior: los eventos adjuntan evidencia y hay lectura de placas de sesión; queda pendiente verificar con cámaras físicas y vincular las lecturas a incidencias. Ver `pruebas.md`.
+
+2026-11-16: Corregido endpoint de Roboflow para RF-DETR Nano (coco/38). La pasarela real respondi? correctamente con imagen sint?tica; video e incidencias pendientes de validar.
+
+2026-11-16: Ajustada la interfaz de configuracion de incidencias y comparacion de video; pendiente comprobacion visual por el usuario.
+
+2026-11-16: Administrador y guardia pueden confirmar; ambos pueden retirar del historial incidencias confirmadas. La retirada es global, conserva evento y auditoria, y no afecta pendientes. Web y movil actualizados; falta validar en dispositivos reales.
+
+2026-11-16: El monitor desplaza al detalle del evento, destaca la confirmacion del administrador y muestra el resultado; verificado con API simulada.
+
+2026-11-16: Monitor permite abrir detalle, volver a pendientes y consultar historial separado; recorrido simulado correcto.
+
+2026-11-16: Reordenado menu web de administrador: dashboard, autenticacion, finanzas, areas comunes, seguridad y camaras.
+
+2026-11-16: Revisada carga de incidencias e incidentes: ambas API locales devolvieron 200 con sesion activa; corregida presentacion de errores web. Causa original no determinada.
+
+2026-11-16: Revision local de avisos a guardias: notificaciones y cola habilitadas, un guardia activo sin dispositivo FCM activo elegible, procesador FCM detenido; entrega real pendiente.
+
+2026-11-16: El guardia registro un dispositivo FCM elegible. Enviado un unico aviso ficticio autorizado; Firebase acepto la entrega. Falta confirmacion de recepcion y apertura en el telefono; cola previa no procesada.
+
+2026-11-16: Usuario confirmo recepcion de aviso ficticio FCM en el telefono del guardia; al tocarlo se abrio la lista de incidencias activas, no el detalle.
+
+2026-11-16: Usuario confirmo recepcion real de avisos ficticios de estacionamiento y piscina en el unico telefono FCM del guardia. Procesador continuo permanece detenido y cola anterior no procesada.
+
+2026-11-16: Avisos push de revision distinguen piscina y estacionamiento con texto fijo; resto conserva mensaje general y residentes sin cambios. Validacion simulada.
+
+2026-11-16: Notificaciones con textos especificos de piscina y estacionamiento: usuario confirmo recibir ambas en telefono del guardia. Procesador continuo sigue detenido.
+
+2026-11-16: Configurados icono monocromo de seguridad y color azul para notificaciones Android locales y FCM; falta compilar y comprobar en telefono.
+
+2026-11-16: Icono de seguridad y acento azul instalados en APK Android con conexion USB; usuario confirmo verlos en una alerta ficticia de piscina.
+
+2026-11-16: Historial movil muestra incidencias confirmadas y permite retirar con pulsacion larga y confirmacion; APK USB actualizada, validacion visual pendiente.
+
+2026-11-16: Confirmado comportamiento movil: solo historial permite retirar con pulsacion larga; lista unica de confirmadas, en atencion y resueltas, ordenada por fecha de recepcion descendente.
+
+2026-11-16: APK debug recompilada y reinstalada en telefono USB conectado, con direccion de backend USB. Validacion visual del usuario pendiente.
+
+2026-11-16: Diagnosticada APK movil obsoleta por kernel reutilizado. Regenerado artefacto, confirmado contenido nuevo e instalada APK mediante USB; pendiente confirmacion visual.
+
+2026-11-16: Listas moviles de incidencias e historial permiten actualizar deslizando hacia abajo; APK USB regenerada e instalada, validacion visual pendiente.
+
+2026-11-16: Web permite actualizar lista de incidencias al deslizar hacia abajo en pantalla tactil cuando el desplazamiento esta arriba; boton actualizado disponible en escritorio.
+
+2026-11-16: Guardia ya no ve filtro de eventos descartados en web; descartes conservan trazabilidad y administrador conserva vista.

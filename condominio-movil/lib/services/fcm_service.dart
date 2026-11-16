@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Color;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -106,7 +107,7 @@ class FCMService {
   // Inicializar notificaciones locales
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_notificacion_seguridad');
     
     const InitializationSettings settings = InitializationSettings(
       android: androidSettings,
@@ -155,6 +156,7 @@ class FCMService {
       channelDescription: 'Canal para notificaciones importantes',
       importance: Importance.high,
       priority: Priority.high,
+      color: Color(0xFF00AEEF),
       showWhen: true,
     );
 

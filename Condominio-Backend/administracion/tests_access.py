@@ -82,6 +82,68 @@ class AccessTests(unittest.TestCase):
         token['session_id'] = str(session.pk)
         self.client.force_authenticate(user=user, token=token)
 
+    def test_cambiar_contrasena_exige_actual_y_revoca_solo_otras_sesiones(self):
+        from administracion.models import SesionAplicacion
+        from finanzas.models import ProcedenciaFCM
+        path = '/api/change-password/'
+        self.assertEqual(self.client.post(path, {'old_password': 'x', 'new_password': 'x'}, format='json').status_code, 401)
+        self.auth(self.guard)
+        actual = SesionAplicacion.objects.get(usuario=self.guard)
+        otra = SesionAplicacion.objects.create(usuario=self.guard)
+        otro_usuario = SesionAplicacion.objects.create(usuario=self.owner)
+        telefono_actual = FCMDevice.objects.create(user=self.guard, registration_id='telefono-actual-ficticio', type='android', active=True)
+        telefono_otro = FCMDevice.objects.create(user=self.guard, registration_id='telefono-otro-ficticio', type='android', active=True)
+        telefono_ajeno = FCMDevice.objects.create(user=self.owner, registration_id='telefono-ajeno-ficticio', type='android', active=True)
+        ProcedenciaFCM.objects.filter(dispositivo=telefono_actual).update(sesion=actual)
+        ProcedenciaFCM.objects.filter(dispositivo=telefono_otro).update(sesion=otra)
+        ProcedenciaFCM.objects.filter(dispositivo=telefono_ajeno).update(sesion=otro_usuario)
+        for datos in ({'old_password': 'erronea', 'new_password': 'NuevaSegura789!'},
+                      {'old_password': 'Prueba1234', 'new_password': 'Prueba1234'},
+                      {'old_password': 'Prueba1234', 'new_password': '123'}):
+            self.assertEqual(self.client.post(path, datos, format='json').status_code, 400)
+        self.guard.refresh_from_db()
+        self.assertTrue(self.guard.check_password('Prueba1234'))
+        self.assertEqual(self.client.post(path, {'old_password': 'Prueba1234', 'new_password': 'NuevaSegura789!'}, format='json').status_code, 200)
+        self.guard.refresh_from_db(); actual.refresh_from_db(); otra.refresh_from_db(); otro_usuario.refresh_from_db()
+        self.assertTrue(self.guard.check_password('NuevaSegura789!'))
+        self.assertIsNone(actual.revocada)
+        self.assertIsNotNone(otra.revocada)
+        self.assertIsNone(otro_usuario.revocada)
+        telefono_actual.refresh_from_db(); telefono_otro.refresh_from_db(); telefono_ajeno.refresh_from_db()
+        self.assertTrue(telefono_actual.active)
+        self.assertFalse(telefono_otro.active)
+        self.assertTrue(telefono_ajeno.active)
+
+    def test_cambiar_contrasena_invalida_el_token_y_renovacion_de_otra_sesion(self):
+        primero, segundo = APIClient(), APIClient()
+        datos = {'username': self.guard.username, 'password': 'Prueba1234'}
+        acceso1 = primero.post('/api/login/', datos, format='json').data
+        acceso2 = segundo.post('/api/login/', datos, format='json').data
+        primero.credentials(HTTP_AUTHORIZATION='Bearer ' + acceso1['access'])
+        segundo.credentials(HTTP_AUTHORIZATION='Bearer ' + acceso2['access'])
+        respuesta = primero.post('/api/change-password/', {'old_password': 'Prueba1234', 'new_password': 'NuevaSegura789!'}, format='json')
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(primero.get('/api/me/').status_code, 200)
+        self.assertEqual(segundo.get('/api/me/').status_code, 401)
+        segundo.credentials()
+        self.assertEqual(segundo.post('/api/refresh/', {'refresh': acceso2['refresh']}, format='json').status_code, 401)
+
+    def test_cambio_propio_y_edicion_admin_comparten_cuenta_sin_exponer_contrasena(self):
+        self.auth(self.guard)
+        response = self.client.post('/api/change-password/', {'old_password': 'Prueba1234', 'new_password': 'NuevaSegura789!'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.auth(self.admin)
+        response = self.client.get(f'/api/users/{self.guard.pk}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('password', response.data)
+        response = self.client.patch(f'/api/users/{self.guard.pk}/', {'email': 'guardia-ficticio@example.test'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.guard.refresh_from_db()
+        self.assertTrue(self.guard.check_password('NuevaSegura789!'))
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.client.post('/api/login/', {'username': self.guard.username, 'password': 'Prueba1234'}, format='json').status_code, 401)
+        self.assertEqual(self.client.post('/api/login/', {'username': self.guard.username, 'password': 'NuevaSegura789!'}, format='json').status_code, 200)
+
     def test_custom_role_storage_starts_inactive_without_capabilities(self):
         role = RolPersonalizado.objects.create(nombre='Operador ficticio')
         self.assertFalse(role.activo)

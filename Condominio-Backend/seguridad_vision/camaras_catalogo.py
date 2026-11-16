@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import secrets
 import socket
+import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -37,6 +38,12 @@ class Peticion(BaseHTTPRequestHandler):
         if hmac.compare_digest(self.headers.get('Authorization', ''), 'Bearer ' + self.server.clave):
             estado = 400
             try:
+                if self.path == '/cerrar':
+                    threading.Thread(target=self.server.shutdown, daemon=True).start()
+                    self.send_response(200)
+                    self.send_header('Content-Length', '0')
+                    self.end_headers()
+                    return
                 if self.path != '/fotograma':
                     raise ValueError
                 longitud = int(self.headers.get('Content-Length', '0'))

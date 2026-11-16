@@ -1,5 +1,6 @@
-from django.contrib.admin.models import ADDITION, CHANGE
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.db import transaction, IntegrityError
+from django.db.models.deletion import ProtectedError, RestrictedError
 from collections.abc import Mapping
 from urllib.parse import parse_qsl
 from django.core.exceptions import ImproperlyConfigured
@@ -93,10 +94,21 @@ class CamaraSerializer(serializers.ModelSerializer):
 
 
 class CamaraViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
-                    mixins.CreateModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+                    mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = Camara.objects.all()
     serializer_class = CamaraSerializer
     permission_classes = [AdministratorOnly]
+
+    def destroy(self, request, *args, **kwargs):
+        camara = self.get_object()
+        try:
+            with transaction.atomic():
+                camara = Camara.objects.select_for_update().get(pk=camara.pk)
+                record_action(request.user, camara, 'Cámara eliminada del catálogo.', DELETION)
+                camara.delete()
+        except (ProtectedError, RestrictedError):
+            return Response({'detail': 'No se puede eliminar: la cámara está vinculada al monitor o tiene configuración o historial protegido. Puedes deshabilitarla.'}, status=status.HTTP_409_CONFLICT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['get', 'put'], url_path='funciones-propuestas')
     def funciones_propuestas(self, request, pk=None):

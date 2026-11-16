@@ -12,6 +12,10 @@
         android:label="Smart Condominium"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notificacion_seguridad" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notificacion_acento" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

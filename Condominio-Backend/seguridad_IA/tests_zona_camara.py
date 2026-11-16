@@ -45,3 +45,16 @@ class ZonaCamaraTests(TestCase):
         self.assertEqual(self.llamar('put', 'administrador', self.a.pk, {'puntos': [], 'segundos': 5, 'version': None}).status_code, 409)
         self.assertEqual(ZonaImou.objects.get(pk=1).puntos, self.puntos)
         self.assertFalse(ZonaCamara.objects.exists())
+
+    def test_registro_automatico_independiente_y_auditado(self):
+        datos = {'puntos': self.puntos, 'segundos': 5, 'version': None, 'automatico': True}
+        self.assertEqual(self.llamar('put', 'guardia', self.a.pk, datos).status_code, 403)
+        guardada = self.llamar('put', 'administrador', self.a.pk, datos)
+        self.assertEqual(guardada.status_code, 200)
+        self.assertTrue(guardada.data['automatico'])
+        self.assertTrue(HistorialZonaCamara.objects.get(camara=self.a).automatico)
+        self.assertFalse(self.llamar('get', 'administrador', self.b.pk).data['automatico'])
+        invalida = {'puntos': [], 'segundos': 5, 'version': guardada.data['version'], 'automatico': True}
+        self.assertEqual(self.llamar('put', 'administrador', self.a.pk, invalida).status_code, 400)
+        antigua = {'puntos': self.puntos, 'segundos': 8, 'version': guardada.data['version']}
+        self.assertTrue(self.llamar('put', 'administrador', self.a.pk, antigua).data['automatico'])

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { scanPlate } from '../../api/recognitionApi.jsx';
 import Button from '../../components/button.jsx';
+import ResultadoPlaca from '../../components/ResultadoPlaca.jsx';
 
 const ReconocimientoPage = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -244,41 +245,7 @@ const ReconocimientoPage = () => {
           )}
 
           {/* Resultados */}
-          {result && (
-            <div className={`border rounded-lg p-4 ${
-              result.match 
-                ? 'border-green-500 bg-green-50' 
-                : 'border-red-500 bg-red-50'
-            }`}>
-              <h4 className={`text-lg font-semibold mb-2 ${
-                result.match ? 'text-green-800' : 'text-red-800'
-              }`}>
-                {result.coincidencia_ambigua ? 'Coincidencia ambigua: requiere revisión' : result.match ? 'Vehículo registrado: requiere verificación' : 'Sin coincidencia verificada'}
-              </h4>
-              
-              <div className="space-y-2 text-sm">
-                <p><strong>Placa detectada:</strong> {result.plate || 'No detectada'}</p>
-                <p><strong>Confianza:</strong> {(result.score * 100).toFixed(1)}%</p>
-                <p><strong>Estado:</strong> {result.status}</p>
-                
-                {result.vehiculo && (
-                  <div className="mt-3 p-2 bg-white rounded border">
-                    <p className="font-medium text-gray-800">Información del Vehículo:</p>
-                    <p><strong>Marca:</strong> {result.vehiculo.marca}</p>
-                    <p><strong>Modelo:</strong> {result.vehiculo.modelo}</p>
-                    <p><strong>Color:</strong> {result.vehiculo.color}</p>
-                    <p><strong>Propietario:</strong> {
-                      result.lectura?.propietario || 
-                      result.vehiculo?.persona_nombre || 
-                      result.vehiculo?.persona?.nombre_completo ||
-                      result.vehiculo?.persona?.nombre ||
-                      'N/A'
-                    }</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {result && <ResultadoPlaca resultado={result} />}
 
           {/* Errores */}
           {error && (

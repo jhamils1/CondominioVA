@@ -4,7 +4,8 @@ export function crearEventoCamara(hallazgo, id, fecha) {
   return {
     id,
     categoria: 'Posible estacionamiento en zona prohibida',
-    descripcion: `Registro automático desde la prueba de cámara local: ${nombres[hallazgo.clase] || 'vehículo'}, aproximadamente ${Math.floor(hallazgo.duracion)} segundos detenido en la zona temporal. La cámara y la ubicación no están identificadas. Requiere revisión. No se adjunta evidencia.`,
+    camara: 'Cámara local (laptop o USB)',
+    descripcion: `Registro automático desde cámara local: ${nombres[hallazgo.clase] || 'vehículo'}, aproximadamente ${Math.floor(hallazgo.duracion)} segundos detenido en la zona configurada. La ubicación no está verificada. Requiere revisión. Se adjunta el fotograma analizado.`,
     fecha_evento: fecha,
   };
 }

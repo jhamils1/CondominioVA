@@ -78,7 +78,8 @@ try {
       }
       return route.fulfill({ status: 200, contentType: 'application/json',
         body: JSON.stringify({ detecciones: [{ clase: 'car', confianza: 0.9,
-          caja: moverVehiculo ? [400, 100, 500, 200] : [100, 100, 200, 200] }] }) });
+          caja: moverVehiculo ? [400, 100, 500, 200] : [100, 100, 200, 200] },
+          { clase: 'person', confianza: 0.8, caja: [250, 100, 300, 200] }] }) });
     }
     if (url.pathname.endsWith('/evidencia/')) {
       evidenciasConsultadas++;
@@ -102,23 +103,38 @@ try {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras`);
+  await pagina.getByRole('button', { name: 'Cámaras', exact: true }).click();
+  await pagina.getByRole('button', { name: 'Ampliar cámara Imou' }).waitFor();
+  await pagina.getByRole('button', { name: 'Ampliar cámara Imou' }).click();
   const start = pagina.getByRole('button', { name: 'Ver c\u00e1mara Imou' });
   await start.waitFor();
   assert.equal(consultas, 0);
-  assert.equal(await pagina.getByRole('button', { name: 'Cámara de laptop' }).count(), 1);
+  await pagina.getByRole('button', { name: 'Reducir cámara Imou' }).waitFor();
+  await pagina.getByText(/No hay cámaras de red adicionales habilitadas/).waitFor();
+  assert.equal(await pagina.getByRole('button', { name: 'Cámara de laptop' }).count(), 0);
   await start.click();
   const vista = pagina.getByRole('img', { name: 'Vista en directo de la c\u00e1mara Imou' });
+  await pagina.getByLabel('Imagen Imou analizada con IA').waitFor();
+  await pagina.getByRole('link', { name: 'Configuración de incidencias' }).click();
+  await pagina.getByRole('button', { name: 'Detener IA en Imou' }).click();
   await vista.waitFor();
+  const analisisInicial = analisis;
   await pagina.getByText(/Registro desactivado: todavía no hay una zona guardada/).waitFor();
   await pagina.waitForFunction(() => document.querySelector('img[alt^="Vista en directo"]')?.naturalWidth === 640);
   assert.equal(lecturasPlaca, 0, 'No se envía ninguna imagen sin pulsar el botón');
   await pagina.getByRole('button', { name: 'Consultar placa de la imagen' }).click();
   await pagina.getByText('ABC123').waitFor();
   assert.equal(lecturasPlaca, 1);
-  assert.equal(analisis, 0);
+  assert.equal(analisis, analisisInicial);
   await pagina.getByRole('button', { name: 'Activar IA en Imou' }).click();
   const canvas = pagina.getByLabel('Imagen Imou analizada con IA');
   await pagina.getByText(/Los recuadros corresponden a este fotograma/).waitFor();
+  const incidenciaImou = pagina.getByRole('heading', { name: 'Configuración de incidencias para la cámara Imou' });
+  const placasImou = pagina.getByRole('region', { name: 'Lectura de placas de la cámara Imou' });
+  const guardarImou = pagina.getByRole('button', { name: 'Guardar configuración', exact: true });
+  assert.equal(await guardarImou.count(), 1);
+  assert.ok((await incidenciaImou.boundingBox()).y < (await placasImou.boundingBox()).y);
+  assert.ok((await placasImou.boundingBox()).y < (await guardarImou.boundingBox()).y);
   assert.ok(analisis > 0);
   assert.equal(lecturasPlaca, 1, 'No inicia lectura automática sin activación');
   await pagina.getByRole('button', { name: 'Activar lectura automática' }).click();
@@ -127,9 +143,26 @@ try {
   await pagina.waitForTimeout(900);
   assert.equal(lecturasPlaca, 2, 'Un mismo vehículo no causa consultas continuas');
   await pagina.getByRole('button', { name: 'Detener lectura automática' }).click();
+  await pagina.getByRole('link', { name: 'Configuración de incidencias' }).click();
+  assert.equal(await pagina.getByRole('heading', { name: 'Configuración de incidencias', exact: true }).count(), 1);
+  assert.equal(await pagina.getByRole('heading', { name: 'Monitor en vivo', exact: true }).count(), 0);
+  await pagina.waitForTimeout(800);
   assert.equal(await canvas.evaluate(el => el.width), 640);
   const pixel = await canvas.evaluate(el => Array.from(el.getContext('2d').getImageData(100, 140, 1, 1).data));
   assert.ok(pixel[1] > 200 && pixel[0] < 50, 'Recuadro verde dibujado en el fotograma analizado');
+  const pixelPersona = () => canvas.evaluate(el => Array.from(el.getContext('2d').getImageData(250, 140, 1, 1).data));
+  const personaCompleta = await pixelPersona();
+  assert.ok(personaCompleta[1] > 200 && personaCompleta[0] < 50, 'Vista completa muestra personas');
+  await pagina.getByRole('button', { name: 'Solo vehículos' }).click();
+  await pagina.waitForTimeout(800);
+  const personaFiltrada = await pixelPersona();
+  assert.ok(!(personaFiltrada[1] > 200 && personaFiltrada[0] < 50), 'Modo vehículos oculta personas');
+  await pagina.getByRole('button', { name: 'Vehículos en zona' }).click();
+  await pagina.getByText('Configura una zona para ver vehículos en ella.').waitFor();
+  await pagina.waitForTimeout(800);
+  const sinZona = await canvas.evaluate(el => Array.from(el.getContext('2d').getImageData(100, 140, 1, 1).data));
+  assert.ok(!(sinZona[1] > 200 && sinZona[0] < 50), 'Sin zona no se muestran vehículos en zona');
+  await pagina.getByRole('button', { name: 'Todas', exact: true }).click();
   await pagina.getByRole('button', { name: 'Detener IA en Imou' }).click();
   await vista.waitFor();
   const analisisAlParar = analisis, consultasAlParar = consultas;
@@ -138,11 +171,14 @@ try {
   assert.ok(consultas > consultasAlParar, 'La cámara sigue transmitiendo con IA detenida');
   await pagina.getByRole('button', { name: 'Activar IA en Imou' }).click();
   await pagina.getByText(/Los recuadros corresponden a este fotograma/).waitFor();
+  await pagina.getByRole('link', { name: 'Monitor en vivo' }).click();
+  await pagina.getByRole('heading', { name: 'Monitor en vivo', exact: true }).waitFor();
   assert.equal(await pagina.getByRole('button', { name: 'Dibujar zona Imou' }).count(), 0);
   assert.equal(await pagina.getByRole('button', { name: 'Analizar video', exact: true }).count(), 0);
   if (process.env.SEGURIDAD_SCREENSHOT) await pagina.screenshot({ path: process.env.SEGURIDAD_SCREENSHOT });
   const muestrasAntesConfig = analisis;
-  await pagina.getByRole('button', { name: 'Configuración de análisis' }).click();
+  await pagina.getByRole('link', { name: 'Configuración de incidencias' }).click();
+  await pagina.getByRole('button', { name: 'Analizar video', exact: true }).waitFor();
   assert.equal(await pagina.getByRole('button', { name: 'Analizar video', exact: true }).count(), 1);
   await pagina.waitForTimeout(650);
   assert.ok(analisis > muestrasAntesConfig, 'La IA sigue activa al abrir la configuración');
@@ -156,18 +192,42 @@ try {
   for (const [x, y] of [[0.1, 0.1], [0.6, 0.1], [0.6, 0.6], [0.1, 0.6]])
     await editor.click({ position: { x: cuadroZona.width * x, y: cuadroZona.height * y } });
   await pagina.getByRole('button', { name: 'Completar zona Imou' }).click();
+  assert.equal(zonaCompartida.puntos.length, 0, 'El borrador no cambia la configuración guardada');
+  await pagina.getByRole('link', { name: 'Monitor en vivo' }).click();
+  await pagina.waitForTimeout(800);
+  const antesDeGuardar = await canvas.evaluate(el => Array.from(el.getContext('2d').getImageData(100, 140, 1, 1).data));
+  assert.ok(antesDeGuardar[0] < 50 && antesDeGuardar[1] < 50, 'El monitor conserva la zona guardada mientras hay un borrador');
+  await pagina.getByRole('link', { name: 'Configuración de incidencias' }).click();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.getByText('Configuración Imou guardada.').waitFor();
   assert.equal(zonaCompartida.puntos.length, 4, 'Completar guarda automáticamente');
   assert.equal(await pagina.getByLabel('Zona prohibida marcada').count(), 0);
-  await pagina.getByRole('button', { name: 'Volver al monitoreo' }).first().click();
-  assert.equal(await pagina.getByRole('button', { name: 'Cambiar zona Imou' }).count(), 0);
-  await pagina.getByRole('button', { name: 'Configuración de análisis' }).click();
+  await pagina.getByRole('link', { name: 'Monitor en vivo' }).click();
+  await pagina.getByRole('button', { name: 'Cambiar zona Imou' }).waitFor({ state: 'hidden' });
+  await pagina.waitForFunction(() => {
+    const ctx = document.querySelector('canvas[aria-label="Imagen Imou analizada con IA"]')?.getContext('2d');
+    if (!ctx) return false;
+    const vehiculo = ctx.getImageData(100, 140, 1, 1).data;
+    const persona = ctx.getImageData(250, 140, 1, 1).data;
+    return (vehiculo[0] > 150 || vehiculo[1] > 150) && persona[0] < 50 && persona[1] < 50;
+  }, null, { timeout: 10000 });
+  moverVehiculo = true;
+  await pagina.waitForFunction(() => {
+    const ctx = document.querySelector('canvas[aria-label="Imagen Imou analizada con IA"]')?.getContext('2d');
+    if (!ctx) return false;
+    const fuera = ctx.getImageData(400, 140, 1, 1).data;
+    return fuera[0] < 50 && fuera[1] < 50;
+  }, null, { timeout: 10000 });
+  moverVehiculo = false;
+  await pagina.getByRole('link', { name: 'Configuración de incidencias' }).click();
   assert.equal(await pagina.getByRole('button', { name: 'Cambiar zona Imou' }).count(), 1, 'La zona persiste entre vistas');
   await pagina.getByRole('button', { name: 'Mostrar zona Imou' }).click();
   assert.equal(await pagina.getByLabel('Zona prohibida marcada').count(), 1);
   await pagina.getByRole('button', { name: 'Ocultar zona Imou' }).click();
   await pagina.getByLabel('Tiempo mínimo detenido Imou (2 a 120 segundos):').fill('2');
   await pagina.getByLabel('Tiempo mínimo detenido Imou (2 a 120 segundos):').blur();
+  assert.equal(zonaCompartida.segundos, 5, 'El tiempo no cambia antes de guardar');
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.waitForFunction(() => document.querySelector('input[type=number]')?.value === '2');
   await pagina.waitForTimeout(200);
   assert.equal(zonaCompartida.segundos, 2, 'El tiempo se guarda al salir del campo');
@@ -204,11 +264,12 @@ try {
   assert.equal(await automatico.isChecked(), false);
   fallarGuardado = true;
   await automatico.click();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.getByText(/No se pudo confirmar el guardado/).waitFor();
   assert.equal(eventos, 0, 'Un guardado fallido no activa envíos');
   assert.equal(zonaCompartida.automatico, false, 'El guardado fallido conserva la opción anterior');
   fallarGuardado = false;
-  await pagina.getByRole('button', { name: 'Reintentar guardado' }).click();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.getByText('Configuración Imou guardada.').waitFor();
   await pagina.getByText(/Registro automático activo: los nuevos hallazgos/).waitFor();
   assert.equal(zonaCompartida.automatico, true);
@@ -233,7 +294,7 @@ try {
   assert.equal(eventos, 2);
   assert.deepEqual(envios[0], envios[1], 'El reintento conserva identificador y contenido');
   assert.equal(await reintentar.count(), 0);
-  await pagina.getByRole('button', { name: 'Volver al monitoreo' }).first().click();
+  await pagina.getByRole('link', { name: 'Monitor en vivo' }).click();
   await pagina.getByRole('button', { name: /Posible estacionamiento en zona prohibida/ }).click();
   const evidencia = pagina.getByRole('img', { name: 'Fotograma de evidencia del evento' });
   await evidencia.waitFor();
@@ -242,6 +303,7 @@ try {
   await pagina.getByRole('button', { name: 'Cerrar', exact: true }).click();
   assert.equal(await evidencia.count(), 0);
   moverVehiculo = true;
+  await pagina.getByRole('link', { name: 'Configuración de incidencias' }).click();
   await pagina.getByRole('button', { name: 'Activar IA en Imou' }).click();
   await pagina.getByText(/Los recuadros corresponden a este fotograma/).waitFor();
   monitorActivo = true;
@@ -252,19 +314,21 @@ try {
   monitorActivo = false;
   await pagina.getByText(/Proceso independiente detenido/).waitFor();
   await pagina.waitForFunction(() => document.querySelector('canvas[aria-label="Imagen Imou analizada con IA"]'), null, { timeout: 5000 });
-  await pagina.waitForTimeout(3000);
+  for (let intento = 0; intento < 20 && eventos < 3; intento++) await pagina.waitForTimeout(500);
   assert.equal(eventos, 3, 'La vista recupera el registro al detener el proceso independiente');
   moverVehiculo = true;
-  await pagina.getByRole('button', { name: 'Configuración de análisis' }).click();
-  if (!await automatico.isChecked()) { await automatico.click(); await pagina.getByText('Configuración Imou guardada.').waitFor(); }
+  await pagina.getByRole('link', { name: 'Configuración de incidencias' }).click();
+  if (!await automatico.isChecked()) { await automatico.click(); await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click(); await pagina.getByText('Configuración Imou guardada.').waitFor(); }
   await pagina.getByLabel('Tiempo mínimo detenido Imou (2 a 120 segundos):').fill('3');
   await pagina.getByLabel('Tiempo mínimo detenido Imou (2 a 120 segundos):').blur();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.waitForTimeout(200);
   assert.equal(zonaCompartida.segundos, 3);
   await pagina.getByLabel('Tiempo mínimo detenido Imou (2 a 120 segundos):').fill('1');
   await pagina.getByLabel('Tiempo mínimo detenido Imou (2 a 120 segundos):').blur();
-  await pagina.getByText(/Se conservó el valor anterior/).waitFor();
+  await pagina.getByText(/Introduce un número entero entre 2 y 120/).waitFor();
   assert.equal(zonaCompartida.segundos, 3, 'Un tiempo inválido no se guarda');
+  await pagina.getByLabel('Tiempo mínimo detenido Imou (2 a 120 segundos):').fill('3');
   const anterior = JSON.stringify(zonaCompartida.puntos);
   await pagina.getByRole('button', { name: 'Cambiar zona Imou' }).click();
   await pagina.getByRole('button', { name: 'Cancelar zona Imou' }).click();
@@ -276,10 +340,11 @@ try {
     await nuevoEditor.click({ position: { x: nuevoCuadro.width * x, y: nuevoCuadro.height * y } });
   fallarGuardado = true;
   await pagina.getByRole('button', { name: 'Completar zona Imou' }).click();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.getByText(/No se pudo confirmar el guardado/).waitFor();
   assert.equal(JSON.stringify(zonaCompartida.puntos), anterior, 'Si falla se conserva la zona anterior');
   fallarGuardado = false;
-  await pagina.getByRole('button', { name: 'Reintentar guardado' }).click();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.getByText('Configuración Imou guardada.').waitFor();
   assert.notEqual(JSON.stringify(zonaCompartida.puntos), anterior, 'Reemplazo guardado');
   pagina.once('dialog', dialog => dialog.dismiss());
@@ -288,10 +353,11 @@ try {
   fallarGuardado = true;
   pagina.once('dialog', dialog => dialog.accept());
   await pagina.getByRole('button', { name: 'Eliminar zona Imou' }).click();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.getByText(/No se pudo confirmar el guardado/).waitFor();
   assert.equal(zonaCompartida.puntos.length, 4, 'Un fallo al eliminar conserva la zona');
   fallarGuardado = false;
-  await pagina.getByRole('button', { name: 'Reintentar guardado' }).click();
+  await pagina.getByRole('button', { name: 'Guardar configuración', exact: true }).click();
   await pagina.getByText(/Registro desactivado: todavía no hay una zona guardada/).waitFor();
   assert.equal(zonaCompartida.puntos.length, 0);
   assert.equal(zonaCompartida.automatico, false, 'Eliminar desactiva avisos');
@@ -311,10 +377,12 @@ try {
   assert.equal(await vista.count(), 0);
   fallar = true;
   await start.click();
-  await pagina.getByText(/No se pudo recibir la imagen/).waitFor();
+  await pagina.getByText(/Cámara no disponible. Reintentando la conexión/).waitFor();
   assert.equal(await vista.count(), 0);
-  assert.equal(await start.isEnabled(), true);
-  fallar = false; fallarIA = false; rolUsuario = 'guardia';
+  assert.equal(await start.isEnabled(), false);
+  fallar = false;
+  await vista.waitFor({ timeout: 8000 });
+  fallarIA = false; rolUsuario = 'guardia';
   await pagina.reload();
   await pagina.getByText('No tienes permiso para acceder a esta página.').waitFor();
   assert.equal(await pagina.getByRole('button', { name: 'Ver cámara Imou' }).count(), 0);

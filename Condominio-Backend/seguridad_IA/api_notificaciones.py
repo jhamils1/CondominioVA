@@ -72,6 +72,25 @@ class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
         _evidencia_disponible=Exists(EvidenciaEventoSeguridad.objects.filter(evento_id=OuterRef('pk')))
     ).order_by('-fecha_recepcion')
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action == 'list':
+            archivados = HistorialEventoSeguridad.objects.filter(evento_id=OuterRef('pk'), accion='RETIRADA_HISTORIAL')
+            queryset = queryset.annotate(_retirado=Exists(archivados)).filter(_retirado=False)
+        return queryset
+
+    @action(detail=True, methods=['post'], url_path='retirar-historial')
+    def retirar_historial(self, request, pk=None):
+        if effective_role(request.user) not in ('guardia', 'administrador'):
+            raise PermissionDenied('No tienes permiso para retirar incidencias.')
+        with transaction.atomic():
+            evento = get_object_or_404(EventoSeguridad.objects.select_for_update(), pk=pk)
+            if evento.estado not in (EventoSeguridad.CONFIRMADO, EventoSeguridad.EN_ATENCION, EventoSeguridad.RESUELTA):
+                raise ValidationError('Solo se pueden retirar incidencias confirmadas.')
+            HistorialEventoSeguridad.objects.get_or_create(evento=evento, accion='RETIRADA_HISTORIAL',
+                                                           defaults={'actor': request.user})
+        return Response({'retirada': True})
+
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -341,8 +360,9 @@ class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
         return Response(self.get_serializer(evento).data)
 
     def _revisar(self, request, pk, confirmar):
-        if effective_role(request.user) != 'guardia':
-            raise PermissionDenied('Solo un guardia activo puede revisar el evento.')
+        rol = effective_role(request.user)
+        if rol != 'guardia' and not (confirmar and rol == 'administrador'):
+            raise PermissionDenied('No tienes permiso para revisar el evento.')
         evento = self.get_object()
         motivo = request.data.get('motivo', '')
         if not isinstance(motivo, str):
@@ -388,8 +408,8 @@ class NotificacionViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         role = effective_role(self.request.user)
-        tipo = 'REVISION' if role == 'guardia' else 'CONFIRMADA'
-        return NotificacionSeguridad.objects.filter(destinatario=self.request.user, tipo=tipo)
+        tipos = ['REVISION'] if role == 'guardia' else ['REVISION', 'CONFIRMADA']
+        return NotificacionSeguridad.objects.filter(destinatario=self.request.user, tipo__in=tipos)
 
     @action(detail=True, methods=['post'])
     def leer(self, request, pk=None):

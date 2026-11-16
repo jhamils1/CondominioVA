@@ -7,6 +7,7 @@ import IncidentesGuardia from '../pages/IncidentesGuardia.jsx';
 import NotificacionesPage from '../pages/NotificacionesPage.jsx';
 import EventosSeguridadPage from '../pages/EventosSeguridadPage.jsx';
 import CamarasPage from '../pages/CamarasPage.jsx';
+import AjustesGuardia from '../pages/AjustesGuardia.jsx';
 import HomePage from "../pages/HomePage.jsx";
 import LoginPage from "../pages/login/LoginPage.jsx";
 import Layout from "../components/Layout.jsx";
@@ -53,6 +54,7 @@ const ProtectedRoute = () => {
 const RolePage = ({ path, children }) => {
   const { user } = useSession();
   if (!canAccess(user.role, path, user.capacidades)) return <div role="alert">No tienes permiso para acceder a esta página.</div>;
+  if (path === 'notificaciones' && user.role === 'administrador') return <Navigate to="/admin/eventos-seguridad" replace />;
   if (path === 'dashboard' && user.role !== 'administrador') return <div className="bg-white p-6 rounded-lg shadow"><h2 className="text-2xl font-semibold">Bienvenido, {user.username}</h2><p>Selecciona una opción del menú.</p></div>;
   if (path === 'perfil' || (['propietario', 'inquilino'].includes(user.role) && ['unidades','vehiculos','contratos','expensas','visitas'].includes(path)) || (user.role === 'guardia' && path === 'vehiculos') || (user.role === 'personalizado' && path === 'visitas')) return <ConsultaPage resource={path} />;
   if (path === 'incidentes' && user.role === 'guardia') return <IncidentesGuardia />;
@@ -78,6 +80,7 @@ const AppRouter = () => {
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="perfil" element={<RolePage path="perfil" />} />
+          <Route path="ajustes" element={<RolePage path="ajustes"><AjustesGuardia /></RolePage>} />
           <Route path="notificaciones" element={<RolePage path="notificaciones"><NotificacionesPage /></RolePage>} />
           <Route path="eventos-seguridad" element={<RolePage path="eventos-seguridad"><EventosSeguridadPage modo="eventos" /></RolePage>} />
           <Route path="monitor-camaras" element={<RolePage path="monitor-camaras"><EventosSeguridadPage modo="monitor" /></RolePage>} />

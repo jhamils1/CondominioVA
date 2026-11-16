@@ -18,12 +18,8 @@ apiClient.interceptors.request.use(
 );
 
 export const fetchAllIncidentes = async () => {
-  try {
-    const response = await apiClient.get('incidentes/');
-    return response.data;
-  } catch (error) {
-    throw new Error('Error al obtener los incidentes.');
-  }
+  const response = await apiClient.get('incidentes/');
+  return response.data;
 };
 
 export const createIncidente = async (incidenteData) => {
@@ -73,7 +69,7 @@ export const updateIncidente = async (incidenteId, incidenteData) => {
 export const deleteIncidente = async (incidenteId) => {
   try {
     await apiClient.delete(`incidentes/${incidenteId}/`);
-  } catch (error) {
+  } catch {
     throw new Error('Error al eliminar el incidente.');
   }
 };
