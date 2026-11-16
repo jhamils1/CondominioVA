@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/alertas_seguridad_service.dart';
 import '../widgets/evidencia_seguridad.dart';
+import '../widgets/clip_seguridad.dart';
 
 class IncidenciasSeguridadPage extends StatefulWidget {
   final bool historial;
@@ -26,6 +27,7 @@ class _IncidenciasSeguridadPageState extends State<IncidenciasSeguridadPage> wit
   String? errorConfirmacion;
   int version = 0;
   Timer? timer;
+  Timer? timerClip;
 
   @override
   void initState() {
@@ -48,11 +50,13 @@ class _IncidenciasSeguridadPageState extends State<IncidenciasSeguridadPage> wit
   void dispose() {
     version++;
     timer?.cancel();
+    timerClip?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   Future<void> cargar({bool silencioso = false}) async {
+    if (!silencioso) timerClip?.cancel();
     final actual = ++version;
     consultando = true;
     if (!silencioso) setState(() { cargando = true; error = null; detalle = null; errorConfirmacion = null; });
@@ -73,18 +77,44 @@ class _IncidenciasSeguridadPageState extends State<IncidenciasSeguridadPage> wit
   }
 
   Future<void> abrir(DetalleEventoSeguridad evento) async {
+    timerClip?.cancel();
     final actual = ++version;
     setState(() { cargando = true; error = null; errorConfirmacion = null; });
     try {
       final resultado = await service.obtenerEvento(evento.id);
       if (!mounted || actual != version) return;
       setState(() { detalle = resultado; cargando = false; });
+      esperarClip(resultado);
     } on AlertasException catch (e) {
       if (!mounted || actual != version) return;
       setState(() { eventos = null; detalle = null; error = e.mensaje; cargando = false; });
     } finally {
       if (actual == version) consultando = false;
     }
+  }
+
+  void esperarClip(DetalleEventoSeguridad evento) {
+    final fecha = DateTime.tryParse(evento.fecha);
+    if (evento.clipDisponible || fecha == null ||
+        DateTime.now().difference(fecha).abs() > const Duration(minutes: 2)) {
+      return;
+    }
+    var intentos = 0;
+    var consultandoClip = false;
+    timerClip = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (!mounted || detalle?.id != evento.id || ++intentos > 6) { timer.cancel(); return; }
+      if (consultandoClip) return;
+      consultandoClip = true;
+      try {
+        final actualizado = await service.obtenerEvento(evento.id);
+        if (mounted && detalle?.id == evento.id && actualizado.clipDisponible) {
+          setState(() { detalle = actualizado; });
+          timer.cancel();
+        }
+      } on AlertasException {
+        // La incidencia y su imagen siguen disponibles; se puede actualizar manualmente.
+      } finally { consultandoClip = false; }
+    });
   }
 
   Future<void> confirmar() async {
@@ -190,8 +220,10 @@ class _IncidenciasSeguridadPageState extends State<IncidenciasSeguridadPage> wit
         if (detalle!.prioridad.isNotEmpty) Text('Prioridad: ${detalle!.prioridad}'),
         const SizedBox(height: 16),
         Text(detalle!.descripcion),
-        if (detalle!.evidenciaDisponible) ...[const SizedBox(height: 16), const Text('Evidencia'),
+        if (!detalle!.clipDisponible && detalle!.evidenciaDisponible) ...[const SizedBox(height: 16), const Text('Evidencia'),
           EvidenciaSeguridad(key: ValueKey(detalle!.id), eventoId: detalle!.id, service: service)],
+        if (detalle!.clipDisponible) ...[const SizedBox(height: 16), const Text('Video de la incidencia'),
+          ClipSeguridad(key: ValueKey('clip-${detalle!.id}'), eventoId: detalle!.id)],
         if (widget.puedeConfirmar && detalle!.estado == 'PENDIENTE_REVISION') ...[
           const SizedBox(height: 20),
           if (errorConfirmacion != null) Text(errorConfirmacion!, style: TextStyle(color: Theme.of(context).colorScheme.error)),

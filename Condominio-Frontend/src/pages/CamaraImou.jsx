@@ -5,6 +5,7 @@ import ConsultaPlacaFotograma from '../components/ConsultaPlacaFotograma.jsx';
 import LecturaAutomaticaImou from '../components/LecturaAutomaticaImou.jsx';
 import ReglaPiscina from '../components/ReglaPiscina.jsx';
 import { crearEventoImou } from '../vision/eventoImou.js';
+import { useClipEvento } from '../vision/useClipEvento.js';
 import { FaCamera, FaCompress, FaExpand, FaPowerOff } from 'react-icons/fa';
 import './CamaraImou.css';
 
@@ -15,6 +16,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
   const [automatico, setAutomatico] = useState(false);
   const [pendientes, setPendientes] = useState([]);
   const [avisoRegistro, setAvisoRegistro] = useState('');
+  const { buffer: bufferClip, registrarConClip } = useClipEvento(onRegistrarEvento, setAvisoRegistro);
   const [iaActiva, setIaActiva] = useState(false);
   const [visorAnalizado, setVisorAnalizado] = useState(null);
   const [pieConfiguracion, setPieConfiguracion] = useState(null);
@@ -26,6 +28,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
   const automaticoRef = useRef(false);
   const pendientesRef = useRef(new Map());
   const enviandoRef = useRef(new Set());
+  const tiemposClip = useRef(new Map());
   const monitorRef = useRef(null);
 
   useEffect(() => {
@@ -59,7 +62,8 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
     enviandoRef.current.add(datos.id);
     actualizarPendientes();
     try {
-      const creado = await onRegistrarEvento(datos, { timeout: 15000 });
+      const creado = await registrarConClip(datos, { timeout: 15000, instanteClip: tiemposClip.current.get(datos.id) });
+      tiemposClip.current.delete(datos.id);
       pendientesRef.current.delete(datos.id);
       setAvisoRegistro(creado.sin_guardias
         ? 'Evento registrado. No hay guardias activos para recibir el aviso.'
@@ -71,12 +75,13 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
       enviandoRef.current.delete(datos.id);
       actualizarPendientes();
     }
-  }, [onRegistrarEvento, desactivarRegistro, actualizarPendientes]);
-  const registrarHallazgo = useCallback((hallazgo, imagen) => {
+  }, [registrarConClip, desactivarRegistro, actualizarPendientes]);
+  const registrarHallazgo = useCallback((hallazgo, imagen, instante) => {
     if (!automaticoRef.current || monitorRef.current !== false) return;
     try {
       if (!(imagen instanceof Blob) || imagen.type !== 'image/jpeg' || imagen.size <= 0 || imagen.size > 1024 * 1024) throw new Error('Fotograma inválido');
       const datos = { ...crearEventoImou(hallazgo, crypto.randomUUID(), new Date().toISOString()), evidencia: imagen };
+      tiemposClip.current.set(datos.id, instante);
       pendientesRef.current.set(datos.id, datos);
       void enviar(datos);
     } catch {
@@ -87,6 +92,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
 
   useEffect(() => {
     if (!activa) return;
+    const buffer = bufferClip.current;
     let vigente = true;
     let timer;
     let url;
@@ -98,6 +104,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
         if (!vigente) return;
         if (blob) {
           ultimoFotograma.current = { imagen: blob, tiempo: performance.now() / 1000 };
+          buffer.agregar(blob, ultimoFotograma.current.tiempo);
           const anterior = url;
           url = URL.createObjectURL(blob);
           setImagen(url);
@@ -139,11 +146,11 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
       vigente = false;
       controller.abort();
       clearTimeout(timer);
-      ultimoFotograma.current = null;
+      ultimoFotograma.current = null; buffer.limpiar();
       if (url) URL.revokeObjectURL(url);
       document.removeEventListener('visibilitychange', alOcultar);
     };
-  }, [activa, desactivarRegistro]);
+  }, [activa, desactivarRegistro, bufferClip]);
 
   async function ampliar() {
     try { await visor.current?.requestFullscreen(); }
@@ -185,7 +192,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
           registrarHallazgo={registrarHallazgo} hayPendientes={pendientes.length > 0}
           activo={iaActiva} setActivo={setIaActiva} configuracion={configuracion} visorAnalizado={visorAnalizado}
           monitorIndependiente={monitorIndependiente} pieConfiguracion={pieConfiguracion} piscinaSeleccionada={regla === 'piscina'} />}
-        {activa && imagen && <ReglaPiscina fuente="imou" nombre="Imou · piscina" muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'piscina'} pie={pieConfiguracion} onRegistrarEvento={onRegistrarEvento} />}
+        {activa && imagen && <ReglaPiscina fuente="imou" nombre="Imou · piscina" muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'piscina'} pie={pieConfiguracion} onRegistrarEvento={registrarConClip} />}
         {activa && imagen && <section className="configuracion-placas-camara" aria-label="Lectura de placas de la cámara Imou">
           {configuracion && <h4>Lectura de placas</h4>}
           {iaActiva && <LecturaAutomaticaImou muestraAnalizada={muestraAnalizada} cameraId="Imou" />}

@@ -23,7 +23,7 @@ try {
   await pagina.addInitScript(modo => { localStorage.setItem('access', 'token-ficticio'); sessionStorage.setItem('vision-procesador', modo); }, modoEsperado);
   const imagen64 = await pagina.evaluate(() => { const c = document.createElement('canvas'); c.width = 640; c.height = 480; c.getContext('2d').fillRect(0, 0, 640, 480); return c.toDataURL('image/jpeg').split(',')[1]; });
   const imagen = Buffer.from(imagen64, 'base64');
-  const reglas = {}, eventos = [], procesadores = [];
+  const reglas = {}, eventos = [], procesadores = [], clips = [];
   let dosPersonas = false;
   await pagina.route('**/api/**', async route => {
     const req = route.request(), path = new URL(req.url()).pathname;
@@ -41,6 +41,7 @@ try {
       if (req.method() === 'PUT') reglas[id] = { ...req.postDataJSON(), version: 'v1' };
       return route.fulfill({ json: reglas[id] || { puntos: [], segundos: 10, automatico: false, version: null } });
     }
+    if (path.endsWith('/clip/') && req.method() === 'POST') { clips.push(req.postDataBuffer()); return route.fulfill({ json: { clip_disponible: true } }); }
     if (path.endsWith('/eventos-seguridad/') && req.method() === 'POST') { eventos.push(req.postDataBuffer()); return route.fulfill({ json: { id: 'evento', sin_guardias: false } }); }
     return route.fulfill({ json: [] });
   });
@@ -77,8 +78,9 @@ try {
   await pagina.getByLabel('Tipo de incidencia:').last().selectOption('piscina');
   await pagina.getByRole('button', { name: 'Dibujar zona de piscina' }).waitFor();
   await configurar();
-  await pagina.waitForTimeout(5000);
+  await pagina.waitForTimeout(9000);
   assert.equal(eventos.length, 2, 'Cada cámara tiene su propio evento');
+  assert.equal(clips.length, 2, 'Cada cámara adjunta su propio clip');
   assert.notEqual(reglas.imou.puntos, reglas['catalogo-2'].puntos);
   assert.equal(reglas.imou.segundos, 2);
   assert.equal(reglas['catalogo-2'].segundos, 2);

@@ -112,8 +112,12 @@ class MonitorImouTests(TestCase):
               patch('seguridad_IA.management.commands.monitorear_imou.solicitar_local', return_value=deteccion),
               patch('seguridad_IA.management.commands.monitorear_imou.time.monotonic', side_effect=lambda: next(reloj)),
               patch('seguridad_IA.management.commands.monitorear_imou.time.sleep', side_effect=dormir),
+              patch('seguridad_IA.management.commands.monitorear_imou.GestorClipsImou') as clips,
               patch('seguridad_IA.management.commands.monitorear_imou.close_old_connections')):
             call_command('monitorear_imou', stdout=io.StringIO(), stderr=io.StringIO())
+        clips.return_value.iniciar.assert_called_once()
+        clips.return_value.programar.assert_called_once()
+        clips.return_value.cerrar.assert_called_once()
         self.assertEqual(EventoSeguridad.objects.count(), 1)
         self.assertEqual(NotificacionSeguridad.objects.count(), 2)
         self.assertEqual(EvidenciaEventoSeguridad.objects.count(), 1)

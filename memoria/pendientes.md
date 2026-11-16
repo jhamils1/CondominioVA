@@ -434,3 +434,13 @@ Una consulta oficial de solo lectura confirmó que ese proyecto sí existe y que
 2026-11-16: Comprobar gesto web en pantalla tactil real y desplazamiento de la pagina.
 
 2026-11-16: Confirmar visualmente cambio de descartados en web del guardia.
+
+2026-11-16: Comprobar con autorizaci?n una incidencia real y reproducci?n del clip en Android; confirmar uso de almacenamiento persistente y pol?ticas de retenci?n antes del despliegue. Fallos de captura o p?rdida de c?mara pueden dejar solo la imagen; no se garantiza clip en todas las incidencias.
+
+2026-11-16: Validar con el usuario el resultado de su video, zona, registro de la incidencia y clip; ninguna grabaci?n recuperable autom?ticamente si el clip no se cre?.
+
+2026-11-16: Comprobar visualmente el detalle de una incidencia con clip en web y tel?fono.
+
+2026-11-16: Confirmar con el usuario la reproducci?n del clip en el tel?fono tras registrar el complemento de video.
+
+2026-11-16: Comprobar visualmente en el tel?fono si la APK regenerada elimina la imagen duplicada al mostrar un clip.

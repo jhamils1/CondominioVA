@@ -524,3 +524,19 @@ No ejecutar los comandos anteriores como parte de una mera lectura documental: a
 2026-11-16: Build y ESLint frontend correctos; prueba simulada verifica gesto tactil y llamada API, junto con flujo de revision. Sin validacion en dispositivo tactil real.
 
 2026-11-16: Build, ESLint y prueba web simulada correctos: guardia sin pesta?a descartados, administrador la conserva.
+
+2026-11-16: Clips: 12 pruebas Django (incluyen permisos, formato y monitor simulado), 2 pruebas Node de intervalo/b?fer, pruebas simuladas de c?maras y video en navegador y 11 pruebas Flutter de navegaci?n superadas; compilaci?n web correcta. No verificada la reproducci?n en tel?fono ni nube.
+
+2026-11-16: APK debug con reproducci?n de clips compilada e instalada en el tel?fono USB conectado; an?lisis Flutter sin hallazgos. Pendiente comprobaci?n visual y recepci?n de un clip real.
+
+2026-11-16: Compilaci?n web correcta; 4 pruebas Node de regla piscina y clips y prueba de navegador con video/IA simulados superadas. Sin prueba integral con el archivo del usuario.
+
+2026-11-16: En an?lisis de piscina se aclara que la zona incluye el borde y usa el punto inferior de la persona; el texto sobre reinicio del conteo coincide con la regla existente. Compilaci?n web superada.
+
+2026-11-16: Usuario inform? una incidencia de piscina en video; verificada en base local pendiente con clip WebM de 4,0 s, 640 x 360 y 116595 bytes. Reproducci?n visual y entrega push no verificadas.
+
+2026-11-16: Compilaci?n web y 11 pruebas m?viles de navegaci?n satisfactorias; APK debug instalada, pendiente revisi?n visual del resultado.
+
+2026-11-16: flutter pub get --offline y compilaci?n Android exitosos; clase VideoPlayerPlugin confirmada en los DEX de la APK e instalaci?n USB exitosa. Reproducci?n real pendiente de confirmaci?n.
+
+2026-11-16: Usuario confirm? reproducci?n de video en tel?fono. APK reconstruida desde cero, complemento de video presente e instalaci?n USB exitosa; interfaz a?n pendiente de validaci?n visual.

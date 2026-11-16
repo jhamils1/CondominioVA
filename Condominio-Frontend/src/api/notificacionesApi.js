@@ -9,6 +9,15 @@ export async function leerNotificacion(id) { return (await client.post(`notifica
 export async function obtenerEvento(id) { return (await client.get(`eventos-seguridad/${id}/`)).data; }
 export async function revisarEvento(id, accion, motivo) { return (await client.post(`eventos-seguridad/${id}/${accion}/`, { motivo })).data; }
 export async function retirarHistorialEvento(id) { await client.post(`eventos-seguridad/${id}/retirar-historial/`); }
+export async function adjuntarClipEvento(id, clip) {
+  const data = new FormData(); data.append('clip', clip, 'incidencia.webm');
+  return (await client.post(`eventos-seguridad/${id}/clip/`, data, { timeout: 30000 })).data;
+}
+export async function obtenerClipEvento(id, signal) {
+  const response = await client.get(`eventos-seguridad/${id}/clip/`, { signal, responseType: 'blob', timeout: 30000 });
+  if (response.data.type !== 'video/webm' || response.data.size > 2 * 1024 * 1024) throw new Error('Clip inválido');
+  return response.data;
+}
 export async function registrarPlacaEvento(id, placa) { return (await client.post(`eventos-seguridad/${id}/registrar-placa/`, { placa })).data; }
 export async function reconocerPlacaEvidencia(id) { return (await client.post(`eventos-seguridad/${id}/reconocer-placa-evidencia/`, {}, { timeout: 45000 })).data; }
 export async function posiblesLecturasEntrada(id) { return (await client.get(`eventos-seguridad/${id}/posibles-lecturas-entrada/`)).data; }

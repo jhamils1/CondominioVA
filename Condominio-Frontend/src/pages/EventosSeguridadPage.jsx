@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { crearEvento, listarEventos, listarHistorialEvento, revisarEvento, atenderEvento, redistribuirEvento, retirarHistorialEvento } from '../api/notificacionesApi.js';
+import { crearEvento, listarEventos, listarHistorialEvento, obtenerEvento, revisarEvento, atenderEvento, redistribuirEvento, retirarHistorialEvento } from '../api/notificacionesApi.js';
 import { useSession } from '../auth/sessionContext.js';
 import CamaraDemostracion from './CamaraDemostracion.jsx';
 import CamaraImou from './CamaraImou.jsx';
@@ -9,6 +9,7 @@ import ProcesadorVision from '../components/ProcesadorVision.jsx';
 import { camarasMonitor } from '../api/visionDemoApi.js';
 import VideoArchivoDemostracion from './VideoArchivoDemostracion.jsx';
 import EvidenciaEvento from '../components/EvidenciaEvento.jsx';
+import ClipEvento from '../components/ClipEvento.jsx';
 import EvidenciaMiniatura from '../components/EvidenciaMiniatura.jsx';
 import LecturaPlacaEvidencia from '../components/LecturaPlacaEvidencia.jsx';
 import { FaCamera, FaClipboardList, FaCog, FaPlusCircle, FaShieldAlt, FaVideo } from 'react-icons/fa';
@@ -224,6 +225,10 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
   async function select(item) {
     setError(''); setSelected(item); setObservation(''); setHistory([]);
     requestAnimationFrame(() => detalleEventoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    obtenerEvento(item.id).then(actualizado => {
+      setSelected(actual => actual?.id === item.id ? actualizado : actual);
+      setItems(actual => actual.map(evento => evento.id === item.id ? actualizado : evento));
+    }).catch(() => {});
     try { setHistory(await listarHistorialEvento(item.id)); }
     catch { setError('No se pudo cargar el historial.'); }
   }
@@ -268,6 +273,10 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
     const creado = await crearEvento(datos, configuracion);
     setItems(actual => [creado, ...actual.filter(item => item.id !== creado.id)]);
     return creado;
+  }, []);
+  const clipAdjuntado = useCallback(id => {
+    setItems(actual => actual.map(item => item.id === id ? { ...item, clip_disponible: true } : item));
+    setSelected(actual => actual?.id === id ? { ...actual, clip_disponible: true } : actual);
   }, []);
   async function execute(action) {
     if (['descartar', 'resolver', 'actuaciones'].includes(action) && !observation.trim()) {
@@ -379,7 +388,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
     </div>}
     <div hidden={!configuracion} className="seguridad-archivo">
       <div className="seguridad-section-title"><div><span className="seguridad-eyebrow">HERRAMIENTAS</span><h3>Análisis de videos</h3></div></div>
-      <VideoArchivoDemostracion onPrepararEvento={prepararEventoVideo} onRegistrarEvento={registrarEventoVideo} />
+      <VideoArchivoDemostracion onPrepararEvento={prepararEventoVideo} onRegistrarEvento={registrarEventoVideo} onClipAdjuntado={clipAdjuntado} />
     </div>
     </>}
     {error && <p role="alert" className="seguridad-feedback is-error">{error}</p>}
@@ -425,7 +434,9 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
           <p>{selected.descripcion}</p><p className="seguridad-muted">{selected.camara || 'Sin cámara'} · {selected.ubicacion || 'Sin ubicación'}</p>
           <p className="seguridad-muted">Estado: {selected.estado} · Origen: {selected.origen}</p>
           {user.role === 'administrador' && selected.estado === 'PENDIENTE_REVISION' && <div className="seguridad-review"><button disabled={busy} className="seguridad-primary" onClick={() => execute('confirmar')}>Confirmar incidencia</button></div>}
-          <EvidenciaEvento key={selected.id} evento={selected} />
+          {selected.clip_disponible
+            ? <ClipEvento key={selected.id} evento={selected} />
+            : <EvidenciaEvento key={selected.id} evento={selected} />}
           {selected.estado !== 'PENDIENTE_REVISION' && <p className="seguridad-muted">Esta incidencia ya fue revisada.</p>}
           {['administrador', 'guardia'].includes(user.role) && ['CONFIRMADA', 'EN_ATENCION', 'RESUELTA'].includes(selected.estado) && <button type="button" disabled={busy} className="seguridad-danger" onClick={retirarHistorial}>Retirar del historial</button>}
           {user.role === 'guardia' && <LecturaPlacaEvidencia key={selected.id} evento={selected} onRegistrada={async () => setHistory(await listarHistorialEvento(selected.id))} />}

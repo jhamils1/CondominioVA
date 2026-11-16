@@ -8,6 +8,7 @@ import ZonaVideo from './ZonaVideo.jsx';
 import { zonaValida } from '../vision/zonas.js';
 import { FaCompress, FaExpand } from 'react-icons/fa';
 import { crearEventoImou } from '../vision/eventoImou.js';
+import { useClipEvento } from '../vision/useClipEvento.js';
 import './VideoArchivoDemostracion.css';
 
 export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracion, compacto = false, ampliado = false, onAmpliar }) {
@@ -35,6 +36,8 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
   const [eventosPendientes, setEventosPendientes] = useState([]);
   const [registroPausado, setRegistroPausado] = useState(false);
   const [mensajeRegistro, setMensajeRegistro] = useState('');
+  const { buffer: bufferClip, registrarConClip } = useClipEvento(onRegistrarEvento, setMensajeRegistro);
+  const tiemposClip = useRef(new Map());
   const enviando = useRef(new Set());
   const [cambios, setCambios] = useState(false);
   const [aviso, setAviso] = useState('');
@@ -77,7 +80,8 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
     if (enviando.current.has(datos.id)) return;
     enviando.current.add(datos.id);
     try {
-      const resultado = await onRegistrarEvento(datos, { timeout: 15000 });
+      const resultado = await registrarConClip(datos, { timeout: 15000, instanteClip: tiemposClip.current.get(datos.id) });
+      tiemposClip.current.delete(datos.id);
       setEventosPendientes(actual => actual.filter(item => item.id !== datos.id));
       setMensajeRegistro(resultado.sin_guardias ? 'Evento registrado, pero no hay guardias activos.' : 'Evento enviado a revisión de los guardias.');
       return true;
@@ -86,20 +90,22 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
       setMensajeRegistro('No se pudo confirmar el evento. Reintenta antes de cerrar esta vista.');
       return false;
     } finally { enviando.current.delete(datos.id); }
-  }, [onRegistrarEvento]);
-  const registrarHallazgo = useCallback((hallazgo, imagen) => {
+  }, [registrarConClip]);
+  const registrarHallazgo = useCallback((hallazgo, imagen, instante) => {
     if (registroPausado || !(imagen instanceof Blob) || imagen.type !== 'image/jpeg' || !imagen.size || imagen.size > 1024 * 1024) {
       setRegistroPausado(true); setMensajeRegistro('Registro pausado: revisa la evidencia o el evento pendiente.'); return;
     }
     const datos = { ...crearEventoImou(hallazgo, crypto.randomUUID(), new Date().toISOString()),
       camara: `${camara.nombre} (#${camara.id})`.slice(0, 100),
       descripcion: `Posible vehículo detenido ${Math.floor(hallazgo.duracion)} segundos en la zona configurada. Requiere revisión. Se adjunta el fotograma analizado.`, evidencia: imagen };
+    tiemposClip.current.set(datos.id, instante);
     setEventosPendientes(actual => [...actual, datos]);
     void enviar(datos);
   }, [registroPausado, camara.id, camara.nombre, enviar]);
 
   useEffect(() => {
     if (!activo) return undefined;
+    const buffer = bufferClip.current;
     let vigente = true, timer, actual = '';
     const controller = new AbortController();
     async function consultar() {
@@ -108,6 +114,7 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
         if (!vigente) return;
         if (blob) {
           ultimoFotograma.current = { imagen: blob, tiempo: performance.now() / 1000 };
+          buffer.agregar(blob, ultimoFotograma.current.tiempo);
           const siguiente = URL.createObjectURL(blob);
           setImagen(siguiente);
           if (actual) URL.revokeObjectURL(actual);
@@ -131,8 +138,8 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
     consultar();
     function ocultar() { if (document.hidden) { setActivo(false); setImagen(''); setMensaje('Vista detenida al salir de esta pestaña.'); } }
     document.addEventListener('visibilitychange', ocultar);
-    return () => { vigente = false; controller.abort(); clearTimeout(timer); ultimoFotograma.current = null; if (actual) URL.revokeObjectURL(actual); document.removeEventListener('visibilitychange', ocultar); };
-  }, [activo, camara.id]);
+    return () => { vigente = false; controller.abort(); clearTimeout(timer); ultimoFotograma.current = null; buffer.limpiar(); if (actual) URL.revokeObjectURL(actual); document.removeEventListener('visibilitychange', ocultar); };
+  }, [activo, camara.id, bufferClip]);
 
   return <section className={`imou-panel ${compacto ? 'camara-mosaico-catalogo' : ''}`}>
     <div className="camara-catalogo-cabecera"><h3>{camara.nombre}</h3>
@@ -177,7 +184,7 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
       </>}
       {zona && !esAdmin && <p>Solo el administrador puede configurar esta zona.</p>}
     </div>}
-    {activo && imagen && <ReglaPiscina fuente={`catalogo-${camara.id}`} nombre={`${camara.nombre} (#${camara.id})`} muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo configuracion={configuracion} seleccionada={regla === 'piscina'} pie={piePiscina} onRegistrarEvento={onRegistrarEvento} />}
+    {activo && imagen && <ReglaPiscina fuente={`catalogo-${camara.id}`} nombre={`${camara.nombre} (#${camara.id})`} muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo configuracion={configuracion} seleccionada={regla === 'piscina'} pie={piePiscina} onRegistrarEvento={registrarConClip} />}
     <div hidden={compacto}>
       {activo && imagen && <section className="configuracion-placas-camara" aria-label={`Lectura de placas de ${camara.nombre}`}>
         {configuracion && <h4>Lectura de placas</h4>}

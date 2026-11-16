@@ -4,6 +4,7 @@ import { analizarFotograma, estadoCamaraDemo } from '../api/visionDemoApi.js';
 import { zonaValida } from '../vision/zonas.js';
 import { crearSeguimiento } from '../vision/permanencia.js';
 import { crearEventoCamara } from '../vision/eventoCamara.js';
+import { useClipEvento } from '../vision/useClipEvento.js';
 import { colorDeteccionMonitor, filtrarDetecciones } from '../vision/coloresDeteccion.js';
 import ConsultaPlacaFotograma from '../components/ConsultaPlacaFotograma.jsx';
 import LecturaAutomaticaImou from '../components/LecturaAutomaticaImou.jsx';
@@ -49,6 +50,8 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
   const [pendientes, setPendientes] = useState([]);
   const [reintentando, setReintentando] = useState(false);
   const [avisoRegistro, setAvisoRegistro] = useState('');
+  const { buffer: bufferClip, registrarConClip } = useClipEvento(onRegistrarEvento, setAvisoRegistro);
+  const tiemposClip = useRef(new Map());
   const [dispositivos, setDispositivos] = useState([]);
   const [dispositivo, setDispositivo] = useState('');
   const [identificadorLectura, setIdentificadorLectura] = useState('');
@@ -75,7 +78,8 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
 
   async function enviarEvento(datos, reintento = false) {
     try {
-      const creado = await onRegistrarEvento(datos);
+      const creado = await registrarConClip(datos, { instanteClip: tiemposClip.current.get(datos.id) });
+      tiemposClip.current.delete(datos.id);
       if (reintento) setPendientes(actual => actual.filter(item => item.id !== datos.id));
       setAvisoRegistro(creado.sin_guardias ? 'Evento registrado; no hay guardias activos para recibir el aviso.' : 'Evento registrado y enviado a la bandeja de guardias.');
     } catch {
@@ -100,6 +104,27 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
   }
 
   useEffect(() => () => liberar(), []);
+
+  useEffect(() => {
+    if (estado !== 'activa') return undefined;
+    const buffer = bufferClip.current;
+    let vigente = true, ocupado = false;
+    const lienzo = document.createElement('canvas');
+    const timer = setInterval(() => {
+      const fuente = video.current;
+      if (!vigente || ocupado || !fuente?.videoWidth || !fuente.videoHeight) return;
+      const escala = Math.min(1, 640 / fuente.videoWidth, 640 / fuente.videoHeight);
+      lienzo.width = Math.max(2, Math.round(fuente.videoWidth * escala));
+      lienzo.height = Math.max(2, Math.round(fuente.videoHeight * escala));
+      const ctx = lienzo.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(fuente, 0, 0, lienzo.width, lienzo.height);
+      const instante = performance.now() / 1000;
+      ocupado = true;
+      lienzo.toBlob(blob => { ocupado = false; if (vigente && blob) buffer.agregar(blob, instante); }, 'image/jpeg', 0.7);
+    }, 200);
+    return () => { vigente = false; clearInterval(timer); buffer.limpiar(); };
+  }, [estado, bufferClip]);
 
   async function analizar(id, version) {
     if (actual.current !== id || versionIA.current !== version || !iaHabilitada.current || !video.current || !canvas.current) return;
@@ -135,6 +160,7 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
           pistasEnviadas.current.add(aviso.id);
           if (blob.type !== 'image/jpeg' || blob.size > 1024 * 1024) { desactivarRegistro(); setAvisoRegistro('El fotograma no es válido; registro automático detenido.'); continue; }
           const datos = { ...crearEventoCamara(aviso, crypto.randomUUID(), new Date().toISOString()), camara: nombreCamara.current, evidencia: blob };
+          tiemposClip.current.set(datos.id, tiempoCaptura);
           void enviarEvento(datos);
         }
         ultimoFotograma.current = tiempoCaptura;
@@ -364,7 +390,7 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
           }} />{' '}Registrar automáticamente los hallazgos de esta cámara de prueba y avisar a los guardias.</label>
       </div>}
     </div>}
-    {estado === 'activa' && <ReglaPiscina fuente={`local-${dispositivo}`} nombre={nombreCamara.current} muestraAnalizada={muestraAnalizada} visor={visorPiscina} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'piscina'} pie={piePiscina} onRegistrarEvento={onRegistrarEvento} />}
+    {estado === 'activa' && <ReglaPiscina fuente={`local-${dispositivo}`} nombre={nombreCamara.current} muestraAnalizada={muestraAnalizada} visor={visorPiscina} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'piscina'} pie={piePiscina} onRegistrarEvento={registrarConClip} />}
     {configuracion && estado === 'activa' && <section className="configuracion-placas-camara" aria-label="Lectura de placas de la cámara local">
       <h4>Lectura de placas</h4>
       {iaActiva && <LecturaAutomaticaImou key={dispositivo} muestraAnalizada={muestraAnalizada} cameraId={identificadorLectura} />}

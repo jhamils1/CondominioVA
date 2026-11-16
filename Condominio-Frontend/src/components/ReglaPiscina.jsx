@@ -24,6 +24,7 @@ export default function ReglaPiscina({ fuente, nombre, muestraAnalizada, visor, 
   const [estado, setEstado] = useState('');
   const [pendiente, setPendiente] = useState(null);
   const pendienteRef = useRef(null);
+  const tiemposClip = useRef(new Map());
   const guardadoRef = useRef(null);
   const analisisRef = useRef(null);
   const ultimoRef = useRef(null);
@@ -75,7 +76,8 @@ export default function ReglaPiscina({ fuente, nombre, muestraAnalizada, visor, 
 
   const enviar = useCallback(async datos => {
     try {
-      const resultado = await onRegistrarEvento(datos, { timeout: 15000 });
+      const resultado = await onRegistrarEvento(datos, { timeout: 15000, instanteClip: tiemposClip.current.get(datos.id) });
+      tiemposClip.current.delete(datos.id);
       pendienteRef.current = null; setPendiente(null);
       setMensaje(resultado.sin_guardias ? 'Evento registrado sin guardias activos.' : 'Evento enviado a revisión de los guardias.');
     } catch { pendienteRef.current = datos; setPendiente(datos); setMensaje('No se pudo confirmar el evento. Reintenta antes de cerrar.'); }
@@ -110,6 +112,7 @@ export default function ReglaPiscina({ fuente, nombre, muestraAnalizada, visor, 
             if (!evidencia || evidencia.size > 1024 * 1024) { setMensaje('No se pudo preparar la evidencia de piscina.'); return; }
             const datos = { id: crypto.randomUUID(), camara: nombre.slice(0, 100), categoria: 'Posible persona sola cerca de piscina',
               descripcion: `Una persona fue detectada en la zona de piscina sin otra persona detectada en la imagen durante al menos ${config.segundos} segundos. Requiere revisión del guardia. Se adjunta el fotograma analizado.`, fecha_evento: new Date().toISOString(), evidencia };
+            tiemposClip.current.set(datos.id, muestra.tiempo);
             pendienteRef.current = datos; setPendiente(datos); void enviar(datos);
           }
         } finally { bitmap.close(); }

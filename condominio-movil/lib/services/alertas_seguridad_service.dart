@@ -34,12 +34,13 @@ class DetalleEventoSeguridad {
   final String estado;
   final String fecha;
   final bool evidenciaDisponible;
+  final bool clipDisponible;
   final String camara;
   final String ubicacion;
   final String prioridad;
 
   const DetalleEventoSeguridad({required this.id, required this.categoria, required this.descripcion,
-    required this.estado, required this.fecha, this.evidenciaDisponible = false,
+    required this.estado, required this.fecha, this.evidenciaDisponible = false, this.clipDisponible = false,
     this.camara = '', this.ubicacion = '', this.prioridad = ''});
 
   factory DetalleEventoSeguridad.fromJson(dynamic data, String esperado) {
@@ -47,6 +48,7 @@ class DetalleEventoSeguridad {
         data['categoria'] is! String || data['descripcion'] is! String ||
         data['estado'] is! String || data['fecha_evento'] is! String ||
         (data['evidencia_disponible'] != null && data['evidencia_disponible'] is! bool) ||
+        (data['clip_disponible'] != null && data['clip_disponible'] is! bool) ||
         (data['camara'] != null && data['camara'] is! String) ||
         (data['ubicacion'] != null && data['ubicacion'] is! String) ||
         (data['prioridad'] != null && data['prioridad'] is! String)) {
@@ -55,6 +57,7 @@ class DetalleEventoSeguridad {
     return DetalleEventoSeguridad(id: esperado, categoria: data['categoria'],
         descripcion: data['descripcion'], estado: data['estado'], fecha: data['fecha_evento'],
         evidenciaDisponible: data['evidencia_disponible'] == true,
+        clipDisponible: data['clip_disponible'] == true,
         camara: data['camara'] as String? ?? '', ubicacion: data['ubicacion'] as String? ?? '',
         prioridad: data['prioridad'] as String? ?? '');
   }

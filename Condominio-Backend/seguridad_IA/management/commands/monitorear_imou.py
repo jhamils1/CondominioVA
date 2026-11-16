@@ -13,6 +13,7 @@ from PIL import Image
 from seguridad_IA.api_camara_demo import solicitar_local
 from seguridad_IA.api_imou_local import obtener_fotograma
 from seguridad_IA.evidencia import procesar_evidencia
+from seguridad_IA.clip_en_vivo import GestorClipsImou
 from seguridad_IA.models import EvidenciaEventoSeguridad, ZonaImou
 from seguridad_IA.monitoreo_imou import Seguimiento, adquirir_exclusion
 from seguridad_IA.notificaciones import TransicionInvalida, registrar_evento
@@ -53,7 +54,9 @@ class Command(BaseCommand):
         dimensiones = None
         pendientes = []
         estado_anterior = None
+        clips = GestorClipsImou(obtener_fotograma)
         try:
+            clips.iniciar()
             while True:
                 try:
                     close_old_connections()
@@ -63,13 +66,15 @@ class Command(BaseCommand):
                         pendientes.clear()
                         estado = 'Esperando una zona con registro automático activado.'
                     elif pendientes:
-                        registrar_hallazgo(pendientes[0])
+                        if registrar_hallazgo(pendientes[0]):
+                            clips.programar(pendientes[0]['id'], pendientes[0]['instante'])
                         pendientes.pop(0)
                         estado = 'Procesando eventos pendientes.'
                     else:
                         if zona.actualizado != version:
                             version, seguimiento, dimensiones = zona.actualizado, None, None
                         codigo, imagen = obtener_fotograma()
+                        instante = time.monotonic()
                         if codigo != 200:
                             estado = 'Esperando el servicio local de cámara Imou.'
                         else:
@@ -84,9 +89,9 @@ class Command(BaseCommand):
                                 if seguimiento is None or dimensiones != (ancho, alto):
                                     seguimiento = Seguimiento(zona.puntos, zona.segundos, ancho, alto)
                                     dimensiones = (ancho, alto)
-                                for hallazgo in seguimiento.procesar(resultado['detecciones'], time.monotonic()):
+                                for hallazgo in seguimiento.procesar(resultado['detecciones'], instante):
                                     clase = NOMBRES.get(hallazgo['clase'], 'vehículo')
-                                    pendientes.append({'id': uuid.uuid4(), 'version': version, 'imagen': imagen,
+                                    pendientes.append({'id': uuid.uuid4(), 'version': version, 'imagen': imagen, 'instante': instante,
                                         'fecha': timezone.now(), 'descripcion': (
                                             f'Detección automática Imou: {clase}, aproximadamente '
                                             f'{int(hallazgo["duracion"])} segundos detenido en zona prohibida. '
@@ -106,4 +111,5 @@ class Command(BaseCommand):
         except KeyboardInterrupt:
             self.stdout.write('Monitor Imou detenido.')
         finally:
+            clips.cerrar()
             bloqueo.close()

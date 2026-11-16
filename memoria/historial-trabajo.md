@@ -497,3 +497,17 @@ Se integró la fuente local al mosaico y se añadió persistencia de su configur
 2026-11-16: Implementada actualizacion manual tactil para incidencias web.
 
 2026-11-16: Alineada vista web del guardia con historial movil de lista unica.
+
+2026-11-16: Implementada captura de clips en torno a la detecci?n, sin detener el aviso; respaldo local previo antes de la migraci?n aditiva. V?anse pruebas.md y pendientes.md.
+
+2026-11-16: APK debug con reproducci?n de clips compilada e instalada en el tel?fono USB conectado; an?lisis Flutter sin hallazgos. Pendiente comprobaci?n visual y recepci?n de un clip real.
+
+2026-11-16: Revisada incidencia de clip ausente reportada en video subido; corregido estado web obsoleto. La causa espec?fica de la prueba del usuario sigue sin confirmar.
+
+2026-11-16: Usuario inform? una incidencia de piscina en video; verificada en base local pendiente con clip WebM de 4,0 s, 640 x 360 y 116595 bytes. Reproducci?n visual y entrega push no verificadas.
+
+2026-11-16: Se ajust? la presentaci?n para evitar imagen y clip duplicados; APK debug compilada e instalada por USB.
+
+2026-11-16: Diagnosticada ausencia del registro nativo de video_player; dependencias regeneradas sin conexi?n y APK corregida instalada.
+
+2026-11-16: Tras el reporte de imagen duplicada en m?vil se reconstruy? la APK desde cero y se verific? que contiene el complemento del reproductor; instalada mediante USB.

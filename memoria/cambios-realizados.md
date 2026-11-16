@@ -487,3 +487,15 @@ Se incorporó la cámara de laptop o USB al selector del mosaico, con ampliació
 2026-11-16: Agregado gesto tactil e indicador de consulta a la lista web; sin cambios de backend.
 
 2026-11-16: Ocultada pesta?a de descartados para guardia y retorno a pendientes tras descartar, sin cambios de backend.
+
+2026-11-16: Clips por evento con validaci?n WebM y permisos, captura para video y c?maras del navegador y monitor Imou independiente, reproductores web y Android y actualizaci?n del detalle m?vil.
+
+2026-11-16: La lista y el detalle web reflejan el clip al adjuntarse durante el an?lisis de video y consultan el evento actualizado al abrirlo.
+
+2026-11-16: En an?lisis de piscina se aclara que la zona incluye el borde y usa el punto inferior de la persona; el texto sobre reinicio del conteo coincide con la regla existente. Compilaci?n web superada.
+
+2026-11-16: Detalle de incidencia prioriza video sobre imagen en web y m?vil; la imagen sigue disponible si no hay clip.
+
+2026-11-16: Se regener? el registro Android de complementos despu?s de detectar que faltaba el reproductor en la compilaci?n anterior.
+
+2026-11-16: Reconstrucci?n limpia de aplicaci?n m?vil para asegurar inclusi?n de la condici?n de mostrar video o imagen.

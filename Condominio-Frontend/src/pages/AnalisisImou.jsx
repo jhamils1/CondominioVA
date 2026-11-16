@@ -156,7 +156,7 @@ export default function AnalisisImou({ ultimoFotograma, muestraAnalizada, automa
             }
             const resultadoSeguimiento = seguimiento.current(detecciones, muestra.tiempo);
             detecciones = resultadoSeguimiento.detecciones;
-            resultadoSeguimiento.avisos.forEach(aviso => registrarHallazgo(aviso, muestra.imagen));
+            resultadoSeguimiento.avisos.forEach(aviso => registrarHallazgo(aviso, muestra.imagen, muestra.tiempo));
             const coches = detecciones.filter(d => vehiculos.has(d.clase));
             estado = intervaloInvalido
               ? 'Muestras demasiado separadas: se reinició el tiempo. No se puede confirmar permanencia con este ritmo de análisis.'

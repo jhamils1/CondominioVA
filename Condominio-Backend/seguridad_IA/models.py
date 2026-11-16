@@ -94,6 +94,15 @@ class EvidenciaEventoSeguridad(models.Model):
     creada = models.DateTimeField(default=timezone.now)
 
 
+class ClipEventoSeguridad(models.Model):
+    # Se almacena en la base persistente y se entrega solo a operadores autorizados.
+    evento = models.OneToOneField(EventoSeguridad, on_delete=models.PROTECT,
+                                  primary_key=True, related_name='clip_privado')
+    video = models.BinaryField()
+    sha256 = models.CharField(max_length=64)
+    creado = models.DateTimeField(default=timezone.now)
+
+
 class NotificacionSeguridad(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     evento = models.ForeignKey(EventoSeguridad, on_delete=models.PROTECT, related_name='notificaciones')

@@ -63,7 +63,7 @@ export default function AnalisisCamaraCatalogo({ camara, ultimoFotograma, muestr
               if (config.automatico && !pausado && resultado.avisos.length) {
                 const evidencia = await prepararEvidencia(muestra.imagen, bitmap);
                 if (!vigente || zonaRef.current !== config || pausadoRef.current) return;
-                resultado.avisos.forEach(aviso => hallazgoRef.current(aviso, evidencia));
+                resultado.avisos.forEach(aviso => hallazgoRef.current(aviso, evidencia, muestra.tiempo));
               }
             }
             dibujar(canvas.current, bitmap, detecciones, { zona: config?.puntos || [], segundos: config?.segundos || 5 }, configuracion ? modoRef.current : 'zona');

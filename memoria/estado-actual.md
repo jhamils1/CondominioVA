@@ -581,3 +581,19 @@ El monitor permite añadir la cámara local sin registrarla en el catálogo; la 
 2026-11-16: Web permite actualizar lista de incidencias al deslizar hacia abajo en pantalla tactil cuando el desplazamiento esta arriba; boton actualizado disponible en escritorio.
 
 2026-11-16: Guardia ya no ve filtro de eventos descartados en web; descartes conservan trazabilidad y administrador conserva vista.
+
+2026-11-16: Implementados clips WebM silenciosos asociados a incidencias: objetivo 2 s antes y 2 s despu?s, hasta 2 MB, consulta autenticada en web y m?vil. Se env?a primero el aviso; el clip se adjunta despu?s. Migraci?n 0010 aplicada a PostgreSQL local con respaldo previo. Falta prueba integral con c?mara y tel?fono reales y despliegue en nube.
+
+2026-11-16: APK debug con reproducci?n de clips compilada e instalada en el tel?fono USB conectado; an?lisis Flutter sin hallazgos. Pendiente comprobaci?n visual y recepci?n de un clip real.
+
+2026-11-16: Corregida actualizaci?n web de disponibilidad del clip tras adjuntarlo y al abrir el detalle. En la base local consultada no hab?a clips; falta confirmar si la prueba del usuario registr? una incidencia y repetirla con su video.
+
+2026-11-16: En an?lisis de piscina se aclara que la zona incluye el borde y usa el punto inferior de la persona; el texto sobre reinicio del conteo coincide con la regla existente. Compilaci?n web superada.
+
+2026-11-16: Usuario inform? una incidencia de piscina en video; verificada en base local pendiente con clip WebM de 4,0 s, 640 x 360 y 116595 bytes. Reproducci?n visual y entrega push no verificadas.
+
+2026-11-16: En el detalle web y m?vil se muestra el clip si existe, o la imagen si no hay clip; las evidencias guardadas no se modificaron. APK debug instalada en el tel?fono USB; falta verificaci?n visual.
+
+2026-11-16: Corregida la compilaci?n Android: flutter pub get regener? el registro del complemento video_player_android; APK debug compilada e instalada en el tel?fono USB. Pendiente confirmaci?n real de reproducci?n.
+
+2026-11-16: Usuario confirm? reproducci?n de clip, pero inform? imagen adicional. Se regener? la APK desde cero y se instal? en tel?fono USB; pendiente confirmar visualizaci?n sin imagen duplicada.

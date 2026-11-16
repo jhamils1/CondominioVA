@@ -1,7 +1,7 @@
 // Video y respuestas simuladas; no se envían notificaciones reales.
 import { chromium } from '@playwright/test';
 import { createServer } from 'node:http';
-import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { resolve, join, extname, sep } from 'node:path';
@@ -32,6 +32,7 @@ w.release()`, archivo]);
   navegador = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const pagina = await navegador.newPage();
   const eventos = [];
+  const clips = [];
   const modoEsperado = process.env.PISCINA_PROCESADOR === 'remoto' ? 'remoto' : 'local';
   const procesadores = [];
   await pagina.addInitScript(modo => { localStorage.setItem('access', 'token-ficticio'); sessionStorage.setItem('vision-procesador', modo); }, modoEsperado);
@@ -40,6 +41,7 @@ w.release()`, archivo]);
     if (path.endsWith('/me/')) return route.fulfill({ json: { username: 'demo', role: 'administrador', capacidades: [] } });
     if (path.endsWith('/vision-camara/estado/')) return route.fulfill({ json: { disponible: true } });
     if (path.endsWith('/vision-camara/analizar/')) { procesadores.push(new URL(req.url()).searchParams.get('procesador')); return route.fulfill({ json: { detecciones: [{ clase: 'person', confianza: .9, caja: [200, 120, 300, 300] }] } }); }
+    if (path.endsWith('/clip/') && req.method() === 'POST') { clips.push(req.postDataBuffer()); return route.fulfill({ json: { clip_disponible: true } }); }
     if (path.endsWith('/eventos-seguridad/') && req.method() === 'POST') { eventos.push(req.postDataBuffer()); return route.fulfill({ json: { id: 'ficticio', sin_guardias: false } }); }
     return route.fulfill({ json: [] });
   });
@@ -56,6 +58,18 @@ w.release()`, archivo]);
   await pagina.getByRole('button', { name: 'Analizar video', exact: true }).click();
   await pagina.getByText('Análisis terminado.', { exact: false }).waitFor({ timeout: 30000 });
   assert.equal(eventos.length, 1);
+  assert.equal(clips.length, 1, 'se adjunta un clip al evento registrado');
+  const inicio = clips[0].indexOf(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]));
+  const fin = clips[0].lastIndexOf(Buffer.from('\r\n--'));
+  assert.ok(inicio >= 0 && fin > inicio);
+  const clip = join(temporal, 'clip.webm');
+  await writeFile(clip, clips[0].subarray(inicio, fin));
+  const backendPython = resolve('../Condominio-Backend/env/Scripts/python.exe');
+  execFileSync(backendPython, ['-c', `import av, sys
+with av.open(sys.argv[1]) as c:
+ frames = list(c.decode(video=0))
+ assert len(frames) > 2
+ assert 3 <= frames[-1].time - frames[0].time <= 5`, clip]);
   assert.ok(procesadores.length > 0 && procesadores.every(modo => modo === modoEsperado), 'El video utiliza el procesador seleccionado');
   assert.match(eventos[0].toString('utf8'), /Posible persona sola cerca de piscina/);
   assert.match(eventos[0].toString('latin1'), /name="evidencia"; filename="evidencia.jpg"/);

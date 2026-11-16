@@ -7,6 +7,8 @@ import { colorDeteccion, esVehiculo, filtrarDetecciones } from '../vision/colore
 import ModoDetecciones from '../components/ModoDetecciones.jsx';
 import { crearEventoVideo } from '../vision/eventoVideo.js';
 import { exportarVideo } from '../vision/exportarVideo.js';
+import { grabarClipArchivo } from '../vision/clipIncidencia.js';
+import { adjuntarClipEvento } from '../api/notificacionesApi.js';
 import ZonaVideo from './ZonaVideo.jsx';
 import './VideoArchivoDemostracion.css';
 
@@ -64,7 +66,8 @@ function buscarFotograma(video, tiempo, signal) {
   });
 }
 
-export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrarEvento }) {
+export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrarEvento, onClipAdjuntado }) {
+  const tiemposPendientesClip = useRef(new Map());
   const video = useRef(null);
   const videoAnalizado = useRef(null);
   const canvas = useRef(null);
@@ -102,6 +105,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
   const [pendientes, setPendientes] = useState([]);
   const [reintentando, setReintentando] = useState(false);
   const [registrados, setRegistrados] = useState(0);
+  const [clipsFallidos, setClipsFallidos] = useState(0);
   const [sinGuardias, setSinGuardias] = useState(0);
   const [exportando, setExportando] = useState(false);
   const [avanceExportacion, setAvanceExportacion] = useState(0);
@@ -202,6 +206,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     resultados.current = [];
     setHallazgos([]);
     setRegistrados(0);
+    setClipsFallidos(0);
     setSinGuardias(0);
     cancelAnimationFrame(animacion.current);
     videoAnalizado.current?.pause();
@@ -240,7 +245,15 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
               const creado = await onRegistrarEvento(datos);
               setRegistrados(actual => actual + 1);
               if (creado.sin_guardias) setSinGuardias(actual => actual + 1);
+              try {
+                const clip = await grabarClipArchivo(url, tiempo, duracion);
+                await adjuntarClipEvento(datos.id, clip);
+                onClipAdjuntado?.(datos.id);
+              } catch {
+                setClipsFallidos(actual => actual + 1);
+              }
             } catch {
+              tiemposPendientesClip.current.set(datos.id, tiempo);
               setPendientes(actual => [...actual, datos]);
             }
             if (controlador.signal.aborted) return;
@@ -274,6 +287,15 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     setReintentando(true);
     try {
       const creado = await onRegistrarEvento(datos);
+      const tiempoClip = tiemposPendientesClip.current.get(datos.id);
+      tiemposPendientesClip.current.delete(datos.id);
+      if (Number.isFinite(tiempoClip)) {
+        try {
+          const clip = await grabarClipArchivo(url, tiempoClip, duracion);
+          await adjuntarClipEvento(datos.id, clip);
+          onClipAdjuntado?.(datos.id);
+        } catch { setClipsFallidos(actual => actual + 1); }
+      }
       setPendientes(actual => actual.filter(item => item.id !== datos.id));
       setRegistrados(actual => actual + 1);
       if (creado.sin_guardias) setSinGuardias(actual => actual + 1);
@@ -466,6 +488,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       </select></label>
       <h4 className="font-medium">{tipoRegla === 'piscina' ? 'Zona de piscina' : 'Zona de estacionamiento prohibido'}</h4>
       <p className="text-sm">Pausa el video y dibuja la zona en la imagen original. Se conserva mientras el video esté abierto.</p>
+      {tipoRegla === 'piscina' && <p className="text-sm">Incluye la piscina y el borde por donde camina la persona; se evalúa el punto inferior de su recuadro.</p>}
       {!marcandoZona ? <div className="mt-2 flex flex-wrap gap-2">
         <button type="button" onClick={empezarZona} disabled={!duracion || estado === 'procesando' || exportando}
           className="border rounded px-3 py-2 disabled:opacity-50">{zona.length ? 'Cambiar zona' : 'Dibujar zona'}</button>
@@ -509,6 +532,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     </div>
     {progreso && <p role="status" className="text-sm mt-2">{progreso}</p>}
     {registroAutomatico && <p className="text-sm mt-2">Eventos registrados en este análisis: {registrados}. Los avisos push dependen del procesador y Firebase.</p>}
+    {clipsFallidos > 0 && <p role="alert" className="text-sm mt-2">No se pudo adjuntar el clip de {clipsFallidos} incidencia(s). El evento y su imagen sí fueron registrados.</p>}
     {sinGuardias > 0 && <p role="alert" className="text-sm mt-2">{sinGuardias} evento(s) se registraron sin guardias activos para recibir el aviso. El administrador puede reintentar la distribución.</p>}
     {pendientes.length > 0 && <div role="alert" className="mt-3 border rounded p-3 text-red-700">
       <p>No se pudo confirmar el registro de {pendientes.length} evento(s). Si ya se guardó, reintentar usa el mismo identificador. No recargues ni cierres la página antes de resolverlo.</p>
@@ -528,7 +552,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
             clase: nombres[h.clase] || h.clase, tiempo: h.tiempo, duracion: h.duracion,
           })}>Preparar evento manual</button></>}
         </li>)}</ul>}
-      <p className="text-sm mt-2">Una pérdida breve de detección pausa el conteo. La lista puede contener repeticiones y no confirma una infracción.</p>
+      <p className="text-sm mt-2">{tipoRegla === 'piscina' ? 'Si la persona sale de la zona, no se detecta o aparece otra persona, el conteo vuelve a empezar.' : 'Una pérdida breve de detección pausa el conteo. La lista puede contener repeticiones y no confirma una infracción.'}</p>
     </div>}
     {mensaje && <p role={estado === 'error' ? 'alert' : 'status'} className="mt-2">{mensaje}</p>}
   </section>;

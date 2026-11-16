@@ -12,11 +12,13 @@ from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser
 from administracion.access import SecurityOperator, effective_role
 from residencial.modelsVehiculo import Vehiculo
-from .models import EntregaFCMSeguridad, EventoSeguridad, EvidenciaEventoSeguridad, HistorialEventoSeguridad, LecturaPlaca, NotificacionSeguridad
+from .models import ClipEventoSeguridad, EntregaFCMSeguridad, EventoSeguridad, EvidenciaEventoSeguridad, HistorialEventoSeguridad, LecturaPlaca, NotificacionSeguridad
 from .notificaciones import atender_evento, distribuir_revision, registrar_actuacion, registrar_evento, revisar_evento, TransicionInvalida
 from .evidencia import procesar_evidencia
+from .clip import procesar_clip
 from .monitoreo_imou import adquirir_exclusion
 
 
@@ -35,18 +37,24 @@ class ActivacionRequerida:
 class EventoSerializer(serializers.ModelSerializer):
     evidencia = serializers.FileField(write_only=True, required=False)
     evidencia_disponible = serializers.SerializerMethodField()
+    clip_disponible = serializers.SerializerMethodField()
 
     def get_evidencia_disponible(self, obj):
         if hasattr(obj, '_evidencia_disponible'):
             return obj._evidencia_disponible
         return EvidenciaEventoSeguridad.objects.filter(evento_id=obj.pk).exists()
 
+    def get_clip_disponible(self, obj):
+        if hasattr(obj, '_clip_disponible'):
+            return obj._clip_disponible
+        return ClipEventoSeguridad.objects.filter(evento_id=obj.pk).exists()
+
     class Meta:
         model = EventoSeguridad
         fields = ['id', 'origen', 'categoria', 'descripcion', 'camara', 'ubicacion', 'prioridad',
                   'fecha_evento', 'fecha_recepcion', 'estado', 'sin_guardias', 'revisor',
                   'fecha_revision', 'motivo_descarte', 'incidencia', 'atendido_por', 'observaciones', 'fecha_resolucion',
-                  'evidencia', 'evidencia_disponible']
+                  'evidencia', 'evidencia_disponible', 'clip_disponible']
         read_only_fields = ['origen', 'fecha_recepcion', 'estado', 'sin_guardias', 'revisor',
                             'fecha_revision', 'motivo_descarte', 'incidencia', 'atendido_por', 'observaciones', 'fecha_resolucion']
         extra_kwargs = {'id': {'read_only': False, 'required': True}}
@@ -69,7 +77,8 @@ class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
     permission_classes = [SecurityOperator]
     serializer_class = EventoSerializer
     queryset = EventoSeguridad.objects.annotate(
-        _evidencia_disponible=Exists(EvidenciaEventoSeguridad.objects.filter(evento_id=OuterRef('pk')))
+        _evidencia_disponible=Exists(EvidenciaEventoSeguridad.objects.filter(evento_id=OuterRef('pk'))),
+        _clip_disponible=Exists(ClipEventoSeguridad.objects.filter(evento_id=OuterRef('pk')))
     ).order_by('-fecha_recepcion')
 
     def get_queryset(self):
@@ -130,6 +139,28 @@ class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
         response['Cache-Control'] = 'private, no-store, max-age=0'
         response['X-Content-Type-Options'] = 'nosniff'
         return response
+
+    @action(detail=True, methods=['get', 'post'], url_path='clip', parser_classes=[MultiPartParser])
+    def clip(self, request, pk=None):
+        evento = self.get_object()
+        if request.method == 'GET':
+            registro = get_object_or_404(ClipEventoSeguridad, evento=evento)
+            response = HttpResponse(bytes(registro.video), content_type='video/webm')
+            response['Cache-Control'] = 'private, no-store, max-age=0'
+            response['X-Content-Type-Options'] = 'nosniff'
+            return response
+        if effective_role(request.user) != 'administrador':
+            raise PermissionDenied('Solo el administrador puede adjuntar clips.')
+        archivo = request.FILES.get('clip')
+        if not archivo:
+            raise ValidationError('Falta el clip.')
+        video, digest = procesar_clip(archivo)
+        with transaction.atomic():
+            EventoSeguridad.objects.select_for_update().get(pk=evento.pk)
+            registro, creado = ClipEventoSeguridad.objects.get_or_create(evento=evento, defaults={'video': video, 'sha256': digest})
+            if not creado and registro.sha256 != digest:
+                return Response({'detail': 'El evento ya tiene otro clip.'}, status=409)
+        return Response({'clip_disponible': True}, status=201 if creado else 200)
 
     @action(detail=True, methods=['post'])
     def confirmar(self, request, pk=None):
