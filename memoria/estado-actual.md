@@ -597,3 +597,13 @@ El monitor permite añadir la cámara local sin registrarla en el catálogo; la 
 2026-11-16: Corregida la compilaci?n Android: flutter pub get regener? el registro del complemento video_player_android; APK debug compilada e instalada en el tel?fono USB. Pendiente confirmaci?n real de reproducci?n.
 
 2026-11-16: Usuario confirm? reproducci?n de clip, pero inform? imagen adicional. Se regener? la APK desde cero y se instal? en tel?fono USB; pendiente confirmar visualizaci?n sin imagen duplicada.
+
+2026-11-16: Regla de mascota (perro o gato) implementada con deteccion inmediata por defecto, zona individual por camara y video; avisa al guardia con evidencia y clip cuando hay fotogramas disponibles. La evaluacion de camaras depende de la vista web y la IA activas; pendiente prueba real.
+
+2026-11-16: En la web, administrador y guardia ven pendientes e historial sin filtro de eventos descartados; datos y trazabilidad de descartes siguen conservados.
+2026-11-17: restablecido enlace ADB del móvil 8001 al backend local 8000 tras error de conexión. La API respondió 401 anónimo en PC y ADB confirmó el enlace; falta verificar inicio de sesión desde la app.
+2026-11-17: restablecido nuevamente enlace USB ADB 8001→8000; API local respondió 401 anónimo y falta confirmación de conexión desde la app.
+2026-11-17: revisado nuevo error móvil: Django responde y enlace USB existe; APK generada recientemente no contiene la URL USB literal en kernel. Compilación desde la sesión quedó sin salida y fue detenida; falta verificar app.
+2026-11-17: revisión de notificaciones: backend y enlace USB disponibles, permiso Android concedido, opciones FCM activas y entregas pendientes; existe error genérico de envío y reserva vencida. Causa exacta y estado del procesador no confirmados.
+2026-11-17: nueva revisión push: dos dispositivos elegibles en total, seis entregas vencidas y tres de cinco notificaciones recientes sin entrega asociada; permiso Android concedido. HTTPS a Firebase falló desde entorno de diagnóstico con red restringida, sin confirmar conectividad real del servidor.
+2026-11-17: usuario confirmó recepción de aviso en otro dispositivo; teléfono USB tiene permiso Android y usuario confirmó sesión de guardia e internet. Se reinició la app para intentar sincronizar registro; no se confirmó registro específico ni recepción en este teléfono.

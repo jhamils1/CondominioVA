@@ -13,7 +13,8 @@ export function colorDeteccionMonitor(deteccion) {
 const vehiculos = new Set(['car', 'motorcycle', 'bus', 'truck']);
 export function esVehiculo(deteccion) { return vehiculos.has(deteccion.clase); }
 export function filtrarDetecciones(detecciones, modo, tipo = 'vehiculos') {
-  const clase = tipo === 'personas' ? deteccion => deteccion.clase === 'person' : esVehiculo;
+  const clase = tipo === 'personas' ? deteccion => deteccion.clase === 'person'
+    : tipo === 'mascotas' ? deteccion => ['dog', 'cat'].includes(deteccion.clase) : esVehiculo;
   if (modo === 'zona') return detecciones.filter(deteccion => clase(deteccion) && deteccion.permanencia != null);
   return modo === 'vehiculos' ? detecciones.filter(clase) : detecciones;
 }

@@ -540,3 +540,13 @@ No ejecutar los comandos anteriores como parte de una mera lectura documental: a
 2026-11-16: flutter pub get --offline y compilaci?n Android exitosos; clase VideoPlayerPlugin confirmada en los DEX de la APK e instalaci?n USB exitosa. Reproducci?n real pendiente de confirmaci?n.
 
 2026-11-16: Usuario confirm? reproducci?n de video en tel?fono. APK reconstruida desde cero, complemento de video presente e instalaci?n USB exitosa; interfaz a?n pendiente de validaci?n visual.
+
+2026-11-16: Mascota: 9 pruebas Django, 11 pruebas Node de reglas, compilacion web y pruebas simuladas en navegador de video y dos camaras con clip superadas. Migracion 0011 local aplicada tras pg_dump validado; sin pruebas de animales o entrega FCM reales.
+
+2026-11-16: Compilacion web y recorrido simulado de incidencias para guardia y administrador superados, incluyendo filtro descartadas en URL.
+2026-11-17: teléfono autorizado detectado por ADB, API local /api/me/ respondió HTTP 401 sin autenticación, y adb reverse --list confirmó tcp:8001 a tcp:8000. No se verificó la solicitud desde la app ni el inicio de sesión; curl y wget no disponibles en el teléfono.
+2026-11-17: API /api/me/ respondió 401 anónimo, teléfono autorizado y adb reverse confirmó tcp:8001 hacia tcp:8000; falta verificación en la app.
+2026-11-17: ADB confirmó enlace 8001→8000 y API respondió HTTP 401 anónimo; kernel APK generado no incluye URL USB literal, sin demostrar configuración efectiva instalada. Flutter build no produjo salida y se detuvo.
+2026-11-17: permiso Android concedido, API local 401 anónimo y enlace ADB configurado; opciones de seguridad, cola y envío habilitadas, seis pendientes y una reserva vencida; hay ERROR_ENVIO y cancelaciones por destinatario no válido. No se confirmó el proceso ni recepción.
+2026-11-17: dos dispositivos FCM elegibles globalmente, seis entregas pendientes vencidas, tres de cinco notificaciones recientes sin entregas; consulta HTTPS a Firebase falló desde sandbox de red restringida y no demuestra estado del servidor.
+2026-11-17: teléfono USB autorizado y permiso de notificaciones concedido; app relanzada tras confirmación del usuario de sesión e internet. Sin confirmación de sincronización ni recepción en este teléfono; usuario sí recibió aviso en otro.

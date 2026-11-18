@@ -59,6 +59,24 @@ class HistorialReglaPiscina(models.Model):
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
 
+class ReglaMascota(models.Model):
+    fuente = models.CharField(max_length=64, primary_key=True)
+    puntos = models.JSONField(default=list)
+    segundos = models.PositiveSmallIntegerField(default=0)
+    automatico = models.BooleanField(default=False)
+    actualizado = models.DateTimeField(default=timezone.now)
+    actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
+class HistorialReglaMascota(models.Model):
+    fuente = models.CharField(max_length=64)
+    puntos = models.JSONField(default=list)
+    segundos = models.PositiveSmallIntegerField(default=0)
+    automatico = models.BooleanField(default=False)
+    fecha = models.DateTimeField(default=timezone.now)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
 class EventoSeguridad(models.Model):
     PENDIENTE = 'PENDIENTE_REVISION'
     CONFIRMADO = 'CONFIRMADA'

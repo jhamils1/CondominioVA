@@ -72,6 +72,7 @@ class RevisionImouAdminTests(TestCase):
         device = FCMDevice.objects.create(user=guardia, registration_id='token-ficticio', type='android', active=True)
         for categoria, titulo in (
             ('Posible persona sola cerca de piscina', 'Alerta de piscina'),
+            ('Posible mascota en área restringida', 'Alerta de mascota'),
             ('Posible estacionamiento en zona prohibida', 'Alerta de estacionamiento'),
             ('Otra categoria', 'Seguridad del condominio'),
         ):

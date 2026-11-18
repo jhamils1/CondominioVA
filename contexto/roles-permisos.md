@@ -60,3 +60,5 @@ Aplicar permisos en backend y limitar datos por relación; ocultar un menú no p
 2026-11-15: para posibles estacionamientos detectados por la Imou, el usuario solicitó avisar inicialmente tanto a guardias como a administradores. El evento permanece pendiente hasta la revisión del guardia; los demás eventos conservan su distribución anterior.
 
 2026-11-16: Administrador y guardia pueden confirmar pendientes y retirar incidencias confirmadas del historial global; el registro y la auditoria permanecen.
+
+2026-11-16: La interfaz web de administrador y guardia no ofrece una vista de eventos descartados; se mantiene la trazabilidad en el backend.

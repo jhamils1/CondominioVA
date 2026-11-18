@@ -444,3 +444,13 @@ Una consulta oficial de solo lectura confirmó que ese proyecto sí existe y que
 2026-11-16: Confirmar con el usuario la reproducci?n del clip en el tel?fono tras registrar el complemento de video.
 
 2026-11-16: Comprobar visualmente en el tel?fono si la APK regenerada elimina la imagen duplicada al mostrar un clip.
+
+2026-11-16: Probar deteccion de perros y gatos y llegada del aviso en video/camara reales con autorizacion; verificar comportamiento con perdida de imagen y personas u otros animales simultaneos. La evaluacion no funciona de forma continua al cerrar la vista web.
+
+2026-11-16: Comprobar visualmente la vista web actualizada del administrador tras refrescar la pagina.
+2026-11-17: comprobar desde la app móvil el inicio de sesión tras restablecer el enlace USB; confirmar que fue compilada con API_BASE_URL=http://127.0.0.1:8001/api si persiste el error.
+2026-11-17: confirmar desde la app móvil que el enlace USB restablecido resuelve el nuevo error.
+2026-11-17: ejecutar Flutter con API_BASE_URL USB y comprobar conexión en la app; compilación automática intentada no produjo salida.
+2026-11-17: revisar salida del procesador FCM y resolver causa de error genérico de envío y cola pendiente; confirmar recepción en teléfono.
+2026-11-17: confirmar salida del procesador y conectividad Firebase desde su entorno real; investigar elegibilidad para notificaciones recientes sin entrega, sin exponer identidades.
+2026-11-17: confirmar registro FCM del teléfono USB y recepción en nueva alerta autorizada; evitar inferirlo a partir de los dispositivos globales.

@@ -499,3 +499,13 @@ Se incorporó la cámara de laptop o USB al selector del mosaico, con ampliació
 2026-11-16: Se regener? el registro Android de complementos despu?s de detectar que faltaba el reproductor en la compilaci?n anterior.
 
 2026-11-16: Reconstrucci?n limpia de aplicaci?n m?vil para asegurar inclusi?n de la condici?n de mostrar video o imagen.
+
+2026-11-16: Agregadas regla de mascota, configuracion y auditoria por fuente, seguimiento aproximado, filtros visuales de video, evento, clip y texto especifico FCM. Migracion aditiva 0011 aplicada localmente tras respaldo.
+
+2026-11-16: Ocultada la vista de eventos descartados para ambos roles; enlaces con ese filtro abren pendientes sin borrar datos.
+2026-11-17: configurado enlace temporal ADB tcp:8001 a tcp:8000 mediante conectar-usb.ps1; sin cambios de código ni cuentas.
+2026-11-17: ejecutado conectar-usb.ps1 para restablecer enlace ADB temporal, sin cambios de código o cuentas.
+2026-11-17: revisada APK debug y conexión móvil; no se instaló ninguna actualización.
+2026-11-17: diagnóstico FCM de solo lectura, sin envío de prueba ni cambios de cuentas.
+2026-11-17: diagnóstico adicional FCM de solo lectura; no se procesó cola ni se enviaron avisos.
+2026-11-17: reinicio de app Android conectada, sin cambio de cuentas o envío de prueba.

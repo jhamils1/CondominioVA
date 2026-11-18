@@ -126,8 +126,9 @@ try {
   assert.equal(await pagina.getByRole('button', { name: 'Historial de incidencias' }).getAttribute('aria-pressed'), 'true');
   rol = 'administrador';
   evento = { ...evento, estado: 'PENDIENTE_REVISION' };
-  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras`);
-  assert.equal(await pagina.getByRole('button', { name: 'Eventos descartados' }).count(), 1);
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/admin/monitor-camaras?vista=descartadas`);
+  assert.equal(await pagina.getByRole('button', { name: 'Eventos descartados' }).count(), 0);
+  assert.equal(await pagina.getByRole('button', { name: 'Pendientes de revisión' }).getAttribute('aria-pressed'), 'true');
   await pagina.getByText('Vehículo en zona').click();
   await pagina.getByRole('heading', { name: 'Detalle de la incidencia' }).waitFor();
   await pagina.getByRole('button', { name: 'Confirmar incidencia' }).click();

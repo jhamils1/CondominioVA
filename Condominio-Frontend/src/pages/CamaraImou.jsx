@@ -4,6 +4,7 @@ import AnalisisImou from './AnalisisImou.jsx';
 import ConsultaPlacaFotograma from '../components/ConsultaPlacaFotograma.jsx';
 import LecturaAutomaticaImou from '../components/LecturaAutomaticaImou.jsx';
 import ReglaPiscina from '../components/ReglaPiscina.jsx';
+import ReglaMascota from '../components/ReglaMascota.jsx';
 import { crearEventoImou } from '../vision/eventoImou.js';
 import { useClipEvento } from '../vision/useClipEvento.js';
 import { FaCamera, FaCompress, FaExpand, FaPowerOff } from 'react-icons/fa';
@@ -186,13 +187,14 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
       </div>
       <aside className="imou-side-card" hidden={compacto}>
         <div className="imou-side-heading"><span className="imou-icon"><FaCamera /></span><div><h3>Control de cámara</h3><p>Imou · red local</p></div></div>
-        {configuracion && <label className="selector-incidencia">Tipo de incidencia: <select value={regla} onChange={e => setRegla(e.target.value)}><option value="estacionamiento">Estacionamiento prohibido</option><option value="piscina">Persona sola cerca de piscina</option></select></label>}
+        {configuracion && <label className="selector-incidencia">Tipo de incidencia: <select value={regla} onChange={e => setRegla(e.target.value)}><option value="estacionamiento">Estacionamiento prohibido</option><option value="piscina">Persona sola cerca de piscina</option><option value="mascota">Mascota en área restringida</option></select></label>}
         {activa && imagen && <AnalisisImou ultimoFotograma={ultimoFotograma} muestraAnalizada={muestraAnalizada} automatico={automatico}
           cambiarAutomatico={cambiarAutomatico} desactivarRegistro={desactivarRegistro}
           registrarHallazgo={registrarHallazgo} hayPendientes={pendientes.length > 0}
           activo={iaActiva} setActivo={setIaActiva} configuracion={configuracion} visorAnalizado={visorAnalizado}
-          monitorIndependiente={monitorIndependiente} pieConfiguracion={pieConfiguracion} piscinaSeleccionada={regla === 'piscina'} />}
+          monitorIndependiente={monitorIndependiente} pieConfiguracion={pieConfiguracion} piscinaSeleccionada={regla !== 'estacionamiento'} />}
         {activa && imagen && <ReglaPiscina fuente="imou" nombre="Imou · piscina" muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'piscina'} pie={pieConfiguracion} onRegistrarEvento={registrarConClip} />}
+        {activa && imagen && <ReglaMascota fuente="imou" nombre="Imou" muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'mascota'} pie={pieConfiguracion} onRegistrarEvento={registrarConClip} />}
         {activa && imagen && <section className="configuracion-placas-camara" aria-label="Lectura de placas de la cámara Imou">
           {configuracion && <h4>Lectura de placas</h4>}
           {iaActiva && <LecturaAutomaticaImou muestraAnalizada={muestraAnalizada} cameraId="Imou" />}

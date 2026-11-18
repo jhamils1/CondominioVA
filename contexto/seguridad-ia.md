@@ -128,3 +128,5 @@ El catálogo de cámaras de red admite usuario, ruta RTSP y contraseña cifrada 
 2026-11-15: el administrador puede eliminar cámaras del catálogo solo cuando no existan referencias protegidas; se registra auditoría. Las cámaras vinculadas al monitor o a zonas/historial protegido deben conservarse o deshabilitarse. La selección del mosaico es temporal y ocultar una vista no detiene su captura.
 
 2026-11-16: La pasarela remota admite proveedor Roboflow alojado mediante clave privada en entorno. Conexi?n real a?n no verificada.
+
+2026-11-16: Regla de posible mascota en zona restringida: perros y gatos, aviso inmediato por defecto, configuracion por camara y evaluacion de video o vista activa. No identifica al animal ni a su dueno; el guardia confirma. Validada con fuentes simuladas.

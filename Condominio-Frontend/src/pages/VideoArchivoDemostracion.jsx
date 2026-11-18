@@ -3,6 +3,7 @@ import { analizarFotograma, estadoCamaraDemo } from '../api/visionDemoApi.js';
 import { zonaValida } from '../vision/zonas.js';
 import { crearSeguimiento } from '../vision/permanencia.js';
 import { crearSeguimientoPiscina } from '../vision/personaSolaPiscina.js';
+import { crearSeguimientoMascota } from '../vision/mascotaRestringida.js';
 import { colorDeteccion, esVehiculo, filtrarDetecciones } from '../vision/coloresDeteccion.js';
 import ModoDetecciones from '../components/ModoDetecciones.jsx';
 import { crearEventoVideo } from '../vision/eventoVideo.js';
@@ -22,7 +23,7 @@ const INTERVALO = 0.5;
 function dibujarCajas(contexto, detecciones, segundos, tieneZona, modo, tipo = 'estacionamiento') {
   contexto.font = '600 14px system-ui, sans-serif';
   contexto.lineWidth = 2;
-  for (const deteccion of filtrarDetecciones(detecciones, modo, tipo === 'piscina' ? 'personas' : 'vehiculos')) {
+  for (const deteccion of filtrarDetecciones(detecciones, modo, tipo === 'piscina' ? 'personas' : tipo === 'mascota' ? 'mascotas' : 'vehiculos')) {
     if (!Array.isArray(deteccion.caja) || deteccion.caja.length !== 4 ||
         !deteccion.caja.every(Number.isFinite) || !Number.isFinite(deteccion.confianza)) continue;
     const [x1, y1, x2, y2] = deteccion.caja;
@@ -110,7 +111,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
   const [exportando, setExportando] = useState(false);
   const [avanceExportacion, setAvanceExportacion] = useState(0);
   const [mensajeExportacion, setMensajeExportacion] = useState('');
-  const umbralValido = Number.isInteger(Number(umbral)) && Number(umbral) >= 2 && Number(umbral) <= 120;
+  const umbralValido = umbral !== '' && Number.isInteger(Number(umbral)) && Number(umbral) >= (tipoRegla === 'mascota' ? 0 : 2) && Number(umbral) <= 120;
 
   useEffect(() => { desmontado.current = false; return () => {
     desmontado.current = true;
@@ -224,7 +225,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       const lienzo = canvas.current;
       lienzo.width = ancho; lienzo.height = alto;
       const contexto = lienzo.getContext('2d');
-      const seguimiento = zona.length ? (tipoRegla === 'piscina' ? crearSeguimientoPiscina({ zona, ancho, alto, segundos: Number(umbral) }) : crearSeguimiento({ zona, ancho, alto, segundos: Number(umbral), toleranciaPerdida: 2 })) : null;
+      const seguimiento = zona.length ? (tipoRegla === 'piscina' ? crearSeguimientoPiscina({ zona, ancho, alto, segundos: Number(umbral) }) : tipoRegla === 'mascota' ? crearSeguimientoMascota({ zona, ancho, alto, segundos: Number(umbral) }) : crearSeguimiento({ zona, ancho, alto, segundos: Number(umbral), toleranciaPerdida: 2 })) : null;
       const total = Math.ceil(duracion / INTERVALO);
       for (let indice = 0; indice < total; indice += 1) {
         const tiempo = Math.min(indice * INTERVALO + 0.001, Math.max(0, duracion - 0.01));
@@ -480,13 +481,14 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
         </div>}
       </div>
     </div>}
-    {url && <div className="video-visualizacion"><ModoDetecciones value={modoDetecciones} tipo={tipoRegla === 'piscina' ? 'personas' : 'vehiculos'} tieneZona={zona.length > 0} disabled={exportando} onChange={modo => { modoDeteccionesRef.current = modo; setModoDetecciones(modo); pintarReproduccion(modo); }} /></div>}
+    {url && <div className="video-visualizacion"><ModoDetecciones value={modoDetecciones} tipo={tipoRegla === 'piscina' ? 'personas' : tipoRegla === 'mascota' ? 'mascotas' : 'vehiculos'} tieneZona={zona.length > 0} disabled={exportando} onChange={modo => { modoDeteccionesRef.current = modo; setModoDetecciones(modo); pintarReproduccion(modo); }} /></div>}
     {url && <div className="zona-acciones mt-4">
-      <label>Tipo de incidencia:{' '}<select value={tipoRegla} disabled={estado === 'procesando' || exportando} onChange={event => { invalidarResultados(); setTipoRegla(event.target.value); setZona([]); setBorradorZona([]); setMarcandoZona(false); setUmbral(event.target.value === 'piscina' ? '10' : '15'); }}>
+      <label>Tipo de incidencia:{' '}<select value={tipoRegla} disabled={estado === 'procesando' || exportando} onChange={event => { invalidarResultados(); setTipoRegla(event.target.value); setZona([]); setBorradorZona([]); setMarcandoZona(false); setUmbral(event.target.value === 'piscina' ? '10' : event.target.value === 'mascota' ? '0' : '15'); }}>
         <option value="estacionamiento">Estacionamiento prohibido</option>
         <option value="piscina">Persona sola cerca de piscina</option>
+        <option value="mascota">Mascota en área restringida</option>
       </select></label>
-      <h4 className="font-medium">{tipoRegla === 'piscina' ? 'Zona de piscina' : 'Zona de estacionamiento prohibido'}</h4>
+      <h4 className="font-medium">{tipoRegla === 'piscina' ? 'Zona de piscina' : tipoRegla === 'mascota' ? 'Área restringida para mascotas' : 'Zona de estacionamiento prohibido'}</h4>
       <p className="text-sm">Pausa el video y dibuja la zona en la imagen original. Se conserva mientras el video esté abierto.</p>
       {tipoRegla === 'piscina' && <p className="text-sm">Incluye la piscina y el borde por donde camina la persona; se evalúa el punto inferior de su recuadro.</p>}
       {!marcandoZona ? <div className="mt-2 flex flex-wrap gap-2">
@@ -508,12 +510,12 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       </div>}
       {errorZona && <p role="alert" className="text-red-700 mt-2">{errorZona}</p>}
       {zona.length > 0 && !marcandoZona && <div className="mt-2">
-        <label className="text-sm">{tipoRegla === 'piscina' ? 'Tiempo mínimo sola (segundos, de 2 a 120):' : 'Tiempo mínimo detenido (segundos, de 2 a 120):'}{' '}
-          <input type="number" min="2" max="120" step="1" value={umbral} disabled={estado === 'procesando' || exportando}
+        <label className="text-sm">{tipoRegla === 'piscina' ? 'Tiempo mínimo sola (segundos, de 2 a 120):' : tipoRegla === 'mascota' ? 'Tiempo en zona (0 = inmediato):' : 'Tiempo mínimo detenido (segundos, de 2 a 120):'}{' '}
+          <input type="number" min={tipoRegla === 'mascota' ? 0 : 2} max="120" step="1" value={umbral} disabled={estado === 'procesando' || exportando}
             onChange={event => { invalidarResultados(); setUmbral(event.target.value); }} className="border rounded p-1 w-20" />
         </label>
-        {!umbralValido && <p role="alert" className="text-red-700 text-sm">Introduce un número entero entre 2 y 120.</p>}
-        {tipoRegla === 'piscina' ? <p className="text-sm mt-2">Se avisa si hay una persona dentro de la zona y ninguna otra detectada en la imagen durante el tiempo indicado. No detecta ahogamientos ni personas fuera de cámara.</p> : <><p className="text-sm mt-1">Amarillo desde los 5 s detenido en zona. Si el límite es de 5 s o menos, pasa directamente a rojo y solicita el aviso.</p><p className="text-sm mt-2">Se busca un vehículo prácticamente detenido dentro de la zona. Los resultados son orientativos y necesitan revisión.</p></>}
+        {!umbralValido && <p role="alert" className="text-red-700 text-sm">Introduce un tiempo válido de hasta 120 segundos.</p>}
+        {tipoRegla === 'piscina' ? <p className="text-sm mt-2">Se avisa si hay una persona dentro de la zona y ninguna otra detectada en la imagen durante el tiempo indicado. No detecta ahogamientos ni personas fuera de cámara.</p> : tipoRegla === 'mascota' ? <p className="text-sm mt-2">Detecta perros y gatos dentro de la zona.</p> : <><p className="text-sm mt-1">Amarillo desde los 5 s detenido en zona. Si el límite es de 5 s o menos, pasa directamente a rojo y solicita el aviso.</p><p className="text-sm mt-2">Se busca un vehículo prácticamente detenido dentro de la zona. Los resultados son orientativos y necesitan revisión.</p></>}
         <label className="block mt-2 text-sm">
           <input type="checkbox" checked={registroAutomatico} disabled={estado === 'procesando'}
             onChange={event => setRegistroAutomatico(event.target.checked)} />{' '}
@@ -523,7 +525,7 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
       </div>}
     </div>}
     <div className="mt-3">
-      <button type="button" onClick={iniciar} disabled={!duracion || estado === 'procesando' || exportando || marcandoZona || (zona.length > 0 && !umbralValido) || (tipoRegla === 'piscina' && !zona.length)}
+      <button type="button" onClick={iniciar} disabled={!duracion || estado === 'procesando' || exportando || marcandoZona || (zona.length > 0 && !umbralValido) || (tipoRegla !== 'estacionamiento' && !zona.length)}
         className="bg-indigo-600 text-white rounded px-3 py-2 mr-3 disabled:opacity-50">
         {estado === 'procesando' ? 'Analizando…' : 'Analizar video'}
       </button>
@@ -541,18 +543,18 @@ export default function VideoArchivoDemostracion({ onPrepararEvento, onRegistrar
     </div>}
     {estado === 'terminado' && <p className="text-sm mt-2">Los recuadros se basan en una imagen analizada cada medio segundo y pueden no coincidir exactamente con objetos en movimiento.</p>}
     {estado === 'terminado' && zona.length > 0 && <div className="mt-3 border rounded p-3">
-      <h4 className="font-medium">{tipoRegla === 'piscina' ? 'Posible persona sola para revisar' : 'Posibles vehículos detenidos para revisar'}</h4>
+      <h4 className="font-medium">{tipoRegla === 'piscina' ? 'Posible persona sola para revisar' : tipoRegla === 'mascota' ? 'Posibles mascotas para revisar' : 'Posibles vehículos detenidos para revisar'}</h4>
       {hallazgos.length === 0 ? <p className="text-sm mt-1">No se encontró ninguno que cumpla el tiempo configurado.</p> :
         <ul className="list-disc pl-5 text-sm mt-1">{hallazgos.map((h, i) => <li key={`${h.id}-${i}`}>
-          {nombres[h.clase] || h.clase} · aproximadamente {Math.floor(h.duracion)} s {tipoRegla === 'piscina' ? 'sin otra persona detectada' : 'detenido'} ·{' '}
+          {nombres[h.clase] || h.clase} · aproximadamente {Math.floor(h.duracion)} s {tipoRegla === 'piscina' ? 'sin otra persona detectada' : tipoRegla === 'mascota' ? 'en zona' : 'detenido'} ·{' '}
           <button type="button" className="text-indigo-700 underline" onClick={() => {
             if (video.current) { controlActual.current = 'original'; video.current.currentTime = h.tiempo; }
           }}>Ver momento {Math.floor(h.tiempo / 60)}:{String(Math.floor(h.tiempo % 60)).padStart(2, '0')}</button>
-          {tipoRegla !== 'piscina' && <> {' · '}<button type="button" className="text-indigo-700 underline" onClick={() => onPrepararEvento({
+          {tipoRegla === 'estacionamiento' && <> {' · '}<button type="button" className="text-indigo-700 underline" onClick={() => onPrepararEvento({
             clase: nombres[h.clase] || h.clase, tiempo: h.tiempo, duracion: h.duracion,
           })}>Preparar evento manual</button></>}
         </li>)}</ul>}
-      <p className="text-sm mt-2">{tipoRegla === 'piscina' ? 'Si la persona sale de la zona, no se detecta o aparece otra persona, el conteo vuelve a empezar.' : 'Una pérdida breve de detección pausa el conteo. La lista puede contener repeticiones y no confirma una infracción.'}</p>
+      <p className="text-sm mt-2">{tipoRegla === 'piscina' ? 'Si la persona sale de la zona, no se detecta o aparece otra persona, el conteo vuelve a empezar.' : tipoRegla === 'mascota' ? 'La detección es orientativa y requiere revisión del guardia.' : 'Una pérdida breve de detección pausa el conteo. La lista puede contener repeticiones y no confirma una infracción.'}</p>
     </div>}
     {mensaje && <p role={estado === 'error' ? 'alert' : 'status'} className="mt-2">{mensaje}</p>}
   </section>;

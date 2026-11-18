@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import ConsultaPlacaFotograma from '../components/ConsultaPlacaFotograma.jsx';
 import AnalisisCamaraCatalogo from '../components/AnalisisCamaraCatalogo.jsx';
 import ReglaPiscina from '../components/ReglaPiscina.jsx';
+import ReglaMascota from '../components/ReglaMascota.jsx';
 import { fotogramaCamara, obtenerZonaCamara, guardarZonaCamara } from '../api/visionDemoApi.js';
 import { useSession } from '../auth/sessionContext.js';
 import ZonaVideo from './ZonaVideo.jsx';
@@ -151,16 +152,16 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
     {camara.ubicacion && <p>{camara.ubicacion}</p>}
     <p role="status">{mensaje}</p>
     {(imagen || compacto) && <div ref={asignarVisor} className="camara-catalogo-visor">{imagen ? <img src={imagen} alt={`Vista en vivo: ${camara.nombre}`} /> : <div className="mosaico-sin-imagen">Cámara sin conectar</div>}
-      {configuracion && regla !== 'piscina' && <ZonaVideo puntos={dibujando ? borrador : puntosPendientes} activa={dibujando}
+      {configuracion && regla === 'estacionamiento' && <ZonaVideo puntos={dibujando ? borrador : puntosPendientes} activa={dibujando}
         onAgregar={punto => setBorrador(actual => actual.length < 30 ? [...actual, punto] : actual)} />}
       {!configuracion && !compacto && <button type="button" className="camara-catalogo-expand" aria-label={`Pantalla completa: ${camara.nombre}`}
         onClick={async () => { try { await visor.current?.requestFullscreen(); } catch { setMensaje('El navegador no permitió ampliar la cámara.'); } }}><FaExpand /></button>}
     </div>}
-    {configuracion && <label className="selector-incidencia">Tipo de incidencia: <select value={regla} onChange={e => setRegla(e.target.value)}><option value="estacionamiento">Estacionamiento prohibido</option><option value="piscina">Persona sola cerca de piscina</option></select></label>}
+    {configuracion && <label className="selector-incidencia">Tipo de incidencia: <select value={regla} onChange={e => setRegla(e.target.value)}><option value="estacionamiento">Estacionamiento prohibido</option><option value="piscina">Persona sola cerca de piscina</option><option value="mascota">Mascota en área restringida</option></select></label>}
     <div hidden={compacto}>
       {activo && imagen && <AnalisisCamaraCatalogo camara={camara} ultimoFotograma={ultimoFotograma} muestraAnalizada={muestraAnalizada} zona={guardando ? null : zona} visor={visorAnalizado} configuracion={configuracion} pausado={registroPausado} onHallazgo={registrarHallazgo} onError={setMensajeRegistro} espacioPlacas={espacioPlacas} />}
     </div>
-    {configuracion && regla !== 'piscina' && <div>
+    {configuracion && regla === 'estacionamiento' && <div>
       <h4>Configuración de incidencias para {camara.nombre}</h4>
       <h5>Zona de estacionamiento</h5>
       <p>Dibuja la zona y define el tiempo permitido.</p>
@@ -185,6 +186,7 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
       {zona && !esAdmin && <p>Solo el administrador puede configurar esta zona.</p>}
     </div>}
     {activo && imagen && <ReglaPiscina fuente={`catalogo-${camara.id}`} nombre={`${camara.nombre} (#${camara.id})`} muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo configuracion={configuracion} seleccionada={regla === 'piscina'} pie={piePiscina} onRegistrarEvento={registrarConClip} />}
+    {activo && imagen && <ReglaMascota fuente={`catalogo-${camara.id}`} nombre={`${camara.nombre} (#${camara.id})`} muestraAnalizada={muestraAnalizada} visor={visorAnalizado} activo configuracion={configuracion} seleccionada={regla === 'mascota'} pie={piePiscina} onRegistrarEvento={registrarConClip} />}
     <div hidden={compacto}>
       {activo && imagen && <section className="configuracion-placas-camara" aria-label={`Lectura de placas de ${camara.nombre}`}>
         {configuracion && <h4>Lectura de placas</h4>}
@@ -195,7 +197,7 @@ export default function CamaraCatalogo({ camara, onRegistrarEvento, configuracio
     {compacto && errorZona && <p className="camara-catalogo-aviso" role="alert">{errorZona}</p>}
     {mensajeRegistro && <p className="camara-catalogo-aviso" role="status">{mensajeRegistro}</p>}
     {eventosPendientes.map(datos => <button key={datos.id} type="button" onClick={async () => { if (await enviar(datos) && eventosPendientes.length === 1) setRegistroPausado(false); }}>Reintentar evento</button>)}
-    {configuracion && regla !== 'piscina' && zona && esAdmin && <div className="configuracion-guardar">
+    {configuracion && regla === 'estacionamiento' && zona && esAdmin && <div className="configuracion-guardar">
       <button type="button" className="imou-primary" disabled={!cambios || guardando || dibujando || eventosPendientes.length > 0 || !Number.isInteger(Number(segundosPendientes)) || Number(segundosPendientes) < 2 || Number(segundosPendientes) > 120}
         onClick={() => guardar(puntosPendientes, Number(segundosPendientes))}>Guardar configuración</button>
       <p>Guarda la zona y los avisos de esta cámara.</p>

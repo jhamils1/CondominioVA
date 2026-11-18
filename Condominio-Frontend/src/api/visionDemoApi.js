@@ -40,6 +40,14 @@ export async function guardarReglaPiscina(fuente, datos) {
   return (await client.put(`vision-piscina/${fuente}/`, datos)).data;
 }
 
+export async function obtenerReglaMascota(fuente, signal) {
+  return (await client.get(`vision-mascota/${fuente}/`, { signal })).data;
+}
+
+export async function guardarReglaMascota(fuente, datos) {
+  return (await client.put(`vision-mascota/${fuente}/`, datos)).data;
+}
+
 export async function fotogramaCamara(id, signal) {
   const response = await client.post(`camaras/${id}/fotograma-monitor/`, null, {
     signal, responseType: 'blob', timeout: 6000,

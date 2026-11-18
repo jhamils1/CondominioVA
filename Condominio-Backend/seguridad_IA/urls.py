@@ -7,7 +7,7 @@ from .api_camara_demo import CamaraAnalizarDemo, CamaraEstadoDemo
 from .api_imou_local import ImouFotogramaLocal, EstadoMonitoreoImou
 from .api_zona_imou import ConfiguracionZonaImou
 from .api_zona_camara import ConfiguracionZonaCamara
-from .api_piscina import ConfiguracionPiscina
+from .api_piscina import ConfiguracionPiscina, ConfiguracionMascota
 from .views import AlprScanView, ReconocimientoGlobalView, EnrolarPersonaView, VerificarEnrolamientoView, VerificarLuxandAPIView, ProbarLuxandView
 
 router = SimpleRouter()
@@ -17,6 +17,7 @@ router.register('avisos-residente', AvisoResidenteViewSet, basename='avisos-resi
 
 urlpatterns = [
     path('vision-piscina/<str:fuente>/', ConfiguracionPiscina.as_view(), name='vision-piscina'),
+    path('vision-mascota/<str:fuente>/', ConfiguracionMascota.as_view(), name='vision-mascota'),
     path('vision-camaras/<int:pk>/zona/', ConfiguracionZonaCamara.as_view(), name='vision-camara-zona'),
     path('vision-imou/zona/', ConfiguracionZonaImou.as_view(), name='vision-imou-zona'),
     path('vision-imou/monitoreo/', EstadoMonitoreoImou.as_view(), name='vision-imou-monitoreo'),

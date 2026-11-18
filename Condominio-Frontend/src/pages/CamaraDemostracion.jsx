@@ -10,6 +10,7 @@ import ConsultaPlacaFotograma from '../components/ConsultaPlacaFotograma.jsx';
 import LecturaAutomaticaImou from '../components/LecturaAutomaticaImou.jsx';
 import ModoDetecciones from '../components/ModoDetecciones.jsx';
 import ReglaPiscina from '../components/ReglaPiscina.jsx';
+import ReglaMascota from '../components/ReglaMascota.jsx';
 import ZonaVideo from './ZonaVideo.jsx';
 import './VideoArchivoDemostracion.css';
 
@@ -349,12 +350,12 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
     <div ref={setVisorPiscina} hidden={estado !== 'activa'} className="camara-zona-marco mt-3">
       <video ref={video} muted playsInline hidden={iaActiva} className="camara-zona-imagen" aria-label="Cámara de laptop en directo" />
       <canvas ref={canvas} hidden={!iaActiva} className="camara-zona-imagen" aria-label="Cámara con detecciones" />
-      {iaActiva && configuracion && regla !== 'piscina' && <ZonaVideo puntos={dibujando ? borrador : mostrarZona ? zona : []} activa={dibujando}
+      {iaActiva && configuracion && regla === 'estacionamiento' && <ZonaVideo puntos={dibujando ? borrador : mostrarZona ? zona : []} activa={dibujando}
         onAgregar={punto => setBorrador(actual => actual.length < 30 ? [...actual, punto] : actual)} />}
     </div>
     {compacto && estado !== 'activa' && <div className="camara-local-placeholder">Inicia la cámara para ver la imagen</div>}
-    {configuracion && estado === 'activa' && <label className="selector-incidencia">Tipo de incidencia: <select value={regla} onChange={e => setRegla(e.target.value)}><option value="estacionamiento">Estacionamiento prohibido</option><option value="piscina">Persona sola cerca de piscina</option></select></label>}
-    {estado === 'activa' && iaActiva && <div className="mt-3" hidden={!configuracion || regla === 'piscina'}>
+    {configuracion && estado === 'activa' && <label className="selector-incidencia">Tipo de incidencia: <select value={regla} onChange={e => setRegla(e.target.value)}><option value="estacionamiento">Estacionamiento prohibido</option><option value="piscina">Persona sola cerca de piscina</option><option value="mascota">Mascota en área restringida</option></select></label>}
+    {estado === 'activa' && iaActiva && <div className="mt-3" hidden={!configuracion || regla !== 'estacionamiento'}>
       <ModoDetecciones value={modoDetecciones} tieneZona={zona.length > 0} onChange={modo => { modoDeteccionesRef.current = modo; setModoDetecciones(modo); }} />
       <h4 className="font-medium">Incidencias · zona de estacionamiento</h4>
       <p className="text-sm mt-1">Dibuja la zona y define el tiempo permitido.</p>
@@ -391,6 +392,7 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
       </div>}
     </div>}
     {estado === 'activa' && <ReglaPiscina fuente={`local-${dispositivo}`} nombre={nombreCamara.current} muestraAnalizada={muestraAnalizada} visor={visorPiscina} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'piscina'} pie={piePiscina} onRegistrarEvento={registrarConClip} />}
+    {estado === 'activa' && <ReglaMascota fuente={`local-${dispositivo}`} nombre={nombreCamara.current} muestraAnalizada={muestraAnalizada} visor={visorPiscina} activo={iaActiva} configuracion={configuracion} seleccionada={regla === 'mascota'} pie={piePiscina} onRegistrarEvento={registrarConClip} />}
     {configuracion && estado === 'activa' && <section className="configuracion-placas-camara" aria-label="Lectura de placas de la cámara local">
       <h4>Lectura de placas</h4>
       {iaActiva && <LecturaAutomaticaImou key={dispositivo} muestraAnalizada={muestraAnalizada} cameraId={identificadorLectura} />}
@@ -402,7 +404,7 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
       {pendientes.map(datos => <button key={datos.id} type="button" disabled={reintentando} className="border rounded px-3 py-1 mt-2 mr-2 disabled:opacity-50"
         onClick={async () => { setReintentando(true); try { await enviarEvento(datos, true); } finally { setReintentando(false); } }}>Reintentar registro</button>)}
     </div>}
-    {configuracion && regla !== 'piscina' && estado === 'activa' && iaActiva && <div className="configuracion-guardar">
+    {configuracion && regla === 'estacionamiento' && estado === 'activa' && iaActiva && <div className="configuracion-guardar">
       {avisoGuardado && <p role="status">{avisoGuardado}</p>}
       <button type="button" disabled={dibujando || !tiempoValido} className="bg-indigo-600 text-white rounded px-3 py-2" onClick={guardarConfiguracion}>Guardar configuración</button>
       <p>Guarda la zona y los avisos en este navegador.</p>

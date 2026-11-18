@@ -26,6 +26,8 @@ def texto_notificacion(notification):
     categoria = notification.evento.categoria.strip().casefold()
     if categoria == 'posible persona sola cerca de piscina':
         return 'Alerta de piscina', 'Posible persona sola cerca de la piscina. Revisa la incidencia.'
+    if categoria == 'posible mascota en área restringida':
+        return 'Alerta de mascota', 'Posible mascota en un área restringida. Revisa la incidencia.'
     if categoria == 'posible estacionamiento en zona prohibida':
         return 'Alerta de estacionamiento', 'Posible vehículo estacionado en zona prohibida. Revisa la incidencia.'
     return 'Seguridad del condominio', 'Hay una alerta para revisar.'

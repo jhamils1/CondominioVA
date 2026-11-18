@@ -511,3 +511,13 @@ Se integró la fuente local al mosaico y se añadió persistencia de su configur
 2026-11-16: Diagnosticada ausencia del registro nativo de video_player; dependencias regeneradas sin conexi?n y APK corregida instalada.
 
 2026-11-16: Tras el reporte de imagen duplicada en m?vil se reconstruy? la APK desde cero y se verific? que contiene el complemento del reproductor; instalada mediante USB.
+
+2026-11-16: Usuario eligio perros y gatos, aviso inmediato y soporte en video y camaras en vivo. Implementacion y comprobaciones con fuentes simuladas; no se uso video ni camara reales.
+
+2026-11-16: Usuario solicito retirar Eventos descartados de la vista web. Cambio acotado a navegacion y presentacion.
+2026-11-17: diagnosticado error de conexión móvil y restablecido enlace USB; ver pruebas y pendientes.
+2026-11-17: ante nuevo error de conexión móvil se restableció el enlace USB; ver pruebas.
+2026-11-17: nueva revisión de conexión móvil; enlace y backend activos, compilación intentada sin salida y cancelada.
+2026-11-17: revisada cola FCM por falta de notificaciones; ver pruebas y pendientes.
+2026-11-17: investigado tramo push tras incidencias visibles en web; sigue pendiente identificar procesador y conectividad.
+2026-11-17: app móvil conectada reiniciada para reintentar registro FCM tras aviso recibido en otro dispositivo; recepción en teléfono USB pendiente.

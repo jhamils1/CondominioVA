@@ -9,11 +9,15 @@ from administracion.access import SecurityOperator, is_admin
 from camaras.models import Camara
 from .api_zona_imou import validar_zona
 from .api_camara_demo import SoloConexionLocal
-from .models import ReglaPiscina, HistorialReglaPiscina
+from .models import ReglaPiscina, HistorialReglaPiscina, ReglaMascota, HistorialReglaMascota
 
 
 class ConfiguracionPiscina(APIView):
     permission_classes = [IsAuthenticated, SecurityOperator, SoloConexionLocal]
+    modelo = ReglaPiscina
+    historial = HistorialReglaPiscina
+    segundos_defecto = 10
+    segundos_minimo = 2
 
     @staticmethod
     def validar_fuente(fuente):
@@ -25,21 +29,20 @@ class ConfiguracionPiscina(APIView):
             raise NotFound()
         get_object_or_404(Camara, pk=int(coincidencia.group(1)), tipo='RED', activa=True)
 
-    @staticmethod
-    def datos(regla):
-        return {'puntos': regla.puntos if regla else [], 'segundos': regla.segundos if regla else 10,
+    def datos(self, regla):
+        return {'puntos': regla.puntos if regla else [], 'segundos': regla.segundos if regla else self.segundos_defecto,
                 'automatico': regla.automatico if regla else False,
                 'version': regla.actualizado.isoformat() if regla else None}
 
     def get(self, request, fuente):
         self.validar_fuente(fuente)
-        respuesta = Response(self.datos(ReglaPiscina.objects.filter(pk=fuente).first()))
+        respuesta = Response(self.datos(self.modelo.objects.filter(pk=fuente).first()))
         respuesta['Cache-Control'] = 'private, no-store'
         return respuesta
 
     def put(self, request, fuente):
         if not is_admin(request.user):
-            return Response({'detail': 'Solo el administrador puede configurar la piscina.'}, status=403)
+            return Response({'detail': 'Solo el administrador puede configurar la regla.'}, status=403)
         self.validar_fuente(fuente)
         data = request.data
         if not isinstance(data, dict) or set(data) != {'puntos', 'segundos', 'automatico', 'version'}:
@@ -47,23 +50,30 @@ class ConfiguracionPiscina(APIView):
         puntos, segundos, automatico, version = (data[k] for k in ('puntos', 'segundos', 'automatico', 'version'))
         if not isinstance(puntos, list) or (puntos and not validar_zona(puntos)):
             return Response({'detail': 'Zona inválida.'}, status=400)
-        if isinstance(segundos, bool) or not isinstance(segundos, int) or not 2 <= segundos <= 120:
+        if isinstance(segundos, bool) or not isinstance(segundos, int) or not self.segundos_minimo <= segundos <= 120:
             return Response({'detail': 'Tiempo inválido.'}, status=400)
         if not isinstance(automatico, bool) or (automatico and not puntos) or (version is not None and not isinstance(version, str)):
             return Response({'detail': 'Configuración inválida.'}, status=400)
         try:
             with transaction.atomic():
-                regla = ReglaPiscina.objects.select_for_update().filter(pk=fuente).first()
+                regla = self.modelo.objects.select_for_update().filter(pk=fuente).first()
                 if version != (regla.actualizado.isoformat() if regla else None):
                     return Response({'detail': 'La configuración cambió; recarga antes de guardar.'}, status=409)
                 ahora = timezone.now()
-                regla, _ = ReglaPiscina.objects.update_or_create(pk=fuente, defaults={
+                regla, _ = self.modelo.objects.update_or_create(pk=fuente, defaults={
                     'puntos': puntos, 'segundos': segundos, 'automatico': automatico,
                     'actualizado': ahora, 'actualizado_por': request.user})
-                HistorialReglaPiscina.objects.create(fuente=fuente, puntos=puntos, segundos=segundos,
+                self.historial.objects.create(fuente=fuente, puntos=puntos, segundos=segundos,
                                                      automatico=automatico, fecha=ahora, actor=request.user)
         except IntegrityError:
             return Response({'detail': 'La configuración cambió; recarga antes de guardar.'}, status=409)
         respuesta = Response(self.datos(regla))
         respuesta['Cache-Control'] = 'private, no-store'
         return respuesta
+
+
+class ConfiguracionMascota(ConfiguracionPiscina):
+    modelo = ReglaMascota
+    historial = HistorialReglaMascota
+    segundos_defecto = 0
+    segundos_minimo = 0

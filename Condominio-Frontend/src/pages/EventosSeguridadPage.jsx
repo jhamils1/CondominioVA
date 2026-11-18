@@ -102,7 +102,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
   }
   const [pestana, setPestana] = useState('eventos');
   const vistaSolicitada = searchParams.get('vista');
-  const vistaIncidencias = vistaSolicitada === 'historial' || (vistaSolicitada === 'descartadas' && user.role !== 'guardia') ? vistaSolicitada : 'activas';
+  const vistaIncidencias = vistaSolicitada === 'historial' ? 'historial' : 'activas';
   const setVistaIncidencias = vista => setSearchParams(actual => {
     const siguiente = new URLSearchParams(actual);
     if (vista === 'activas') siguiente.delete('vista'); else siguiente.set('vista', vista);
@@ -113,8 +113,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
     if (modo === 'monitor') return;
     setSelected(actual => {
       if (!actual) return null;
-      const permitidos = vistaIncidencias === 'historial' ? ['CONFIRMADA', 'EN_ATENCION', 'RESUELTA']
-        : vistaIncidencias === 'descartadas' ? ['FALSO_POSITIVO'] : ['PENDIENTE_REVISION'];
+      const permitidos = vistaIncidencias === 'historial' ? ['CONFIRMADA', 'EN_ATENCION', 'RESUELTA'] : ['PENDIENTE_REVISION'];
       return permitidos.includes(actual.estado) ? actual : null;
     });
   }, [modo, vistaIncidencias]);
@@ -204,13 +203,13 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
     if (eventoAbierto.current === id || !items.length) return;
     const item = items.find(actual => actual.id === id);
     if (!item) return;
-    if (item.estado === 'FALSO_POSITIVO' && user.role === 'guardia') {
+    if (item.estado === 'FALSO_POSITIVO') {
       eventoAbierto.current = id;
       setSelected(null);
       setNotice('Este evento ya fue descartado.');
       return;
     }
-    const vista = item.estado === 'FALSO_POSITIVO' ? 'descartadas' : item.estado === 'PENDIENTE_REVISION' ? 'activas' : 'historial';
+    const vista = item.estado === 'PENDIENTE_REVISION' ? 'activas' : 'historial';
     if (vista !== vistaIncidencias) {
       setSearchParams(vista === 'activas' ? { evento: id } : { vista, evento: id }, { replace: true });
       return;
@@ -292,7 +291,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
         setNotice('Incidencia confirmada. Ya está disponible en el historial de incidencias.');
       }
       if (modo !== 'monitor' && ['confirmar', 'descartar'].includes(action)) {
-        setVistaIncidencias(action === 'confirmar' ? 'historial' : user.role === 'guardia' ? 'activas' : 'descartadas');
+        setVistaIncidencias(action === 'confirmar' ? 'historial' : 'activas');
         setNotice(action === 'confirmar'
           ? user.role === 'guardia' ? 'Incidencia confirmada y trasladada al historial. Puedes verificar la placa y solicitar el aviso al residente desde este detalle.' : 'Incidencia confirmada y trasladada al historial.'
           : 'Evento descartado y registrado.');
@@ -322,7 +321,6 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
   }
   const eventosVisibles = items.filter(item => {
     if (vistaIncidencias === 'historial') return ['CONFIRMADA', 'EN_ATENCION', 'RESUELTA'].includes(item.estado);
-    if (vistaIncidencias === 'descartadas') return item.estado === 'FALSO_POSITIVO';
     return item.estado === 'PENDIENTE_REVISION';
   });
   return <div className="seguridad-dashboard">
@@ -414,14 +412,13 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
         <div className="seguridad-incidencias-filtros" aria-label="Vista de incidencias">
           <button type="button" aria-pressed={vistaIncidencias === 'activas'} onClick={() => { setVistaIncidencias('activas'); setSelected(null); }}>Pendientes de revisión</button>
           <button type="button" aria-pressed={vistaIncidencias === 'historial'} onClick={() => { setVistaIncidencias('historial'); setSelected(null); }}>Historial de incidencias</button>
-          {user.role !== 'guardia' && <button type="button" aria-pressed={vistaIncidencias === 'descartadas'} onClick={() => { setVistaIncidencias('descartadas'); setSelected(null); }}>Eventos descartados</button>}
           <button type="button" className="seguridad-secondary" disabled={actualizando} onClick={actualizarLista}>{actualizando ? 'Actualizando…' : 'Actualizar'}</button>
         </div>
-        {modo !== 'monitor' && <p className="seguridad-muted">{vistaIncidencias === 'historial' ? 'Incluye incidencias confirmadas, en atención o resueltas. Confirmar no significa resolver.' : vistaIncidencias === 'descartadas' ? 'Eventos revisados que se descartaron como falsos positivos.' : 'Eventos que esperan la revisión del guardia.'}</p>}
+        {modo !== 'monitor' && <p className="seguridad-muted">{vistaIncidencias === 'historial' ? 'Incluye incidencias confirmadas, en atención o resueltas. Confirmar no significa resolver.' : 'Eventos que esperan la revisión del guardia.'}</p>}
         {modo !== 'monitor' && user.role === 'guardia' && <p className="seguridad-muted">La lista se actualiza cada 30 segundos mientras esta pestaña está visible.</p>}
         <div ref={zonaActualizacion} className="seguridad-zona-actualizacion" aria-label="Lista de incidencias">
         {(gestoActualizacion || actualizando) && <p role="status" className="seguridad-refresh-status">{actualizando ? 'Actualizando incidencias…' : gestoActualizacion}</p>}
-        {loading ? <p className="seguridad-empty">Cargando eventos…</p> : eventosVisibles.length === 0 ? (!error && <div className="seguridad-empty"><FaClipboardList /><p>{modo === 'monitor' ? 'No hay eventos disponibles.' : vistaIncidencias === 'historial' ? 'No hay incidencias confirmadas.' : vistaIncidencias === 'descartadas' ? 'No hay eventos descartados.' : 'No hay incidencias pendientes de revisión.'}</p></div>) : <ul className="seguridad-event-list">{eventosVisibles.map(item => <li key={item.id}>
+        {loading ? <p className="seguridad-empty">Cargando eventos…</p> : eventosVisibles.length === 0 ? (!error && <div className="seguridad-empty"><FaClipboardList /><p>{modo === 'monitor' ? 'No hay eventos disponibles.' : vistaIncidencias === 'historial' ? 'No hay incidencias confirmadas.' : 'No hay incidencias pendientes de revisión.'}</p></div>) : <ul className="seguridad-event-list">{eventosVisibles.map(item => <li key={item.id}>
           <button type="button" className="seguridad-event-row" onClick={() => select(item)}>
             <EvidenciaMiniatura evento={item} />
             <span className="seguridad-event-info"><strong>{item.categoria}</strong><span>{item.origen} · {item.camara || 'Sin cámara'}</span><time>{new Date(item.fecha_evento).toLocaleString()}</time></span>
