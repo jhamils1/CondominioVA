@@ -78,7 +78,7 @@ class AlertasSeguridadService {
   AlertasSeguridadService({this.client, Future<String?> Function()? readToken})
       : readToken = readToken ?? AuthService.getAccessToken;
 
-  Future<http.Response> _request(String path, {bool post = false, bool confirmacion = false}) async {
+  Future<http.Response> _request(String path, {bool post = false, bool confirmacion = false, Map<String, String>? datos}) async {
     try {
       final token = await readToken();
       if (token == null || token.isEmpty) {
@@ -87,7 +87,7 @@ class AlertasSeguridadService {
       final uri = Uri.parse('${ApiConfig.baseUrl}$path');
       final headers = ApiConfig.getAuthHeaders(token);
       final response = await (post
-          ? (client == null ? http.post(uri, headers: headers) : client!.post(uri, headers: headers))
+          ? (client == null ? http.post(uri, headers: headers, body: datos == null ? null : jsonEncode(datos)) : client!.post(uri, headers: headers, body: datos == null ? null : jsonEncode(datos)))
           : (client == null ? http.get(uri, headers: headers) : client!.get(uri, headers: headers)))
           .timeout(const Duration(seconds: 10));
       if (response.statusCode == 401) throw const AlertasException('La sesión venció. Inicia sesión nuevamente.');
@@ -159,6 +159,25 @@ class AlertasSeguridadService {
       if (evento.estado != 'CONFIRMADA') throw const FormatException('Estado inesperado');
     } catch (_) {
       throw const AlertasException('No se pudo comprobar la confirmación. Actualiza para revisar el estado.');
+    }
+  }
+
+  Future<DetalleEventoSeguridad> gestionarEvento(String id, String accion, {String observacion = ''}) async {
+    if (!_validId(id)) throw const AlertasException('La incidencia no es válida.');
+    const estados = {'descartar': 'FALSO_POSITIVO', 'atender': 'EN_ATENCION',
+      'actuaciones': 'EN_ATENCION', 'resolver': 'RESUELTA'};
+    final esperado = estados[accion];
+    if (esperado == null) throw const AlertasException('La acción no es válida.');
+    final texto = observacion.trim();
+    if (accion != 'atender' && texto.isEmpty) throw const AlertasException('Escribe un motivo u observación.');
+    final response = await _request('/eventos-seguridad/$id/$accion/', post: true, confirmacion: true,
+      datos: {accion == 'descartar' ? 'motivo' : 'observacion': texto});
+    try {
+      final evento = DetalleEventoSeguridad.fromJson(jsonDecode(utf8.decode(response.bodyBytes)), id);
+      if (evento.estado != esperado) throw const FormatException('Estado inesperado');
+      return evento;
+    } catch (_) {
+      throw const AlertasException('No se pudo comprobar el resultado. Actualiza para revisar el estado.');
     }
   }
 

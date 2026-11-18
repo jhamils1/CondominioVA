@@ -299,11 +299,11 @@ class _PerfilPageState extends State<PerfilPage> {
                   ? AlertasSeguridadPage(service: widget.alertasService)
               : activeTab == 'nuevos' && staff
                   ? IncidenciasSeguridadPage(key: const ValueKey('incidencias-activas'), service: widget.alertasService,
-                      puedeConfirmar: role == 'guardia' || role == 'administrador', onConfirmada: () => setState(() { _selectedTab = 'historial'; }))
+                      puedeConfirmar: role == 'guardia' || role == 'administrador', puedeAtender: role == 'guardia', onConfirmada: () => setState(() { _selectedTab = 'historial'; }))
               : activeTab == 'nuevos' && resident
                   ? AvisosResidentePage(key: const ValueKey('avisos-nuevos'), service: widget.avisosService, filtro: FiltroBandeja.nuevas, actualizarPeriodicamente: true)
               : activeTab == 'historial' && staff
-                  ? IncidenciasSeguridadPage(key: const ValueKey('incidencias-historial'), service: widget.alertasService, historial: true)
+                  ? IncidenciasSeguridadPage(key: const ValueKey('incidencias-historial'), service: widget.alertasService, historial: true, puedeAtender: role == 'guardia')
               : activeTab == 'historial' && resident
                   ? AvisosResidentePage(key: const ValueKey('avisos-historial'), service: widget.avisosService, filtro: FiltroBandeja.leidas)
               : activeTab == 'visitas' && visits

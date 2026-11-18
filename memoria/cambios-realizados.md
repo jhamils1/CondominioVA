@@ -509,3 +509,17 @@ Se incorporó la cámara de laptop o USB al selector del mosaico, con ampliació
 2026-11-17: diagnóstico FCM de solo lectura, sin envío de prueba ni cambios de cuentas.
 2026-11-17: diagnóstico adicional FCM de solo lectura; no se procesó cola ni se enviaron avisos.
 2026-11-17: reinicio de app Android conectada, sin cambio de cuentas o envío de prueba.
+2026-11-18: revisión de código sobre dibujo de zona y procesador de notificaciones; sin modificaciones funcionales.
+2026-11-18: compilación de frontend y pruebas simuladas de diagnóstico; sin cambios funcionales.
+2026-11-18: diagnóstico del dibujo de video sin cambios funcionales.
+2026-11-18: creada revisión documental móvil; sin cambios funcionales, cuentas, datos ni instalación en teléfono.
+2026-11-18: Flutter integra descartar, atender, registrar actuación y resolver por estado; valida respuesta y requiere actualizar tras resultado incierto. Backend y permisos sin modificar.
+2026-11-18: recompilación debug Android offline con API USB, sin instalación ni cambios de cuentas.
+2026-11-18: reiniciado servicio ADB e iniciado procesador continuo FCM; sin instalación ni cambios de cuentas.
+2026-11-18: diagnóstico USB de solo lectura; sin instalación ni cambios de dispositivo.
+2026-11-18: actualización APK mediante adb install -r y apertura, conservando almacenamiento; se configuró enlace USB.
+2026-11-18: comprobación FCM de solo lectura posterior a confirmación de sesión; sin envío de prueba.
+2026-11-18: reiniciada app móvil y verificada validación FCM, sin envío de prueba ni incidencia.
+2026-11-18: envío push directo de prueba al único dispositivo conectado validado, sin crear incidencia ni modificar cola o cuentas.
+2026-11-18: enviado un segundo push de prueba dirigido únicamente al teléfono conectado validado.
+2026-11-18: reconexión temporal ADB mediante conectar-usb.ps1, sin cambios de aplicación.

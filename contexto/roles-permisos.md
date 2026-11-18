@@ -30,7 +30,7 @@ La tabla distingue la política aprobada de los límites actuales; las capacidad
 | Cámaras, zonas, grabaciones y evidencias | Política de administración; módulo pendiente | Solo autorización operativa futura | No | No |
 | Reglas generales de notificación | Política de administración; pendiente | No | No | No |
 
-La operación de estados está disponible en web. En Flutter el guardia puede confirmar eventos pendientes; descartar, atender y resolver continúan disponibles en web. La tabla no certifica cada endpoint ni reemplaza las restricciones concretas de las vistas.
+La operación de estados está disponible en web. En Flutter el guardia puede confirmar o descartar eventos pendientes, iniciar atención, registrar actuaciones y resolver; estas acciones usan los permisos y validaciones existentes del backend. El administrador conserva la confirmación permitida. La tabla no certifica cada endpoint ni reemplaza las restricciones concretas de las vistas.
 
 Desde 2026-11-05 la imagen de evidencia de eventos nuevos puede consultarse por
 API autenticada por administradores o guardias activos. La autorización

@@ -521,3 +521,17 @@ Se integró la fuente local al mosaico y se añadió persistencia de su configur
 2026-11-17: revisada cola FCM por falta de notificaciones; ver pruebas y pendientes.
 2026-11-17: investigado tramo push tras incidencias visibles en web; sigue pendiente identificar procesador y conectividad.
 2026-11-17: app móvil conectada reiniciada para reintentar registro FCM tras aviso recibido en otro dispositivo; recepción en teléfono USB pendiente.
+2026-11-18: inspeccionada relación entre procesador FCM y dibujo de zona reportado; sin reproducción ni cambios de código.
+2026-11-18: investigado dibujo en Configuración de incidencias mediante revisión y pruebas simuladas; no se modificó código.
+2026-11-18: revisado dibujo sobre video original; prueba simulada de zona para mascotas correcta y prueba antigua de video detenida antes de dibujar.
+2026-11-18: revisados Flutter, compatibilidad de seguridad y límites operativos; ver [revisión móvil](../documentacion/auditorias/REVISION_MOVIL_2026_11_18.md).
+2026-11-18: a solicitud del usuario se incorporaron al móvil las acciones de revisión y atención del guardia ya disponibles en web; ver pruebas.
+2026-11-18: preparada APK actualizada para ejecutar en teléfono; dispositivo no detectado.
+2026-11-18: diagnosticada conexión móvil, reiniciado ADB e iniciado procesador FCM tras verificar cola vacía; instalación pendiente por ausencia de dispositivo ADB.
+2026-11-18: comprobación adicional identificó el dispositivo WPD como almacenamiento, no teléfono; ADB continúa sin dispositivos.
+2026-11-18: instalada y abierta app móvil actualizada en dispositivo autorizado, enlace USB configurado; validación real de push pendiente.
+2026-11-18: confirmada por usuario sesión de guardia en móvil actualizado; recepción FCM en ese dispositivo pendiente.
+2026-11-18: comprobada validación FCM reciente después de reiniciar app; entrega real en teléfono pendiente.
+2026-11-18: usuario solicitó notificación de prueba; envío directo solo al teléfono conectado aceptado por Firebase y registrado en Android.
+2026-11-18: reintentada prueba push directa al teléfono guardia, sin crear incidencia.
+2026-11-18: restablecido enlace USB móvil tras desconexión.

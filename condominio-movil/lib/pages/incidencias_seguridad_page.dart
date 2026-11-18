@@ -9,8 +9,9 @@ class IncidenciasSeguridadPage extends StatefulWidget {
   final bool historial;
   final AlertasSeguridadService? service;
   final bool puedeConfirmar;
+  final bool puedeAtender;
   final VoidCallback? onConfirmada;
-  const IncidenciasSeguridadPage({super.key, this.historial = false, this.service, this.puedeConfirmar = false, this.onConfirmada});
+  const IncidenciasSeguridadPage({super.key, this.historial = false, this.service, this.puedeConfirmar = false, this.puedeAtender = false, this.onConfirmada});
 
   @override
   State<IncidenciasSeguridadPage> createState() => _IncidenciasSeguridadPageState();
@@ -149,6 +150,44 @@ class _IncidenciasSeguridadPageState extends State<IncidenciasSeguridadPage> wit
     }
   }
 
+  Future<void> gestionar(String accion, String titulo, {bool requiereTexto = true}) async {
+    final evento = detalle;
+    if (confirmando || !widget.puedeAtender || evento == null || errorConfirmacion != null) return;
+    var contenido = '';
+    final texto = await showDialog<String>(context: context, builder: (dialogContext) => StatefulBuilder(
+      builder: (dialogContext, actualizarDialogo) => AlertDialog(
+        title: Text(titulo),
+        content: TextField(autofocus: requiereTexto, maxLength: 500,
+          maxLines: 3, onChanged: (valor) => actualizarDialogo(() { contenido = valor; }),
+          decoration: InputDecoration(labelText: requiereTexto ? 'Motivo u observación' : 'Observación opcional')),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+          FilledButton(onPressed: requiereTexto && contenido.trim().isEmpty ? null
+              : () => Navigator.pop(dialogContext, contenido.trim()), child: Text(titulo))],
+      ),
+    ));
+    if (!mounted || texto == null || detalle?.id != evento.id) return;
+    setState(() { confirmando = true; errorConfirmacion = null; });
+    try {
+      final actualizado = await service.gestionarEvento(evento.id, accion, observacion: texto);
+      if (!mounted) return;
+      if (accion == 'descartar') {
+        await cargar();
+      } else {
+        setState(() { detalle = actualizado; });
+      }
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        accion == 'descartar' ? 'Incidencia descartada.' : accion == 'atender' ? 'Atención iniciada.' :
+        accion == 'resolver' ? 'Incidencia resuelta.' : 'Actuación registrada.'))); }
+    } on AlertasException catch (e) {
+      if (!mounted) return;
+      if (e.mensaje == 'La sesión venció. Inicia sesión nuevamente.' || e.mensaje == 'No tienes acceso a esta información.') {
+        setState(() { eventos = null; detalle = null; error = e.mensaje; });
+      } else {
+        setState(() { errorConfirmacion = '${e.mensaje} Actualiza el detalle antes de volver a intentar.'; });
+      }
+    } finally { if (mounted) setState(() { confirmando = false; }); }
+  }
+
   Future<void> retirarHistorial(DetalleEventoSeguridad evento) async {
     if (confirmando) return;
     final aceptado = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
@@ -224,11 +263,21 @@ class _IncidenciasSeguridadPageState extends State<IncidenciasSeguridadPage> wit
           EvidenciaSeguridad(key: ValueKey(detalle!.id), eventoId: detalle!.id, service: service)],
         if (detalle!.clipDisponible) ...[const SizedBox(height: 16), const Text('Video de la incidencia'),
           ClipSeguridad(key: ValueKey('clip-${detalle!.id}'), eventoId: detalle!.id)],
-        if (widget.puedeConfirmar && detalle!.estado == 'PENDIENTE_REVISION') ...[
+        if ((widget.puedeConfirmar && detalle!.estado == 'PENDIENTE_REVISION') ||
+            (widget.puedeAtender && {'CONFIRMADA', 'EN_ATENCION'}.contains(detalle!.estado))) ...[
           const SizedBox(height: 20),
           if (errorConfirmacion != null) Text(errorConfirmacion!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          FilledButton(onPressed: confirmando || errorConfirmacion != null ? null : confirmar,
-            child: Text(confirmando ? 'Confirmando…' : 'Confirmar incidencia')),
+          if (widget.puedeConfirmar && detalle!.estado == 'PENDIENTE_REVISION')
+            FilledButton(onPressed: confirmando || errorConfirmacion != null ? null : confirmar,
+              child: Text(confirmando ? 'Procesando…' : 'Confirmar incidencia')),
+          if (widget.puedeAtender && detalle!.estado == 'PENDIENTE_REVISION')
+            OutlinedButton(onPressed: confirmando || errorConfirmacion != null ? null : () => gestionar('descartar', 'Descartar incidencia'), child: const Text('Descartar incidencia')),
+          if (widget.puedeAtender && detalle!.estado == 'CONFIRMADA')
+            FilledButton(onPressed: confirmando || errorConfirmacion != null ? null : () => gestionar('atender', 'Iniciar atención', requiereTexto: false), child: const Text('Iniciar atención')),
+          if (widget.puedeAtender && detalle!.estado == 'EN_ATENCION') ...[
+            FilledButton(onPressed: confirmando || errorConfirmacion != null ? null : () => gestionar('actuaciones', 'Registrar actuación'), child: const Text('Registrar actuación')),
+            OutlinedButton(onPressed: confirmando || errorConfirmacion != null ? null : () => gestionar('resolver', 'Resolver incidencia'), child: const Text('Resolver incidencia')),
+          ],
           if (errorConfirmacion != null) TextButton(onPressed: () { errorConfirmacion = null; abrir(detalle!); }, child: const Text('Actualizar detalle')),
         ],
       ]))

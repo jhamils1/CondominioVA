@@ -454,3 +454,17 @@ Una consulta oficial de solo lectura confirmó que ese proyecto sí existe y que
 2026-11-17: revisar salida del procesador FCM y resolver causa de error genérico de envío y cola pendiente; confirmar recepción en teléfono.
 2026-11-17: confirmar salida del procesador y conectividad Firebase desde su entorno real; investigar elegibilidad para notificaciones recientes sin entrega, sin exponer identidades.
 2026-11-17: confirmar registro FCM del teléfono USB y recepción en nueva alerta autorizada; evitar inferirlo a partir de los dispositivos globales.
+2026-11-18: identificar pantalla y comportamiento del fallo reportado al dibujar zona de estacionamiento y reproducirlo con datos simulados.
+2026-11-18: identificar cámara y síntoma del fallo de dibujo; prueba Imou general se detuvo esperando texto de cámaras adicionales antes de comprobar zona.
+2026-11-18: reproducir fallo de dibujo de estacionamiento con video y conocer si el botón fallaba o no se marcaban puntos.
+2026-11-18: corregir impresión de respuestas de reconocimiento y pagos, revisar conexión/tiempo límite de login y validar notificaciones y recorridos con dispositivo detectado; ver revisión móvil.
+2026-11-18: probar visualmente en teléfono autorizado la gestión móvil del guardia con incidencias y cuentas ficticias, y verificar permisos y estados extremo a extremo; ADB no detectó teléfono.
+2026-11-18: conectar y autorizar teléfono en ADB, instalar APK debug actualizada y verificar las acciones del guardia.
+2026-11-18: lograr detección ADB del teléfono, instalar APK preparada y confirmar registro y recepción push en él.
+2026-11-18: Windows y ADB deben reconocer el teléfono antes de instalar APK y probar recepción push.
+2026-11-18: confirmar inicio de sesión del guardia, registro FCM y recepción en teléfono recién actualizado, además de acciones reales autorizadas.
+2026-11-18: verificar recepción real en el teléfono actualizado sin asumir que uno de los dispositivos elegibles es el conectado.
+2026-11-18: confirmar recepción de una notificación real en el teléfono actualizado; validación FCM temporalmente correlacionada no demuestra entrega.
+2026-11-18: confirmar visualmente notificación de prueba en teléfono y verificar entrega por cola y apertura en segundo plano o app cerrada.
+2026-11-18: confirmar visualización del segundo push de prueba y probar ruta completa de cola.
+2026-11-18: comprobar app tras restablecer enlace USB; si falla compilación Flutter revisar salida exacta.
