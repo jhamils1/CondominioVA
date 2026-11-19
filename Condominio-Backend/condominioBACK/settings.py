@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 import dj_database_url
 from datetime import timedelta
 import os
@@ -41,7 +41,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['*','primerparcial-backend-production.up.railway.app', '192.168.0.4']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*,primerparcial-backend-production.up.railway.app,192.168.0.4', cast=Csv())
 
 
 # Application definition
@@ -175,7 +175,7 @@ ENVIO_FCM_LEGADO_ACTIVO = config('ENVIO_FCM_LEGADO_ACTIVO', default=True, cast=b
 FCM_PROCEDENCIA_ACTIVA = config('FCM_PROCEDENCIA_ACTIVA', default=False, cast=bool)
 FCM_PROYECTO_ID = config('FCM_PROYECTO_ID', default='')
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -197,18 +197,18 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default=','.join([
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://primerparcial-frontend-production.up.railway.app",
     "https://primerparcial-backend-production.up.railway.app",
-]
-CSRF_TRUSTED_ORIGINS = [
+]), cast=Csv())
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default=','.join([
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://primerparcial-frontend-production.up.railway.app",
     "https://primerparcial-backend-production.up.railway.app",
-]
+]), cast=Csv())
 
 # Permitir que el navegador envíe cookies en peticiones cross-origin
 CORS_ALLOW_CREDENTIALS = False
