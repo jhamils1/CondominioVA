@@ -21,7 +21,7 @@ export async function estadoCamaraDemo(signal, procesador = procesadorVision()) 
 }
 
 export async function camarasMonitor(signal) {
-  return (await client.get('camaras/disponibles-monitor/', { signal })).data;
+  return (await client.get('camaras/disponibles-monitor/', { signal, silenciar403: true })).data;
 }
 
 export async function obtenerZonaCamara(id, signal) {

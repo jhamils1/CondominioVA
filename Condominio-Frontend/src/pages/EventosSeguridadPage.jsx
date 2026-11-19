@@ -48,6 +48,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
   const [camaraImou, setCamaraImou] = useState(null);
   const [cargandoCamaras, setCargandoCamaras] = useState(true);
   const [errorCamaras, setErrorCamaras] = useState('');
+  const [camarasSoloLocal, setCamarasSoloLocal] = useState(false);
   const camaraSolicitada = searchParams.get('camara');
   useEffect(() => {
     if (!selectorCamaras) return undefined;
@@ -63,7 +64,14 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
       setCamaraImou(datos.find(c => c.es_imou_vinculada) || null);
       setCamaras(datos.filter(c => !c.es_imou_vinculada));
     })
-      .catch(() => { if (!controller.signal.aborted) setErrorCamaras('No se pudieron consultar las cámaras registradas.'); })
+      .catch(error => {
+        if (controller.signal.aborted) return;
+        if (error.response?.status === 403) {
+          setCamarasSoloLocal(true);
+          setErrorCamaras('Las cámaras de red del monitor requieren una conexión local; el análisis de videos sigue disponible.');
+          setFuente('laptop');
+        } else setErrorCamaras('No se pudieron consultar las cámaras registradas.');
+      })
       .finally(() => { if (!controller.signal.aborted) setCargandoCamaras(false); });
     return () => controller.abort();
   }, [modo]);
@@ -333,7 +341,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
     <ProcesadorVision />
     <p className="seguridad-source-label">Selecciona una cámara registrada</p>
     <div className="seguridad-source-tabs" aria-label="Seleccionar cámara">
-      <button type="button" aria-pressed={fuente === 'imou'} onClick={() => seleccionarFuente('imou')}><FaVideo /> Cámara Imou</button>
+      {!camarasSoloLocal && <button type="button" aria-pressed={fuente === 'imou'} onClick={() => seleccionarFuente('imou')}><FaVideo /> Cámara Imou</button>}
       <button type="button" aria-pressed={fuente === 'laptop'} onClick={() => seleccionarFuente('laptop')}><FaCamera /> Cámara de laptop</button>
       {camaras.map(c => <button type="button" key={c.id} aria-pressed={fuente === `camara-${c.id}`}
         onClick={() => seleccionarFuente(`camara-${c.id}`)}><FaVideo /> {c.nombre}</button>)}
@@ -351,7 +359,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
     {!verVarias && <p className="seguridad-source-note">La vista y el análisis pueden detenerse al salir de esta pestaña.</p>}
     <div className={verVarias ? 'seguridad-mosaico' : ''}>
     <div hidden={configuracion ? fuente !== 'imou' : camarasOcultas.has('imou')} className={verVarias && camaraAmpliada === 'imou' ? 'mosaico-camara-ampliada' : ''}>
-      <CamaraImou onRegistrarEvento={registrarEventoVideo} configuracion={configuracion} compacto={verVarias} ampliado={camaraAmpliada === 'imou'} onAmpliar={() => alternarAmpliacion('imou')} />
+      {!cargandoCamaras && !camarasSoloLocal && <CamaraImou onRegistrarEvento={registrarEventoVideo} configuracion={configuracion} compacto={verVarias} ampliado={camaraAmpliada === 'imou'} onAmpliar={() => alternarAmpliacion('imou')} />}
     </div>
     <div hidden={configuracion ? fuente !== 'laptop' : camarasOcultas.has('laptop')} className={`seguridad-webcam ${verVarias && camaraAmpliada === 'laptop' ? 'mosaico-camara-ampliada' : ''}`}>
       <CamaraDemostracion onRegistrarEvento={registrarEventoVideo} configuracion={configuracion} compacto={verVarias} ampliado={camaraAmpliada === 'laptop'} onAmpliar={() => alternarAmpliacion('laptop')} />
