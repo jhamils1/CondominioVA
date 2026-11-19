@@ -28,6 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 VISION_REMOTA_URL = config('VISION_REMOTA_URL', default='')
 VISION_REMOTA_TOKEN = config('VISION_REMOTA_TOKEN', default='')
 VISION_REMOTA_PROVEEDOR = config('VISION_REMOTA_PROVEEDOR', default='propio')
+VISION_REMOTA_ACCESO_WEB = config('VISION_REMOTA_ACCESO_WEB', default=False, cast=bool)
+VISION_PC_URL = config('VISION_PC_URL', default='')
+VISION_PC_TOKEN = config('VISION_PC_TOKEN', default='')
 ROBOFLOW_API_KEY = config('ROBOFLOW_API_KEY', default='')
 
 

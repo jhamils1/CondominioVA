@@ -50,6 +50,60 @@ class CamaraDemoTests(SimpleTestCase):
             self.assertEqual(response.status_code, 403)
             local.assert_not_called()
 
+    @override_settings(VISION_REMOTA_ACCESO_WEB=True, VISION_PC_URL='https://pc.example.test', VISION_PC_TOKEN='a' * 43)
+    def test_web_solo_administrador_y_pc_mediante_pasarela(self):
+        def request(role, mode, image=False):
+            path = '/analizar/' if image else '/estado/'
+            path += '?procesador=' + mode
+            uploaded = {'imagen': SimpleUploadedFile('foto.jpg', b'\xff\xd8\xfftest', content_type='image/jpeg')}
+            req = self.factory.post(path, uploaded, format='multipart') if image else self.factory.get(path)
+            req.META['REMOTE_ADDR'] = '192.0.2.10'
+            if role:
+                force_authenticate(req, user=SimpleNamespace(is_authenticated=True))
+            return req
+
+        with patch('administracion.access.effective_role', return_value='administrador'), \
+             patch('seguridad_IA.api_camara_demo.solicitar_remoto', return_value={'disponible': True, 'detecciones': []}) as remoto, \
+             patch('seguridad_IA.api_camara_demo.solicitar_propio', return_value={'disponible': True, 'detecciones': []}) as pc, \
+             patch('seguridad_IA.api_camara_demo.solicitar_local') as local:
+            self.assertEqual(CamaraEstadoDemo.as_view()(request('administrador', 'remoto')).status_code, 200)
+            self.assertEqual(CamaraAnalizarDemo.as_view()(request('administrador', 'remoto', True)).status_code, 200)
+            self.assertEqual(CamaraEstadoDemo.as_view()(request('administrador', 'local')).status_code, 200)
+            self.assertEqual(CamaraAnalizarDemo.as_view()(request('administrador', 'local', True)).status_code, 200)
+            local.assert_not_called()
+            self.assertEqual(remoto.call_count, 2)
+            self.assertEqual(pc.call_count, 2)
+            self.assertEqual(pc.call_args.args[2], 'https://pc.example.test')
+        with patch('administracion.access.effective_role', return_value='guardia'), \
+             patch('seguridad_IA.api_camara_demo.solicitar_remoto') as remoto, \
+             patch('seguridad_IA.api_camara_demo.solicitar_propio') as pc:
+            self.assertEqual(CamaraEstadoDemo.as_view()(request('guardia', 'remoto')).status_code, 403)
+            self.assertEqual(CamaraAnalizarDemo.as_view()(request('guardia', 'remoto', True)).status_code, 403)
+            self.assertEqual(CamaraEstadoDemo.as_view()(request('guardia', 'local')).status_code, 403)
+            self.assertIn(CamaraEstadoDemo.as_view()(request(None, 'remoto')).status_code, (401, 403))
+            remoto.assert_not_called()
+            pc.assert_not_called()
+
+    @override_settings(VISION_REMOTA_ACCESO_WEB=True, VISION_PC_URL='', VISION_PC_TOKEN='')
+    def test_pc_no_configurada_no_recurre_a_procesador_del_servidor(self):
+        req = self.factory.get('/estado/?procesador=local', REMOTE_ADDR='192.0.2.10')
+        force_authenticate(req, user=SimpleNamespace(is_authenticated=True))
+        with patch('administracion.access.effective_role', return_value='administrador'), \
+             patch('seguridad_IA.api_camara_demo.solicitar_local') as local, \
+             patch('seguridad_IA.api_camara_demo.requests.request') as solicitud:
+            self.assertEqual(CamaraEstadoDemo.as_view()(req).status_code, 503)
+            local.assert_not_called()
+            solicitud.assert_not_called()
+
+    @override_settings(VISION_REMOTA_ACCESO_WEB=False)
+    def test_web_remota_bloqueada_por_defecto(self):
+        req = self.factory.get('/estado/?procesador=remoto', REMOTE_ADDR='192.0.2.10')
+        force_authenticate(req, user=SimpleNamespace(is_authenticated=True))
+        with patch('administracion.access.effective_role', return_value='administrador'), \
+             patch('seguridad_IA.api_camara_demo.solicitar_remoto') as remoto:
+            self.assertEqual(CamaraEstadoDemo.as_view()(req).status_code, 403)
+            remoto.assert_not_called()
+
     def test_seleccion_remota_permisos_y_sin_fallback(self):
         request = self.factory.get('/estado/?procesador=remoto')
         force_authenticate(request, user=SimpleNamespace(is_authenticated=True))

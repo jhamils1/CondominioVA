@@ -35,3 +35,11 @@ En el `.env` privado de `Condominio-Backend` configura `VISION_REMOTA_PROVEEDOR=
 
 Cada análisis envía un fotograma a Roboflow y puede consumir créditos. Las reglas permanecen en la vista web. El servicio alojado y la entrega de alertas no se han validado con una cuenta real en esta etapa.
 
+## Acceso a visión desde Railway (preparación)
+
+El acceso desde fuera del equipo está desactivado por defecto. En el backend de Railway se puede habilitar explícitamente con `VISION_REMOTA_ACCESO_WEB=True`. Solo un administrador autenticado puede solicitar el estado y analizar imágenes; el límite es de 180 solicitudes por minuto por usuario y por instancia de caché. El catálogo y las conexiones de cámaras mantienen sus restricciones locales. Configurar `VISION_REMOTA_PROVEEDOR=roboflow` y la clave privada `ROBOFLOW_API_KEY` para usar el proveedor alojado; no compartir su valor. La comprobación de estado no verifica la clave ni el servicio real.
+
+La opción **IA local** desde Railway necesita un servicio `camara_remota.py` funcionando en la computadora del usuario y una pasarela HTTPS autenticada hacia él. `VISION_PC_URL` identifica esa pasarela y `VISION_PC_TOKEN` debe coincidir con `VISION_REMOTA_TOKEN` del servicio local. La pasarela debe proteger el acceso, validar TLS y mantenerse activa; no exponer el puerto HTTP de loopback directamente. El túnel, la computadora y Railway deben estar disponibles. Las variables y la infraestructura todavía no están configuradas por este cambio. No hay cambio automático de proveedor ni sincronización automática de las bases local y nube.
+
+En el backend local, la opción **IA local** sigue utilizando el procesador local existente. En Railway, `127.0.0.1` pertenece al contenedor de Railway, no a la computadora del usuario. El acceso real, las protecciones del túnel, el rendimiento y los costos requieren validación antes de operar.
+

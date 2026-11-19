@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
 from administracion.access import SecurityOperator, is_admin
 
@@ -25,6 +26,30 @@ class SoloConexionLocal(BasePermission):
 
     def has_permission(self, request, view):
         return request.META.get("REMOTE_ADDR") in ("127.0.0.1", "::1")
+
+
+class AccesoVision(BasePermission):
+    """Conservar la visión local; permitir visión web solo al administrador."""
+
+    def has_permission(self, request, view):
+        if SoloConexionLocal().has_permission(request, view):
+            return True
+        return (getattr(settings, 'VISION_REMOTA_ACCESO_WEB', False)
+                and request.query_params.get('procesador') in ('local', 'remoto')
+                and is_admin(request.user))
+
+
+class LimiteVisionRemota(SimpleRateThrottle):
+    scope = 'vision_remota_web'
+    rate = '180/min'
+
+    def get_cache_key(self, request, view):
+        if SoloConexionLocal().has_permission(request, view):
+            return None
+        user_id = getattr(request.user, 'pk', None)
+        if user_id is None:
+            return None
+        return self.cache_format % {'scope': self.scope, 'ident': str(user_id)}
 
 
 def solicitar_local(ruta, imagen=None):
@@ -104,8 +129,13 @@ def solicitar_remoto(ruta, imagen=None):
         return solicitar_roboflow(ruta, imagen)
     if proveedor != 'propio':
         return None
-    url = getattr(settings, 'VISION_REMOTA_URL', '').strip().rstrip('/')
-    clave = getattr(settings, 'VISION_REMOTA_TOKEN', '').strip()
+    return solicitar_propio(ruta, imagen, getattr(settings, 'VISION_REMOTA_URL', ''),
+                            getattr(settings, 'VISION_REMOTA_TOKEN', ''))
+
+
+def solicitar_propio(ruta, imagen, url, clave):
+    url = url.strip().rstrip('/')
+    clave = clave.strip()
     try:
         partes = urlsplit(url)
         if (partes.scheme != 'https' or not partes.hostname or partes.username or partes.password
@@ -153,14 +183,24 @@ def procesador_solicitado(request):
     return modo
 
 
+def solicitar_procesador(request, modo, ruta, imagen=None):
+    if modo == 'remoto':
+        return solicitar_remoto(ruta, imagen)
+    if SoloConexionLocal().has_permission(request, None):
+        return solicitar_local(ruta) if imagen is None else solicitar_local(ruta, imagen)
+    return solicitar_propio(ruta, imagen, getattr(settings, 'VISION_PC_URL', ''),
+                            getattr(settings, 'VISION_PC_TOKEN', ''))
+
+
 class CamaraEstadoDemo(APIView):
-    permission_classes = [IsAuthenticated, SecurityOperator, SoloConexionLocal]
+    permission_classes = [IsAuthenticated, SecurityOperator, AccesoVision]
+    throttle_classes = [LimiteVisionRemota]
 
     def get(self, request):
         modo = procesador_solicitado(request)
         if modo is None:
             return Response({'detail': 'Procesador no permitido.'}, status=403)
-        resultado = solicitar_local('/estado') if modo == 'local' else solicitar_remoto('/estado')
+        resultado = solicitar_procesador(request, modo, '/estado')
         if not isinstance(resultado, dict) or resultado.get('disponible') is not True:
             return Response({"detail": f"El procesador {modo} no está disponible o no está configurado."}, status=503)
         response = Response({"disponible": True, 'procesador': modo,
@@ -170,7 +210,8 @@ class CamaraEstadoDemo(APIView):
 
 
 class CamaraAnalizarDemo(APIView):
-    permission_classes = [IsAuthenticated, SecurityOperator, SoloConexionLocal]
+    permission_classes = [IsAuthenticated, SecurityOperator, AccesoVision]
+    throttle_classes = [LimiteVisionRemota]
     parser_classes = [MultiPartParser]
 
     def post(self, request):
@@ -183,7 +224,7 @@ class CamaraAnalizarDemo(APIView):
         datos = archivo.read(MAX_BYTES + 1)
         if len(datos) > MAX_BYTES or not datos.startswith(b"\xff\xd8\xff"):
             return Response({"detail": "Imagen inválida."}, status=status.HTTP_400_BAD_REQUEST)
-        resultado = solicitar_local('/detectar', datos) if modo == 'local' else solicitar_remoto('/detectar', datos)
+        resultado = solicitar_procesador(request, modo, '/detectar', datos)
         if resultado is None:
             return Response({"detail": f"No se pudo conectar con el procesador {modo}."}, status=503)
         response = Response(resultado)
