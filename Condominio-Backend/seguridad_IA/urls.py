@@ -4,7 +4,7 @@ from rest_framework.routers import SimpleRouter
 from .api_notificaciones import EventoViewSet, NotificacionViewSet
 from .api_aviso_residente import AvisoResidenteViewSet
 from .api_camara_demo import CamaraAnalizarDemo, CamaraEstadoDemo
-from .api_imou_local import ImouFotogramaLocal, EstadoMonitoreoImou
+from .api_imou_local import ImouFotogramaLocal, EstadoMonitoreoImou, PuenteImouInterno, CapacidadImouRemota, ExclusionImouRemota
 from .api_zona_imou import ConfiguracionZonaImou
 from .api_zona_camara import ConfiguracionZonaCamara
 from .api_piscina import ConfiguracionPiscina, ConfiguracionMascota
@@ -22,6 +22,9 @@ urlpatterns = [
     path('vision-imou/zona/', ConfiguracionZonaImou.as_view(), name='vision-imou-zona'),
     path('vision-imou/monitoreo/', EstadoMonitoreoImou.as_view(), name='vision-imou-monitoreo'),
     path('vision-imou/fotograma/', ImouFotogramaLocal.as_view(), name='vision-imou-fotograma'),
+    path('vision-imou/puente-interno/', PuenteImouInterno.as_view(), name='vision-imou-puente-interno'),
+    path('vision-imou/capacidad-remota/', CapacidadImouRemota.as_view(), name='vision-imou-capacidad-remota'),
+    path('vision-imou/exclusion-remota/', ExclusionImouRemota.as_view(), name='vision-imou-exclusion-remota'),
     path('vision-camara/estado/', CamaraEstadoDemo.as_view(), name='vision-camara-estado'),
     path('vision-camara/analizar/', CamaraAnalizarDemo.as_view(), name='vision-camara-analizar'),
     path('', include(router.urls)),

@@ -6,7 +6,7 @@ import CamaraDemostracion from './CamaraDemostracion.jsx';
 import CamaraImou from './CamaraImou.jsx';
 import CamaraCatalogo from './CamaraCatalogo.jsx';
 import ProcesadorVision from '../components/ProcesadorVision.jsx';
-import { camarasMonitor } from '../api/visionDemoApi.js';
+import { camarasMonitor, capacidadImouRemota } from '../api/visionDemoApi.js';
 import VideoArchivoDemostracion from './VideoArchivoDemostracion.jsx';
 import EvidenciaEvento from '../components/EvidenciaEvento.jsx';
 import ClipEvento from '../components/ClipEvento.jsx';
@@ -49,6 +49,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
   const [cargandoCamaras, setCargandoCamaras] = useState(true);
   const [errorCamaras, setErrorCamaras] = useState('');
   const [camarasSoloLocal, setCamarasSoloLocal] = useState(false);
+  const [imouRemota, setImouRemota] = useState(false);
   const camaraSolicitada = searchParams.get('camara');
   useEffect(() => {
     if (!selectorCamaras) return undefined;
@@ -64,9 +65,17 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
       setCamaraImou(datos.find(c => c.es_imou_vinculada) || null);
       setCamaras(datos.filter(c => !c.es_imou_vinculada));
     })
-      .catch(error => {
+      .catch(async error => {
         if (controller.signal.aborted) return;
         if (error.response?.status === 403) {
+          try {
+            const capacidad = await capacidadImouRemota(controller.signal);
+            if (!controller.signal.aborted && capacidad.activa === true) {
+              setImouRemota(true);
+              setErrorCamaras('La Imou usa la PC y consume datos del túnel. Solo una sesión puede controlar el análisis y el registro.');
+              return;
+            }
+          } catch { /* Conservar el bloqueo si no se puede verificar la capacidad. */ }
           setCamarasSoloLocal(true);
           setErrorCamaras('Las cámaras de red del monitor requieren una conexión local; el análisis de videos sigue disponible.');
           setFuente('laptop');
@@ -359,7 +368,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
     {!verVarias && <p className="seguridad-source-note">La vista y el análisis pueden detenerse al salir de esta pestaña.</p>}
     <div className={verVarias ? 'seguridad-mosaico' : ''}>
     <div hidden={configuracion ? fuente !== 'imou' : camarasOcultas.has('imou')} className={verVarias && camaraAmpliada === 'imou' ? 'mosaico-camara-ampliada' : ''}>
-      {!cargandoCamaras && !camarasSoloLocal && <CamaraImou onRegistrarEvento={registrarEventoVideo} configuracion={configuracion} compacto={verVarias} ampliado={camaraAmpliada === 'imou'} onAmpliar={() => alternarAmpliacion('imou')} />}
+      {!cargandoCamaras && !camarasSoloLocal && <CamaraImou onRegistrarEvento={registrarEventoVideo} configuracion={configuracion} compacto={verVarias} ampliado={camaraAmpliada === 'imou'} onAmpliar={() => alternarAmpliacion('imou')} remota={imouRemota} />}
     </div>
     <div hidden={configuracion ? fuente !== 'laptop' : camarasOcultas.has('laptop')} className={`seguridad-webcam ${verVarias && camaraAmpliada === 'laptop' ? 'mosaico-camara-ampliada' : ''}`}>
       <CamaraDemostracion onRegistrarEvento={registrarEventoVideo} configuracion={configuracion} compacto={verVarias} ampliado={camaraAmpliada === 'laptop'} onAmpliar={() => alternarAmpliacion('laptop')} />

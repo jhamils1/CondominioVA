@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { fotogramaImou, estadoMonitoreoImou } from '../api/visionDemoApi.js';
+import { fotogramaImou, estadoMonitoreoImou, exclusionImouRemota } from '../api/visionDemoApi.js';
 import AnalisisImou from './AnalisisImou.jsx';
 import ConsultaPlacaFotograma from '../components/ConsultaPlacaFotograma.jsx';
 import LecturaAutomaticaImou from '../components/LecturaAutomaticaImou.jsx';
@@ -10,14 +10,23 @@ import { useClipEvento } from '../vision/useClipEvento.js';
 import { FaCamera, FaCompress, FaExpand, FaPowerOff } from 'react-icons/fa';
 import './CamaraImou.css';
 
-export default function CamaraImou({ onRegistrarEvento, configuracion = false, compacto = false, ampliado = false, onAmpliar }) {
+export default function CamaraImou({ onRegistrarEvento, configuracion = false, compacto = false, ampliado = false, onAmpliar, remota = false }) {
   const [activa, setActiva] = useState(false);
   const [imagen, setImagen] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [automatico, setAutomatico] = useState(false);
   const [pendientes, setPendientes] = useState([]);
   const [avisoRegistro, setAvisoRegistro] = useState('');
-  const { buffer: bufferClip, registrarConClip } = useClipEvento(onRegistrarEvento, setAvisoRegistro);
+  const sesionImou = useRef(null);
+  if (!sesionImou.current) sesionImou.current = crypto.randomUUID().replaceAll('-', '');
+  const controlRemoto = useRef(false);
+  const montado = useRef(true);
+  const [iniciando, setIniciando] = useState(false);
+  const [puedeRecuperar, setPuedeRecuperar] = useState(false);
+  const registrarConSesion = useCallback((datos, opciones = {}) => onRegistrarEvento(datos,
+    remota ? { ...opciones, headers: { ...opciones.headers, 'X-Imou-Session': sesionImou.current } } : opciones),
+  [onRegistrarEvento, remota]);
+  const { buffer: bufferClip, registrarConClip } = useClipEvento(registrarConSesion, setAvisoRegistro);
   const [iaActiva, setIaActiva] = useState(false);
   const [visorAnalizado, setVisorAnalizado] = useState(null);
   const [pieConfiguracion, setPieConfiguracion] = useState(null);
@@ -33,11 +42,22 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
   const monitorRef = useRef(null);
 
   useEffect(() => {
+    montado.current = true;
+    return () => {
+      montado.current = false;
+      if (remota && controlRemoto.current) {
+        void exclusionImouRemota('liberar', sesionImou.current).catch(() => {});
+      }
+    };
+  }, [remota]);
+
+  useEffect(() => {
+    if (remota && !activa) return undefined;
     let vigente = true, timer;
     const controller = new AbortController();
     async function consultar() {
       try {
-        const datos = await estadoMonitoreoImou(controller.signal);
+        const datos = await estadoMonitoreoImou(controller.signal, remota ? sesionImou.current : undefined);
         if (typeof datos.ocupado !== 'boolean') throw new Error('Estado inválido');
         if (vigente) { monitorRef.current = datos.ocupado; setMonitorIndependiente(datos.ocupado); }
       } catch {
@@ -46,13 +66,58 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
     }
     consultar();
     return () => { vigente = false; controller.abort(); clearTimeout(timer); };
-  }, []);
+  }, [remota, activa]);
 
   const cambiarAutomatico = useCallback(valor => {
     automaticoRef.current = valor;
     setAutomatico(valor);
   }, []);
   const desactivarRegistro = useCallback(() => cambiarAutomatico(false), [cambiarAutomatico]);
+  const liberarControl = useCallback(async () => {
+    if (!remota || !controlRemoto.current) return;
+    try {
+      await exclusionImouRemota('liberar', sesionImou.current);
+      controlRemoto.current = false;
+    } catch {
+      if (montado.current) setMensaje('No se pudo liberar el control de la cámara; revisa la conexión antes de volver a iniciarla.');
+    }
+  }, [remota]);
+  const detenerVista = useCallback(() => {
+    desactivarRegistro(); setIaActiva(false); setActiva(false); setImagen(''); setMensaje('Vista detenida.');
+    void liberarControl();
+  }, [desactivarRegistro, liberarControl]);
+  async function iniciarVista() {
+    setIniciando(true);
+    setPuedeRecuperar(false);
+    setMensaje('Conectando con la cámara…');
+    try {
+      if (remota) {
+        await exclusionImouRemota('adquirir', sesionImou.current);
+        controlRemoto.current = true;
+        if (!montado.current) { await liberarControl(); return; }
+      }
+      setIaActiva(true); setActiva(true);
+    } catch {
+      if (montado.current) {
+        setPuedeRecuperar(remota);
+        setMensaje('No se pudo obtener el control de la cámara. Comprueba si otro monitor está activo o si la PC está conectada.');
+      }
+    } finally {
+      if (montado.current) setIniciando(false);
+    }
+  }
+  async function recuperarControl() {
+    if (!window.confirm('Esto puede detener el análisis iniciado por otro administrador. ¿Liberar el control anterior?')) return;
+    setIniciando(true);
+    try {
+      await exclusionImouRemota('recuperar', sesionImou.current);
+      controlRemoto.current = false;
+      setPuedeRecuperar(false);
+      setMensaje('Control liberado. Puedes iniciar la cámara.');
+    } catch {
+      setMensaje('No se pudo liberar el control. Puede haber una incidencia guardándose o una interrupción pendiente de revisar.');
+    } finally { if (montado.current) setIniciando(false); }
+  }
   const actualizarPendientes = useCallback(() => {
     setPendientes([...pendientesRef.current.values()].map(datos => ({
       datos, enviando: enviandoRef.current.has(datos.id),
@@ -115,7 +180,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
         } else if (Date.now() - ultimaImagen > 12000) {
           throw new Error('Sin imágenes');
         }
-        timer = setTimeout(actualizar, 200);
+        timer = setTimeout(actualizar, remota ? 500 : 200);
       } catch (error) {
         if (!vigente) return;
         desactivarRegistro();
@@ -124,6 +189,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
         ultimoFotograma.current = null;
         if ([401, 403].includes(error.response?.status)) {
           setActiva(false);
+          void liberarControl();
           setMensaje('Tu sesión no permite ver esta cámara. Comprueba tu acceso.');
         } else {
           ultimaImagen = Date.now();
@@ -134,10 +200,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
     }
     function alOcultar() {
       if (document.hidden) {
-        desactivarRegistro();
-        setIaActiva(false);
-        setActiva(false);
-        setImagen('');
+        detenerVista();
         setMensaje('Vista detenida al salir de esta pestaña.');
       }
     }
@@ -151,17 +214,17 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
       if (url) URL.revokeObjectURL(url);
       document.removeEventListener('visibilitychange', alOcultar);
     };
-  }, [activa, desactivarRegistro, bufferClip]);
+  }, [activa, desactivarRegistro, bufferClip, remota, detenerVista, liberarControl]);
 
   async function ampliar() {
     try { await visor.current?.requestFullscreen(); }
     catch { setMensaje('El navegador no permitió ampliar la vista.'); }
   }
   const controlesCamara = <div className="imou-side-buttons" aria-label="Controles de la cámara Imou">
-    <button type="button" disabled={activa} className="imou-primary" aria-label="Ver cámara Imou"
-      onClick={() => { setMensaje('Conectando con la cámara…'); setIaActiva(true); setActiva(true); }}><FaPowerOff /> {compacto ? 'Ver' : 'Ver cámara Imou'}</button>
+    <button type="button" disabled={activa || iniciando} className="imou-primary" aria-label="Ver cámara Imou"
+      onClick={iniciarVista}><FaPowerOff /> {iniciando ? 'Conectando…' : compacto ? 'Ver' : 'Ver cámara Imou'}</button>
     <button type="button" disabled={!activa} className="imou-secondary" aria-label="Detener vista Imou"
-      onClick={() => { desactivarRegistro(); setIaActiva(false); setActiva(false); setImagen(''); setMensaje('Vista detenida.'); }}>{compacto ? 'Detener' : 'Detener vista Imou'}</button>
+      onClick={detenerVista}>{compacto ? 'Detener' : 'Detener vista Imou'}</button>
   </div>;
 
   return <section className={`imou-monitor ${compacto ? 'camara-mosaico-imou' : ''}`} aria-label="Cámara Imou por red">
@@ -184,6 +247,7 @@ export default function CamaraImou({ onRegistrarEvento, configuracion = false, c
             <button type="button" onClick={ampliar} className="imou-expand" title="Ampliar cámara Imou" aria-label="Ampliar cámara Imou"><FaExpand /></button></>}
         </div>
         {mensaje && <p role="status" className="imou-camera-message">{mensaje}</p>}
+        {puedeRecuperar && <button type="button" disabled={iniciando} onClick={recuperarControl}>Liberar control anterior</button>}
       </div>
       <aside className="imou-side-card" hidden={compacto}>
         <div className="imou-side-heading"><span className="imou-icon"><FaCamera /></span><div><h3>Control de cámara</h3><p>Imou · red local</p></div></div>

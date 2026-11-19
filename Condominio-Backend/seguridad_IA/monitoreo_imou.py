@@ -1,13 +1,19 @@
 """Reglas y exclusión local del monitor Imou; no abre cámaras por sí mismo."""
 import math
 import socket
+from pathlib import Path
 
-PUERTO_MONITOR = 28767
+# El procesador remoto de visión escucha por defecto en 28767; reservar un
+# puerto distinto para la exclusión del monitor evita confundir ambos procesos.
+PUERTO_MONITOR = 28769
+MARCA_REMOTA = Path(__file__).resolve().parent.parent / 'seguridad_vision' / 'recursos' / 'imou_remota.activa'
 VEHICULOS = {'car', 'motorcycle', 'bus', 'truck'}
 
 
 def adquirir_exclusion():
     """El monitor mantiene el puerto; los registros web lo toman brevemente."""
+    if MARCA_REMOTA.exists():
+        return None
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)

@@ -12,7 +12,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from .management.commands.monitorear_imou import registrar_hallazgo
 from .api_notificaciones import EventoViewSet
 from .models import EventoSeguridad, EvidenciaEventoSeguridad, NotificacionSeguridad, ZonaImou
-from .monitoreo_imou import Seguimiento, adquirir_exclusion
+from .monitoreo_imou import PUERTO_MONITOR, Seguimiento, adquirir_exclusion
 
 
 class SeguimientoImouTests(SimpleTestCase):
@@ -42,6 +42,9 @@ class SeguimientoImouTests(SimpleTestCase):
         segundo = adquirir_exclusion()
         self.assertIsNotNone(segundo)
         segundo.close()
+
+    def test_exclusion_no_usa_puerto_de_ia_remota(self):
+        self.assertNotEqual(PUERTO_MONITOR, 28767)
 
     def test_no_repite_tras_interrupcion_y_avisa_otro_vehiculo(self):
         regla = Seguimiento(self.zona, 2, 640, 480)
@@ -99,6 +102,44 @@ class MonitorImouTests(TestCase):
             response = EventoViewSet.as_view({'post': 'create'})(request)
         self.assertEqual(response.status_code, 409)
         self.assertEqual(EventoSeguridad.objects.count(), 0)
+
+    @override_settings(IMOU_REMOTA_ACTIVA=True)
+    def test_registro_remoto_exige_exclusion_y_libera_al_terminar(self):
+        def solicitud():
+            request = APIRequestFactory().post('/eventos-seguridad/', {
+                'id': str(uuid.uuid4()), 'categoria': 'Posible estacionamiento',
+                'descripcion': 'Prueba ficticia', 'camara': 'Imou (vista local)',
+                'fecha_evento': timezone.now().isoformat(),
+            }, format='json')
+            force_authenticate(request, user=self.admin)
+            return request
+        with patch('administracion.access.effective_role', return_value='administrador'), \
+             patch('seguridad_IA.api_imou_local.exclusion_remota', return_value=False):
+            response = EventoViewSet.as_view({'post': 'create'})(solicitud())
+            self.assertEqual(response.status_code, 409)
+            self.assertEqual(EventoSeguridad.objects.count(), 0)
+        with patch('administracion.access.effective_role', return_value='administrador'), \
+             patch('seguridad_IA.api_imou_local.exclusion_remota', return_value=True) as control, \
+             patch('seguridad_IA.notificaciones.destinatarios', return_value=[]):
+            response = EventoViewSet.as_view({'post': 'create'})(solicitud())
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual([call.args[1] for call in control.call_args_list], ['iniciar', 'terminar'])
+            self.assertEqual(EventoSeguridad.objects.count(), 1)
+
+    @override_settings(IMOU_REMOTA_ACTIVA=True)
+    def test_error_al_registrar_no_deja_operacion_abierta(self):
+        from .notificaciones import TransicionInvalida
+        request = APIRequestFactory().post('/eventos-seguridad/', {
+            'id': str(uuid.uuid4()), 'categoria': 'Prueba', 'descripcion': 'Prueba ficticia',
+            'camara': 'Imou', 'fecha_evento': timezone.now().isoformat(),
+        }, format='json')
+        force_authenticate(request, user=self.admin)
+        with patch('administracion.access.effective_role', return_value='administrador'), \
+             patch('seguridad_IA.api_imou_local.exclusion_remota', return_value=True) as control, \
+             patch('seguridad_IA.api_notificaciones.registrar_evento', side_effect=TransicionInvalida('Ficticio')):
+            response = EventoViewSet.as_view({'post': 'create'})(request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual([call.args[1] for call in control.call_args_list], ['iniciar', 'terminar'])
 
     def test_proceso_funciona_sin_navegador(self):
         deteccion = {'detecciones': [{'clase': 'car', 'caja': [100, 100, 200, 200], 'confianza': .9}]}

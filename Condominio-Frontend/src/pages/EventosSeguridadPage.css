@@ -57,7 +57,8 @@
 .seguridad-mosaico .imou-placeholder { min-height: 0; height: 100%; }
 .seguridad-mosaico .imou-side-buttons, .seguridad-mosaico .camara-catalogo-acciones { display: flex; align-items: center; flex: none; gap: 4px; margin: 0; }
 .seguridad-mosaico .imou-side-buttons button, .seguridad-dashboard .seguridad-mosaico .camara-catalogo-acciones button { min-height: 27px; margin: 0; padding: 0 7px; font-size: 11px; }
-.seguridad-mosaico .imou-side-buttons button:disabled, .seguridad-mosaico .imou-camera-message, .seguridad-mosaico .imou-camera-caption, .seguridad-mosaico .imou-expand { display: none; }
+.seguridad-mosaico .imou-side-buttons button:disabled, .seguridad-mosaico .imou-camera-caption, .seguridad-mosaico .imou-expand { display: none; }
+.seguridad-mosaico .imou-camera-message { display: block; padding: 6px 8px; color: #d8e8f7; font-size: 12px; }
 .seguridad-mosaico .camara-mosaico-catalogo > p { display: none; }
 .seguridad-mosaico .camara-mosaico-catalogo > .camara-catalogo-aviso { display: block; padding: 6px 8px; color: #ffe3af; font-size: 12px; }
 .seguridad-mosaico .camara-catalogo-acciones button:disabled { display: none; }

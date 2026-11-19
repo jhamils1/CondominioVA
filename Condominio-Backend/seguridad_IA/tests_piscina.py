@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIRequestFactory, force_authenticate
 from camaras.models import Camara
 from .api_piscina import ConfiguracionPiscina
@@ -40,3 +40,9 @@ class PiscinaTests(TestCase):
         self.assertEqual(self.llamar('put', 'administrador', 'imou', base).status_code, 400)
         base.update(puntos=self.puntos, segundos=True)
         self.assertEqual(self.llamar('put', 'administrador', 'imou', base).status_code, 400)
+
+    @override_settings(IMOU_REMOTA_ACTIVA=True)
+    def test_acceso_remoto_solo_administrador_y_solo_imou(self):
+        self.assertEqual(self.llamar('get', 'administrador', 'imou', ip='192.0.2.1').status_code, 200)
+        self.assertEqual(self.llamar('get', 'guardia', 'imou', ip='192.0.2.1').status_code, 403)
+        self.assertEqual(self.llamar('get', 'administrador', f'catalogo-{self.camara.pk}', ip='192.0.2.1').status_code, 403)

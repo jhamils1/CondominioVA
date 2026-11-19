@@ -2,7 +2,7 @@ import re
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from administracion.access import SecurityOperator, is_admin
@@ -12,8 +12,17 @@ from .api_camara_demo import SoloConexionLocal
 from .models import ReglaPiscina, HistorialReglaPiscina, ReglaMascota, HistorialReglaMascota
 
 
+class AccesoReglaImou(BasePermission):
+    def has_permission(self, request, view):
+        if SoloConexionLocal().has_permission(request, view):
+            return True
+        from django.conf import settings
+        return (getattr(settings, 'IMOU_REMOTA_ACTIVA', False)
+                and view.kwargs.get('fuente') == 'imou' and is_admin(request.user))
+
+
 class ConfiguracionPiscina(APIView):
-    permission_classes = [IsAuthenticated, SecurityOperator, SoloConexionLocal]
+    permission_classes = [IsAuthenticated, SecurityOperator, AccesoReglaImou]
     modelo = ReglaPiscina
     historial = HistorialReglaPiscina
     segundos_defecto = 10

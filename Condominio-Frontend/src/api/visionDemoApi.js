@@ -24,6 +24,10 @@ export async function camarasMonitor(signal) {
   return (await client.get('camaras/disponibles-monitor/', { signal, silenciar403: true })).data;
 }
 
+export async function capacidadImouRemota(signal) {
+  return (await client.get('vision-imou/capacidad-remota/', { signal, silenciar403: true })).data;
+}
+
 export async function obtenerZonaCamara(id, signal) {
   return (await client.get(`vision-camaras/${id}/zona/`, { signal })).data;
 }
@@ -65,8 +69,15 @@ export async function guardarZonaImou(datos) {
   return (await client.put('vision-imou/zona/', datos)).data;
 }
 
-export async function estadoMonitoreoImou(signal) {
-  return (await client.get('vision-imou/monitoreo/', { signal, timeout: 4000 })).data;
+export async function estadoMonitoreoImou(signal, sesion) {
+  return (await client.get('vision-imou/monitoreo/', { signal, timeout: 9000,
+    headers: sesion ? { 'X-Imou-Session': sesion } : {} })).data;
+}
+
+export async function exclusionImouRemota(accion, sesion) {
+  return (await client.post('vision-imou/exclusion-remota/', { accion }, {
+    headers: { 'X-Imou-Session': sesion }, timeout: 10000,
+  })).data;
 }
 
 export async function fotogramaImou(signal) {

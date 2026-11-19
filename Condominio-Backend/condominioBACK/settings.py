@@ -29,6 +29,7 @@ VISION_REMOTA_URL = config('VISION_REMOTA_URL', default='')
 VISION_REMOTA_TOKEN = config('VISION_REMOTA_TOKEN', default='')
 VISION_REMOTA_PROVEEDOR = config('VISION_REMOTA_PROVEEDOR', default='propio')
 VISION_REMOTA_ACCESO_WEB = config('VISION_REMOTA_ACCESO_WEB', default=False, cast=bool)
+IMOU_REMOTA_ACTIVA = config('IMOU_REMOTA_ACTIVA', default=False, cast=bool)
 VISION_PC_URL = config('VISION_PC_URL', default='')
 VISION_PC_TOKEN = config('VISION_PC_TOKEN', default='')
 ROBOFLOW_API_KEY = config('ROBOFLOW_API_KEY', default='')
@@ -215,6 +216,8 @@ CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default=','.join([
 
 # Permitir que el navegador envíe cookies en peticiones cross-origin
 CORS_ALLOW_CREDENTIALS = False
+from corsheaders.defaults import default_headers
+CORS_ALLOW_HEADERS = (*default_headers, 'x-imou-session')
 
 # Configuración de ImgBB API
 IMGBB_API_KEY = config('IMGBB_API_KEY', default='')

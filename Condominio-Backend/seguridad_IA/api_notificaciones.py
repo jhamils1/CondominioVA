@@ -111,10 +111,18 @@ class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
         # El monitor mantiene esta exclusión mientras trabaja; así la vista web
         # puede seguir mostrando IA sin registrar el mismo hallazgo en paralelo.
         bloqueo = None
-        if data.get('camara') == 'Imou (vista local)':
-            bloqueo = adquirir_exclusion()
-            if bloqueo is None:
-                return Response({'detail': 'El monitor Imou independiente está en ejecución.'}, status=409)
+        exclusion_remota_adquirida = False
+        if data.get('camara') in ('Imou (vista local)', 'Imou · piscina', 'Imou'):
+            if getattr(settings, 'IMOU_REMOTA_ACTIVA', False):
+                from administracion.access import is_admin
+                from .api_imou_local import exclusion_remota
+                if not is_admin(request.user) or not exclusion_remota(request, 'iniciar'):
+                    return Response({'detail': 'La sesión no tiene el control de la cámara Imou.'}, status=409)
+                exclusion_remota_adquirida = True
+            else:
+                bloqueo = adquirir_exclusion()
+                if bloqueo is None:
+                    return Response({'detail': 'El monitor Imou independiente está en ejecución.'}, status=409)
         try:
             with transaction.atomic():
                 evento, created = registrar_evento(request.user, event_id, data)
@@ -129,6 +137,8 @@ class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
         finally:
             if bloqueo is not None:
                 bloqueo.close()
+            if exclusion_remota_adquirida:
+                exclusion_remota(request, 'terminar')
         return Response(self.get_serializer(evento).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'], url_path='evidencia')
