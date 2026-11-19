@@ -61,6 +61,9 @@ try {
   const base = `http://127.0.0.1:${servidor.address().port}`;
   await pagina.goto(`${base}/admin/monitor-camaras?configuracion=analisis`);
   await pagina.getByRole('button', { name: 'Cámara de laptop' }).click();
+  await pagina.getByLabel('Cámara:', { exact: false }).selectOption('b');
+  assert.equal(await pagina.getByRole('button', { name: 'Iniciar cámara' }).isEnabled(), true);
+  await pagina.getByLabel('Cámara:', { exact: false }).selectOption('a');
   await pagina.getByRole('button', { name: 'Iniciar cámara' }).click();
   await pagina.getByRole('button', { name: 'Dibujar zona' }).waitFor();
   const incidenciaLocal = pagina.getByRole('heading', { name: 'Incidencias · zona de estacionamiento' });
@@ -119,6 +122,8 @@ try {
   await pagina.getByText('Configuración guardada recuperada para esta cámara.').waitFor();
   assert.equal(await pagina.getByLabel('Tiempo mínimo detenido (2 a 120 segundos):').inputValue(), '2');
   await pagina.goto(`${base}/admin/monitor-camaras`);
+  assert.equal(await pagina.locator('.camara-local-compacta').isVisible(), true, 'La cámara local aparece en el monitor');
+  assert.equal(await pagina.getByLabel('Cámara:', { exact: false }).inputValue(), 'a', 'La selección persiste en la pestaña');
   await pagina.getByRole('button', { name: /Agregar cámara/ }).click();
   await pagina.getByLabel('Cámara local (laptop o USB)').check();
   await pagina.getByRole('button', { name: 'Mostrar seleccionadas' }).click();

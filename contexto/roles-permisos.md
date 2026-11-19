@@ -55,6 +55,8 @@ Para residentes vinculados a empleados se exige identidad coincidente y perfil a
 
 Aplicar permisos en backend y limitar datos por relación; ocultar un menú no protege una API. Propietarios e inquilinos no acceden a incidencias internas, cámaras ni grabaciones. El guardia no gestiona usuarios, roles, contratos o finanzas ni elimina evidencia/historial.
 
+Desde 2026-11-19, guardias y administradores pueden solicitar el reconocimiento de placa de la evidencia de un evento que admite revisión. La lectura es orientativa, se solicita expresamente y usa un proveedor externo; registrar la placa verificada y gestionar avisos al residente siguen reservados al guardia.
+
 2026-11-14: el administrador puede eliminar un rol personalizado sin cuentas asignadas, con confirmacion en web y auditoria en backend. La API bloquea la eliminacion si existe cualquier asignacion; las capacidades del rol eliminado se retiran en la misma transaccion. Los cuatro roles predeterminados siguen protegidos.
 
 2026-11-15: para posibles estacionamientos detectados por la Imou, el usuario solicitó avisar inicialmente tanto a guardias como a administradores. El evento permanece pendiente hasta la revisión del guardia; los demás eventos conservan su distribución anterior.

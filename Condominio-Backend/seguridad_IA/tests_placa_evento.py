@@ -61,6 +61,9 @@ class PlacaEventoTests(TestCase):
             self.assertEqual(resultado.status_code, 200)
             self.assertTrue(resultado.data['sugerencia_asociada'])
             self.assertEqual(procesar.call_args.args[0].read(), b'\xff\xd8\xff')
+            resultado_admin = sugerir('administrador')
+            self.assertEqual(resultado_admin.status_code, 200)
+            self.assertTrue(resultado_admin.data['sugerencia_asociada'])
         self.assertEqual(HistorialEventoSeguridad.objects.filter(evento=self.evento, accion='PLACA_SUGERIDA').count(), 1)
         self.assertFalse(HistorialEventoSeguridad.objects.filter(evento=self.evento, accion='PLACA_REVISADA').exists())
 

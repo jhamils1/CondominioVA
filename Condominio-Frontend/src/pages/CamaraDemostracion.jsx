@@ -54,7 +54,9 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
   const { buffer: bufferClip, registrarConClip } = useClipEvento(onRegistrarEvento, setAvisoRegistro);
   const tiemposClip = useRef(new Map());
   const [dispositivos, setDispositivos] = useState([]);
-  const [dispositivo, setDispositivo] = useState('');
+  const [dispositivo, setDispositivo] = useState(() => {
+    try { return sessionStorage.getItem('camara-local-seleccionada') || ''; } catch { return ''; }
+  });
   const [identificadorLectura, setIdentificadorLectura] = useState('');
   const [avisoGuardado, setAvisoGuardado] = useState('');
   const [modoDetecciones, setModoDetecciones] = useState('todas');
@@ -105,6 +107,21 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
   }
 
   useEffect(() => () => liberar(), []);
+
+  useEffect(() => {
+    const medios = navigator.mediaDevices;
+    if (!medios?.enumerateDevices) return undefined;
+    let vigente = true;
+    async function actualizar() {
+      try {
+        const lista = await medios.enumerateDevices();
+        if (vigente) setDispositivos(lista.filter(item => item.kind === 'videoinput' && item.deviceId));
+      } catch { /* El navegador puede impedir consultar dispositivos antes del permiso. */ }
+    }
+    void actualizar();
+    medios.addEventListener?.('devicechange', actualizar);
+    return () => { vigente = false; medios.removeEventListener?.('devicechange', actualizar); };
+  }, []);
 
   useEffect(() => {
     if (estado !== 'activa') return undefined;
@@ -252,6 +269,7 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
       const idDispositivo = stream.getVideoTracks()[0]?.getSettings?.().deviceId || dispositivoElegido;
       nombreCamara.current = `Local: ${stream.getVideoTracks()[0]?.label || 'cámara laptop o USB'}`.slice(0, 100);
       setDispositivo(idDispositivo || '');
+      try { sessionStorage.setItem('camara-local-seleccionada', idDispositivo || ''); } catch { /* La cámara sigue disponible. */ }
       let idLectura = '';
       if (idDispositivo && crypto.subtle) {
         try {
@@ -293,7 +311,7 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
       liberar();
       setEstado('error');
       setMensaje(error.name === 'NotAllowedError' ? 'Se denegó el permiso de cámara en el navegador.'
-        : error.name === 'NotFoundError' ? 'No se encontró una cámara disponible.'
+        : error.name === 'NotFoundError' || error.name === 'OverconstrainedError' ? 'No se encontró la cámara seleccionada. Conéctala o elige otra.'
         : error.message === 'La cámara no está disponible en este navegador.' ? error.message
         : 'No se pudo iniciar. Comprueba la cámara y el procesador seleccionado.');
     }
@@ -348,7 +366,12 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
       : <button type="button" onClick={() => activarIA()} disabled={iaIniciando} className="border rounded px-3 py-2 ml-2">{iaIniciando ? 'Iniciando IA…' : 'Activar IA de laptop'}</button>)}
     {compacto && <button type="button" className="mosaico-ampliar" onClick={onAmpliar} aria-label={ampliado ? 'Reducir cámara local' : 'Ampliar cámara local'}>{ampliado ? <FaCompress /> : <FaExpand />}</button>}
     </div>
-    {estado === 'activa' && dispositivos.length > 1 && <label className="camara-local-dispositivo">Cámara: <select value={dispositivo} onChange={event => iniciar(event.target.value)}>{dispositivos.map((item, indice) => <option key={item.deviceId} value={item.deviceId}>{item.label || `Cámara ${indice + 1}`}</option>)}</select></label>}
+    {dispositivos.length > 0 && <label className="camara-local-dispositivo">Cámara: <select value={dispositivo} disabled={estado === 'iniciando'} onChange={event => {
+      const elegida = event.target.value;
+      setDispositivo(elegida);
+      try { sessionStorage.setItem('camara-local-seleccionada', elegida); } catch { /* La selección sigue activa en esta pantalla. */ }
+      if (estado === 'activa') void iniciar(elegida);
+    }}><option value="">Cámara predeterminada</option>{dispositivo && !dispositivos.some(item => item.deviceId === dispositivo) && <option value={dispositivo}>Cámara guardada (no disponible)</option>}{dispositivos.map((item, indice) => <option key={item.deviceId} value={item.deviceId}>{item.label || `Cámara ${indice + 1}`}</option>)}</select></label>}
     {mensaje && <p role="alert" className="text-red-700 mt-2">{mensaje}</p>}
     <div ref={setVisorPiscina} hidden={estado !== 'activa'} className="camara-zona-marco mt-3">
       <video ref={video} muted playsInline hidden={iaActiva} className="camara-zona-imagen" aria-label="Cámara de laptop en directo" />

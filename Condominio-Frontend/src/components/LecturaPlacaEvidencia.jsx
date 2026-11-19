@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { reconocerPlacaEvidencia, posiblesLecturasEntrada, registrarPlacaEvento, consultarDestinatarioPlaca, confirmarDestinatarioPlaca, prepararAvisoResidente, encolarAvisoResidente } from '../api/notificacionesApi.js';
 
-export default function LecturaPlacaEvidencia({ evento, onRegistrada }) {
+export default function LecturaPlacaEvidencia({ evento, onRegistrada, puedeGestionar = true }) {
   const [procesando, setProcesando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState('');
@@ -87,7 +87,7 @@ export default function LecturaPlacaEvidencia({ evento, onRegistrada }) {
   }
   return <section className="seguridad-review">
     <h4>Consultar placa de la evidencia</h4>
-    {evento.evidencia_disponible && <><p>Al pulsar el botón, la imagen se enviará al servicio externo Plate Recognizer. Revisa el resultado antes de identificar a una persona.</p>
+    {evento.evidencia_disponible && ['PENDIENTE_REVISION', 'CONFIRMADA', 'EN_ATENCION'].includes(evento.estado) && <><p>Al pulsar el botón, la imagen se enviará al servicio externo Plate Recognizer. Revisa el resultado antes de identificar a una persona.</p>
     <button type="button" className="seguridad-secondary" onClick={analizar} disabled={procesando}>{procesando ? 'Procesando…' : 'Reconocer placa'}</button></>}
     {error && <p role="alert">{error}</p>}
     {resultado && <div role="status">
@@ -96,17 +96,17 @@ export default function LecturaPlacaEvidencia({ evento, onRegistrada }) {
         <p>Confirma la placa en la imagen. Una coincidencia no identifica al conductor ni confirma responsabilidad.</p></>
         : <p>No se pudo leer una placa. Revisa la evidencia manualmente.</p>}
     </div>}
-    <button type="button" className="seguridad-secondary" onClick={buscarLecturas} disabled={procesando}>Buscar lecturas previas de esta placa</button>
+    {puedeGestionar && <button type="button" className="seguridad-secondary" onClick={buscarLecturas} disabled={procesando}>Buscar lecturas previas de esta placa</button>}
     {lecturasPrevias && <div role="status"><p>Lecturas previas coincidentes en los 30 minutos anteriores. La cámara indicada proviene de la lectura y no está verificada; estas lecturas no incluyen imagen. La coincidencia no prueba que sea el mismo vehículo.</p>
       {lecturasPrevias.estado === 'sin_sugerencia' ? <p>Primero solicita la lectura de la evidencia de este evento.</p> : lecturasPrevias.lecturas.length === 0 ? <p>No se encontraron lecturas previas.</p> : <ul>{lecturasPrevias.lecturas.map(l => <li key={l.id}>{l.placa} · {l.camara} · {new Date(l.fecha).toLocaleString()}</li>)}</ul>}
     </div>}
-    {['PENDIENTE_REVISION', 'CONFIRMADA', 'EN_ATENCION'].includes(evento.estado) && <form onSubmit={registrar}>
+    {puedeGestionar && ['PENDIENTE_REVISION', 'CONFIRMADA', 'EN_ATENCION'].includes(evento.estado) && <form onSubmit={registrar}>
       <label>Placa verificada por el guardia <input required maxLength={20} value={placa} onChange={e => { setPlaca(e.target.value); setGuardado(''); setCandidato(null); }} /></label>
       <button type="submit" className="seguridad-secondary" disabled={procesando}>Registrar placa revisada</button>
       <p>Registra la placa en el historial; no identifica a una persona ni envía avisos.</p>
     </form>}
     {guardado && <p role="status">{guardado}</p>}
-    {['CONFIRMADA', 'EN_ATENCION'].includes(evento.estado) && <div>
+    {puedeGestionar && ['CONFIRMADA', 'EN_ATENCION'].includes(evento.estado) && <div>
       <button type="button" className="seguridad-secondary" disabled={procesando} onClick={consultar}>Buscar residente por placa registrada</button>
       {candidato?.estado === 'candidato' && <div><p>Persona vinculada: {candidato.nombre} ({candidato.tipo}). Comprueba que corresponde al vehículo de la incidencia.</p>
         {candidato.cuenta_activa ? <button type="button" className="seguridad-primary" disabled={procesando} onClick={confirmar}>Confirmar destinatario y enviar aviso</button> : <p>No tiene una cuenta activa compatible; no se puede confirmar para avisos.</p>}</div>}

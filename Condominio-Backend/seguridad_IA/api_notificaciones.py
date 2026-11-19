@@ -196,8 +196,8 @@ class EventoViewSet(ActivacionRequerida, viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['post'], url_path='reconocer-placa-evidencia')
     def reconocer_placa_evidencia(self, request, pk=None):
         """Lee exclusivamente la evidencia privada de este evento."""
-        if effective_role(request.user) != 'guardia':
-            raise PermissionDenied('Solo un guardia activo puede consultar la placa.')
+        if effective_role(request.user) not in ('guardia', 'administrador'):
+            raise PermissionDenied('Solo un guardia o administrador activo puede consultar la placa.')
         if request.data:
             raise ValidationError('No se admiten imágenes ni datos adicionales.')
         evento = self.get_object()

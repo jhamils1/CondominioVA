@@ -77,6 +77,8 @@
 .seguridad-mosaico .camara-local-compacta .camara-zona-imagen { width: 100%; height: 100%; object-fit: contain; }
 .camara-local-placeholder { display: grid; place-items: center; aspect-ratio: 16 / 9; color: #829bb0; font-size: 12px; }
 .camara-local-dispositivo { display: block; padding: 5px 8px; font-size: 12px; }
+.camara-local-dispositivo select { max-width: 100%; padding: 5px 8px; color: #edf8ff; background: #071b30; border: 1px solid #456b88; border-radius: 5px; }
+.camara-local-dispositivo option { color: #edf8ff; background: #071b30; }
 .seguridad-agregar-camara { min-height: 190px; border: 1px dashed #356382; border-radius: 5px; color: #a8c9df; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; background: #081a2c; }
 .seguridad-agregar-camara:hover { color: #e7f5ff; border-color: #4bb6e8; background: #0d2840; }
 .seguridad-agregar-camara svg { font-size: 22px; color: #39baf0; }

@@ -42,7 +42,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
   const [camaraAmpliada, setCamaraAmpliada] = useState(null);
   const [selectorCamaras, setSelectorCamaras] = useState(false);
   const dialogoCamaras = useRef(null);
-  const [camarasOcultas, setCamarasOcultas] = useState(() => new Set(['laptop']));
+  const [camarasOcultas, setCamarasOcultas] = useState(() => new Set());
   const [borradorOcultas, setBorradorOcultas] = useState(() => new Set());
   const [camaras, setCamaras] = useState([]);
   const [camaraImou, setCamaraImou] = useState(null);
@@ -453,7 +453,7 @@ export default function EventosSeguridadPage({ modo = 'monitor' }) {
             : <EvidenciaEvento key={selected.id} evento={selected} />}
           {selected.estado !== 'PENDIENTE_REVISION' && <p className="seguridad-muted">Esta incidencia ya fue revisada.</p>}
           {['administrador', 'guardia'].includes(user.role) && ['CONFIRMADA', 'EN_ATENCION', 'RESUELTA'].includes(selected.estado) && <button type="button" disabled={busy} className="seguridad-danger" onClick={retirarHistorial}>Retirar del historial</button>}
-          {user.role === 'guardia' && <LecturaPlacaEvidencia key={selected.id} evento={selected} onRegistrada={async () => setHistory(await listarHistorialEvento(selected.id))} />}
+          {['guardia', 'administrador'].includes(user.role) && <LecturaPlacaEvidencia key={selected.id} evento={selected} puedeGestionar={user.role === 'guardia'} onRegistrada={async () => setHistory(await listarHistorialEvento(selected.id))} />}
           {user.role === 'guardia' && ['PENDIENTE_REVISION', 'CONFIRMADA', 'EN_ATENCION'].includes(selected.estado) && <div className="seguridad-review">
             <label>Motivo u observación <textarea value={observation} onChange={e => setObservation(e.target.value)} /></label>
             {selected.estado === 'PENDIENTE_REVISION' && <><button disabled={busy} className="seguridad-primary" onClick={() => execute('confirmar')}>Confirmar</button><button disabled={busy} className="seguridad-danger" onClick={() => execute('descartar')}>Descartar</button></>}

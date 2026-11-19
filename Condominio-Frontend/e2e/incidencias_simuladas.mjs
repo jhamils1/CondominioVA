@@ -40,6 +40,7 @@ try {
     if (path.endsWith('/evidencia/')) return route.fulfill({ status: 200, contentType: 'image/jpeg', body: Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==', 'base64') });
     if (path.endsWith('/confirmar/')) { evento = { ...evento, estado: 'CONFIRMADA' }; return route.fulfill({ json: evento }); }
     if (path.endsWith('/registrar-placa/')) { acciones.push('placa'); return route.fulfill({ json: { placa: 'TEST123' } }); }
+    if (path.endsWith('/reconocer-placa-evidencia/')) return route.fulfill({ json: { plate: 'TEST123', match: false, sugerencia_asociada: true } });
     if (path.endsWith('/destinatario-placa/') && req.method() === 'GET') return route.fulfill({ json: { estado: candidatoEstado, vehiculo_id: 1, nombre: 'Residente ficticio', tipo: 'inquilino', cuenta_activa: true } });
     if (path.endsWith('/destinatario-placa/') && req.method() === 'POST') { acciones.push('verificar'); return route.fulfill({ status: 201, json: { estado: 'verificado' } }); }
     if (path.endsWith('/preparar-aviso-residente/')) { acciones.push('preparar'); return route.fulfill({ json: { estado: 'preparado' } }); }
@@ -131,6 +132,10 @@ try {
   assert.equal(await pagina.getByRole('button', { name: 'Pendientes de revisión' }).getAttribute('aria-pressed'), 'true');
   await pagina.getByText('Vehículo en zona').click();
   await pagina.getByRole('heading', { name: 'Detalle de la incidencia' }).waitFor();
+  await pagina.getByRole('button', { name: 'Reconocer placa' }).click();
+  await pagina.getByText('TEST123', { exact: true }).waitFor();
+  assert.equal(await pagina.getByRole('button', { name: 'Registrar placa revisada' }).count(), 0);
+  assert.equal(await pagina.getByRole('button', { name: 'Buscar lecturas previas de esta placa' }).count(), 0);
   await pagina.getByRole('button', { name: 'Confirmar incidencia' }).click();
   await pagina.getByText('Incidencia confirmada. Ya está disponible en el historial de incidencias.').waitFor();
   assert.equal(await pagina.getByRole('button', { name: 'Confirmar incidencia' }).count(), 0);
