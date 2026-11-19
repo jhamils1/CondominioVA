@@ -186,7 +186,8 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
       iaHabilitada.current = false;
       setIaActiva(false);
       desactivarRegistro();
-      setMensaje(error.message === 'La cámara no entrega imágenes.' ? error.message
+      setMensaje(error.response?.status === 401 ? 'Tu sesión ya no es válida. Vuelve a iniciar sesión para analizar la cámara.'
+        : error.message === 'La cámara no entrega imágenes.' ? error.message
         : 'No se pudo analizar la imagen. La cámara sigue activa; comprueba el procesador seleccionado.');
     }
   }
@@ -209,9 +210,11 @@ export default function CamaraDemostracion({ onRegistrarEvento, configuracion = 
       iaHabilitada.current = true;
       setIaActiva(true);
       void analizar(id, version);
-    } catch {
+    } catch (error) {
       if (actual.current === id && versionIA.current === version) {
-        setMensaje('No se pudo activar la IA. La cámara sigue activa; comprueba el procesador seleccionado.');
+        setMensaje(error.response?.status === 401
+          ? 'Tu sesión ya no es válida. Vuelve a iniciar sesión para analizar la cámara.'
+          : 'No se pudo activar la IA. La cámara sigue activa; comprueba el procesador seleccionado.');
       }
     } finally {
       if (versionIA.current === version) setIaIniciando(false);
